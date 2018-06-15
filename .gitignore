@@ -1,0 +1,8 @@
+.idea/
+__pycache__/
+venv/
+dump.rdb
+locales.py
+db.sqlite
+shoppybot_db.sqlite
+test_conf.conf
