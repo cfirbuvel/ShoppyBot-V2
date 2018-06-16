@@ -1,6 +1,6 @@
 import datetime
 
-from telegram import ParseMode
+from telegram import ParseMode, InputMediaPhoto
 from telegram.ext import ConversationHandler
 
 from .admin import is_admin
@@ -23,7 +23,7 @@ from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ORDER_OPTIO
     ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, ADMIN_CHANNELS, ADMIN_CHANNELS_SELECT_TYPE, \
     ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT, ADMIN_MENU, \
     ADMIN_STATISTICS, ADMIN_COURIERS, ADMIN_EDIT_WORKING_HOURS, ADMIN_EDIT_CONTACT_INFO, ADMIN_BOT_ON_OFF, \
-    ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD
+    ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, BOT_STATE_CHECKOUT_LOCATION_DELIVERY
 
 
 def on_shipping_method(bot, update, user_data):
@@ -102,23 +102,20 @@ def on_shipping_delivery_address(bot, update, user_data):
     user_id = get_user_id(update)
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
-    if update.message.location:
-        location = update.message.location
+    if key == _('↩ Back'):
+        return enter_state_shipping_method(bot, update, user_data)
+    elif key == _('❌ Cancel'):
+        return enter_state_init_order_cancelled(bot, update, user_data)
+    elif key == _('✒️Enter it manually'):
+        return BOT_STATE_CHECKOUT_LOCATION_DELIVERY
+    else:
+        try:
+            location = update.message.location
+        except AttributeError:
+            location = update.message.text
         user_data['shipping']['location'] = location
         session_client.json_set(user_id, user_data)
-
         return enter_state_shipping_time(bot, update, user_data)
-    else:
-        if key == _('↩ Back'):
-            return enter_state_shipping_method(bot, update, user_data)
-        elif key == _('❌ Cancel'):
-            return enter_state_init_order_cancelled(bot, update, user_data)
-        else:
-            address = update.message.text
-            user_data['shipping']['address'] = address
-            session_client.json_set(user_id, user_data)
-
-            return enter_state_shipping_time(bot, update, user_data)
 
 
 def on_checkout_time(bot, update, user_data):
@@ -176,7 +173,7 @@ def on_phone_number_text(bot, update, user_data):
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
         return enter_state_shipping_time(bot, update, user_data)
-    elif key == 'Enter it manually':
+    elif key == _('✒️Enter it manually'):
         return BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
     else:
         try:
@@ -190,11 +187,9 @@ def on_phone_number_text(bot, update, user_data):
             user_data['shipping']['vip'] = True
             session_client.json_set(user_id, user_data)
 
-            return enter_state_order_confirm(bot, update, user_data)
-        elif config.get_identification_required():
+        if config.get_identification_required():
             return enter_state_identify_photo(bot, update, user_data)
-        else:
-            return enter_state_order_confirm(bot, update, user_data)
+        return enter_state_order_confirm(bot, update, user_data)
 
 
 def on_shipping_identify_photo(bot, update, user_data):
@@ -273,27 +268,30 @@ def on_confirm_order(bot, update, user_data):
         cart.fill_order(user_data, order)
 
         # ORDER CONFIRMED, send the details to service channel
-        txt = _('Order confirmed from (@{})\n\n').format(update.message.from_user.username)
+        txt = _('Order confirmed by (@{})\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
+        media = []
         if 'photo_id' in user_data['shipping']:
-            bot.send_photo(service_channel,
-                           photo=user_data['shipping']['photo_id'],
-                           caption=_('Stage 1 Identification - Selfie'),
-                           )
+            media.append(InputMediaPhoto(media=user_data['shipping']['photo_id'],
+                                         caption=_('Stage 1 Identification - Selfie')))
 
         if 'stage2_id' in user_data['shipping']:
-            bot.send_photo(
-                service_channel,
-                photo=user_data['shipping']['stage2_id'],
-                caption=_('Stage 2 Identification - FB'),
-            )
+            media.append(InputMediaPhoto(media=user_data['shipping']['stage2_id'],
+                                         caption=_('Stage 2 Identification - FB')))
+        if media:
+            bot.send_media_group(service_channel,
+                                 media=media)
 
         if 'location' in user_data['shipping']:
-            bot.send_location(
-                service_channel,
-                location=user_data['shipping']['location']
-            )
+            if hasattr(user_data['shipping']['location'], 'latitude'):
+                bot.send_location(
+                    service_channel,
+                    latitude=user_data['shipping']['location']['latitude'],
+                    longitude=user_data['shipping']['location']['longitude'],
+                )
+        else:
+            txt += 'From {}\n\n'.format(user_data['shipping']['location'])
 
         bot.send_message(service_channel,
                          text=txt,
@@ -378,6 +376,8 @@ def on_service_send_order_to_courier(bot, update, user_data):
         user_data['cart'] = {}
         user_data['shipping'] = {}
         session_client.json_set(user_id, user_data)
+        bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                           message_id=update.callback_query.message.message_id,)
     else:
         logger.info('that part is not handled yet')
 

@@ -116,10 +116,6 @@ def create_service_notice(is_pickup, order_id, product_info, shipping_data,
             text += _('Pickup location: ')
             text += value
             text += '\n'
-        if key == 'address':
-            text += _('Address: ')
-            text += value
-            text += '\n'
         if key == 'time':
             text += _('When: ')
             text += value

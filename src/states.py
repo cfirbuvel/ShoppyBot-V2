@@ -5,7 +5,7 @@ from .messages import create_confirmation_text
 from .models import Location
 from .keyboards import create_main_keyboard, create_pickup_location_keyboard, \
     create_shipping_keyboard, create_cancel_keyboard, create_time_keyboard, \
-    create_confirmation_keyboard, create_phone_number_request_keyboard
+    create_confirmation_keyboard, create_phone_number_request_keyboard, create_location_request_keyboard
 from .helpers import cart, config, session_client, get_user_session, get_user_id, get_trans
 from .enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_PICKUP, \
     BOT_STATE_CHECKOUT_LOCATION_DELIVERY, BOT_STATE_CHECKOUT_TIME, BOT_STATE_CHECKOUT_TIME_TEXT, \
@@ -35,7 +35,7 @@ def enter_state_courier_location(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(
-        text=_('Please choose where do you want to pickup your order:'),
+        text=_('Please choose where do you want to pickup your order'),
         reply_markup=create_pickup_location_keyboard(user_id, location_names),
         parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_LOCATION_PICKUP
@@ -46,7 +46,7 @@ def enter_state_location_delivery(bot, update, user_data):
     _ = get_trans(user_id)
     update.message.reply_text(
         text=_('Please enter delivery address as text or send a location.'),
-        reply_markup=create_cancel_keyboard(user_id),
+        reply_markup=create_location_request_keyboard(user_id),
         parse_mode=ParseMode.MARKDOWN)
     return BOT_STATE_CHECKOUT_LOCATION_DELIVERY
 

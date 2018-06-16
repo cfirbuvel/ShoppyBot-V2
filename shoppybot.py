@@ -21,7 +21,7 @@ from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_P
     ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, ADMIN_EDIT_RESTRICTION, ADMIN_ADD_DELIVERY_FEE, \
     ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_TXT_COURIER_ID, ADMIN_INIT, ADMIN_TXT_PRODUCT_TITLE, \
     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_TXT_DELETE_PRODUCT, ADMIN_EDIT_FINAL_MESSAGE, \
-    ADMIN_TXT_COURIER_LOCATION, SERVICE_CHANNEL
+    ADMIN_TXT_COURIER_LOCATION
 from src.handlers import on_start, on_menu, on_error
 from src.helpers import resend_responsibility_keyboard, make_confirm, make_unconfirm, config, get_user_id, \
     get_user_session
@@ -93,7 +93,8 @@ def main():
                 CallbackQueryHandler(checkout_fallback_command_handler,
                                      pass_user_data=True),
 
-                MessageHandler(Filters.contact | Filters.text, on_phone_number_text, pass_user_data=True),
+                MessageHandler(Filters.contact | Filters.text,
+                               on_phone_number_text, pass_user_data=True),
             ],
             BOT_STATE_CHECKOUT_IDENTIFY_STAGE1: [
                 CallbackQueryHandler(checkout_fallback_command_handler,
@@ -117,7 +118,6 @@ def main():
                 CallbackQueryHandler(on_bot_language_change,
                                      pass_user_data=True),
             ],
-
             #
             # admin states
             #

@@ -37,10 +37,27 @@ def create_phone_number_request_keyboard(user_id):
     _ = get_trans(user_id)
     buttons = [
         [KeyboardButton(
-            text=_('Allow to send my phone number'),
+            text=_('📞 Allow to send my phone number'),
             request_contact=True
         ),
-            KeyboardButton('Enter it manually'),
+            KeyboardButton(_('✒️Enter it manually')),
+        ],
+        [KeyboardButton(_('↩ Back'))],
+        [KeyboardButton(_('❌ Cancel'))],
+    ]
+
+    return ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
+
+
+def create_location_request_keyboard(user_id):
+    from .helpers import get_trans
+    _ = get_trans(user_id)
+    buttons = [
+        [KeyboardButton(
+            text=_('📍 Allow to send my location'),
+            request_location=True
+        ),
+            KeyboardButton(text=_('✒️Enter it manually')),
         ],
         [KeyboardButton(_('↩ Back'))],
         [KeyboardButton(_('❌ Cancel'))],
@@ -392,19 +409,19 @@ def create_service_channel_keyboard(user_id, order_id):
     _ = get_trans(user_id)
     main_button_list = [
         [InlineKeyboardButton(_('🛵 Send order to courier channel'),
-                              callback_data='order_send_to_couriers'.format())],
+                              callback_data='order_send_to_couriers|{}|{}'.format(user_id, order_id))],
         [InlineKeyboardButton(_('🚀 Send order to specific courier'),
-                              callback_data='order_send_to_specific_courier')],
+                              callback_data='order_send_to_specific_courier|{}|{}'.format(user_id, order_id))],
         [InlineKeyboardButton(_('🚕 Send order yourself'),
-                              callback_data='order_send_to_self')],
-        [InlineKeyboardButton(_('⭐ Add user to VIP {}'),
-                              callback_data='order_add_to_vip')],
+                              callback_data='order_send_to_self|{}|{}'.format(user_id, order_id))],
+        [InlineKeyboardButton(_('⭐ Add user to VIP {}'.format(order_id)),
+                              callback_data='order_add_to_vip|{}|{}'.format(user_id, order_id))],
         [InlineKeyboardButton(_('🔥 Add client to ban-list'),
-                              callback_data='order_ban_client')],
-        [InlineKeyboardButton(_('💳 Hide Order'),
-                              callback_data='order_hide|{}'.format(order_id))],
+                              callback_data='order_ban_client|{}|{}'.format(user_id, order_id))],
         [InlineKeyboardButton(_('✅ Order Finished'),
-                              callback_data='order_finished')],
+                              callback_data='order_finished|{}|{}'.format(user_id, order_id))],
+        [InlineKeyboardButton(_('💳 Hide Order'),
+                              callback_data='order_hide|{}|{}'.format(user_id, order_id))],
     ]
     return InlineKeyboardMarkup(main_button_list)
 
@@ -414,5 +431,5 @@ def create_show_order_keyboard(user_id, order_id):
     _ = get_trans(user_id)
     return InlineKeyboardMarkup([[
         InlineKeyboardButton(_('💳 Show Order'),
-                             callback_data='order_show|{}'.format(order_id))
+                             callback_data='order_show|{}|{}'.format(user_id, order_id))
     ]])
