@@ -291,7 +291,7 @@ def on_confirm_order(bot, update, user_data):
                     longitude=user_data['shipping']['location']['longitude'],
                 )
         else:
-            txt += 'From {}\n\n'.format(user_data['shipping']['location'])
+            txt += 'From {}\n\n'.format(user_data['shipping']['pickup_location'])
 
         bot.send_message(service_channel,
                          text=txt,
