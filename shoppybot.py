@@ -9,7 +9,8 @@ from src.admin import on_start_admin, on_admin_select_channel_type, on_admin_add
     on_admin_edit_order_message, on_admin_edit_final_message, on_admin_cmd_add_product, on_admin_cmd_delete_product, \
     on_admin_cmd_add_courier, on_admin_txt_courier_name, on_admin_cmd_bot_on, on_admin_cmd_bot_off, on_admin_fallback, \
     on_admin_txt_product_title, on_admin_txt_product_prices, on_admin_txt_product_photo, on_admin_txt_delete_product, \
-    on_admin_cmd_delete_courier, on_admin_txt_courier_id, on_admin_btn_courier_location, on_admin_txt_delete_courier
+    on_admin_cmd_delete_courier, on_admin_txt_courier_id, on_admin_btn_courier_location, on_admin_txt_delete_courier, \
+    on_admin_txt_delete_location, on_admin_txt_location, on_admin_locations
 from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_PICKUP, \
     BOT_STATE_CHECKOUT_LOCATION_DELIVERY, BOT_STATE_CHECKOUT_TIME, BOT_STATE_CHECKOUT_TIME_TEXT, \
     BOT_STATE_CHECKOUT_IDENTIFY_STAGE1, BOT_STATE_CHECKOUT_IDENTIFY_STAGE2, \
@@ -21,7 +22,7 @@ from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_P
     ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, ADMIN_EDIT_RESTRICTION, ADMIN_ADD_DELIVERY_FEE, \
     ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_TXT_COURIER_ID, ADMIN_INIT, ADMIN_TXT_PRODUCT_TITLE, \
     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_TXT_DELETE_PRODUCT, ADMIN_EDIT_FINAL_MESSAGE, \
-    ADMIN_TXT_COURIER_LOCATION
+    ADMIN_TXT_COURIER_LOCATION, ADMIN_TXT_DELETE_LOCATION, ADMIN_TXT_ADD_LOCATION, ADMIN_LOCATIONS
 from src.handlers import on_start, on_menu, on_error
 from src.helpers import resend_responsibility_keyboard, make_confirm, make_unconfirm, config, get_user_id, \
     get_user_session
@@ -33,6 +34,7 @@ from src.triggers import checkout_fallback_command_handler, on_shipping_method, 
     on_shipping_identify_photo, on_statistics_menu, on_confirm_order, on_bot_language_change, on_settings_menu, \
     on_shipping_identify_stage2, on_bot_settings_menu, on_admin_couriers, on_admin_channels, on_admin_ban_list, \
     on_cancel, send_welcome_message, service_channel_courier_query_handler, on_service_send_order_to_courier
+
 
 # will be called when conversation context is lost (e.g. bot is restarted)
 # and the user clicks menu buttons
@@ -131,6 +133,9 @@ def main():
             ADMIN_COURIERS: [
                 CallbackQueryHandler(
                     on_admin_couriers, pattern='^bot_couriers')],
+            ADMIN_LOCATIONS: [
+                CallbackQueryHandler(
+                    on_admin_locations, pattern='^bot_locations')],
             ADMIN_CHANNELS: [
                 CallbackQueryHandler(on_admin_channels, pattern='^bot_channels')
             ],
@@ -300,6 +305,19 @@ def main():
                                pass_user_data=True),
                 CommandHandler('cancel', on_admin_cancel),
             ],
+            ADMIN_TXT_ADD_LOCATION: [
+                CallbackQueryHandler(
+                    on_admin_txt_location, pass_user_data=True),
+                MessageHandler(Filters.text, on_admin_txt_location,
+                               pass_user_data=True),
+                CommandHandler('cancel', on_admin_cancel),
+            ],
+            ADMIN_TXT_DELETE_LOCATION: [
+                CallbackQueryHandler(
+                    on_admin_txt_delete_location, pass_user_data=True),
+                MessageHandler(Filters.text, on_admin_txt_delete_location,
+                               pass_user_data=True),
+                CommandHandler('cancel', on_admin_cancel), ]
         },
         fallbacks=[
             CommandHandler('cancel', on_cancel, pass_user_data=True),

@@ -23,7 +23,7 @@ class Location(BaseModel):
 
 
 class User(BaseModel):
-    username = CharField()
+    username = CharField(null=True)
     telegram_id = IntegerField()
     locale = CharField(max_length=4, default='iw')
     phone_number = CharField(null=True)
