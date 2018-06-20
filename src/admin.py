@@ -10,12 +10,14 @@ from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ADD_DELIVER
     ADMIN_EDIT_RESTRICTION, ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_EDIT_FINAL_MESSAGE, \
     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_INIT, ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, \
     ADMIN_TXT_COURIER_ID, ADMIN_COURIERS, ADMIN_TXT_COURIER_LOCATION, ADMIN_CHANNELS, ADMIN_CHANNELS_ADDRESS, \
-    ADMIN_CHANNELS_SELECT_TYPE, ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, ADMIN_LOCATIONS, ADMIN_TXT_ADD_LOCATION
+    ADMIN_CHANNELS_SELECT_TYPE, ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, ADMIN_LOCATIONS, ADMIN_TXT_ADD_LOCATION, \
+    ADMIN_TXT_DELETE_LOCATION
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans
 from .models import Product, ProductCount, Courier, Location, CourierLocation
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
-    create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard
+    create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
+    create_locations_keyboard
 
 
 def is_admin(bot, user_id):
@@ -129,7 +131,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🎯 Locations'),
-                              reply_markup=create_bot_locations_keyboard(),
+                              reply_markup=create_bot_locations_keyboard(user_id),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_LOCATIONS
@@ -491,11 +493,13 @@ def on_admin_txt_delete_courier(bot, update, user_data):
 
 def on_admin_txt_location(bot, update, user_data):
     query = update.callback_query
-    if update.callback_query and query.callback_query.data == 'back':
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    if update.callback_query and update.callback_query.data == 'back':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🎯 Locations'),
-                              reply_markup=create_bot_locations_keyboard(),
+                              reply_markup=create_bot_locations_keyboard(user_id),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_LOCATIONS
 
@@ -508,7 +512,7 @@ def on_admin_txt_location(bot, update, user_data):
         Location.get(title=location_user_txt)
         update.message.reply_text(text='Location: `{}` '
                                        'already added'.format(location_user_txt),
-                                  reply_markup=create_bot_locations_keyboard(),
+                                  reply_markup=create_bot_locations_keyboard(user_id),
                                   parse_mode=ParseMode.MARKDOWN
                                   )
         return ADMIN_LOCATIONS
@@ -520,18 +524,20 @@ def on_admin_txt_location(bot, update, user_data):
         bot.send_message(chat_id=update.message.chat_id,
                          message_id=update.message.message_id,
                          text=_('new location added'),
-                         reply_markup=create_bot_locations_keyboard(),
+                         reply_markup=create_bot_locations_keyboard(user_id),
                          parse_mode=ParseMode.MARKDOWN)
         return ADMIN_LOCATIONS
 
 
 def on_admin_txt_delete_location(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         query = update.callback_query
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🎯 Locations'),
-                              reply_markup=create_bot_locations_keyboard(),
+                              reply_markup=create_bot_locations_keyboard(user_id),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_LOCATIONS
     lct = update.callback_query.data
@@ -546,7 +552,7 @@ def on_admin_txt_delete_location(bot, update, user_data):
     query = update.callback_query
     bot.send_message(chat_id=query.message.chat_id,
                      text='Location deleted',
-                     reply_markup=create_bot_locations_keyboard(),
+                     reply_markup=create_bot_locations_keyboard(user_id),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_LOCATIONS
 
@@ -554,21 +560,25 @@ def on_admin_txt_delete_location(bot, update, user_data):
 def on_admin_locations(bot, update):
     query = update.callback_query
     data = query.data
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if data == 'bot_locations_back':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('💳 Order options'),
-                              reply_markup=create_bot_order_options_keyboard(),
+                              reply_markup=create_bot_order_options_keyboard(user_id),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_ORDER_OPTIONS
     elif data == 'bot_locations_view':
+        user_id = get_user_id(update)
+        _ = get_trans(user_id)
         locations = Location.select()
         location_names = [x.title for x in locations]
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('Your locations:\n\n{}').format(location_names),
-                              reply_markup=create_bot_locations_keyboard(),
+                              reply_markup=create_bot_locations_keyboard(user_id),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_LOCATIONS
@@ -577,7 +587,7 @@ def on_admin_locations(bot, update):
                               message_id=query.message.message_id,
                               text=_('Enter new location'),
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button()
+                              reply_markup=create_back_button(user_id)
                               ),
         query.answer()
         return ADMIN_TXT_ADD_LOCATION
@@ -589,7 +599,7 @@ def on_admin_locations(bot, update):
                               message_id=query.message.message_id,
                               text=_('Choose location to delete'),
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_locations_keyboard(location_names)
+                              reply_markup=create_locations_keyboard(user_id, location_names)
                               )
         query.answer()
         return ADMIN_TXT_DELETE_LOCATION

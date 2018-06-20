@@ -104,7 +104,9 @@ def create_shipping_keyboard(user_id):
     return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
-def create_locations_keyboard(location_names):
+def create_locations_keyboard(user_id, location_names):
+    from .helpers import get_trans
+    _ = get_trans(user_id)
     button_row = []
     for location_name in location_names:
         button_row.append([InlineKeyboardButton(_(location_name),
@@ -128,7 +130,9 @@ def create_service_notice_keyboard(user_id, order_id):
     return InlineKeyboardMarkup(buttons)
 
 
-def create_confirmation_inline_keyboard():
+def create_confirmation_inline_keyboard(user_id):
+    from .helpers import get_trans
+    _ = get_trans(user_id)
     buttons = [
         InlineKeyboardButton(_('Yes'),
                              callback_data='yes'),
@@ -331,7 +335,9 @@ def create_bot_channels_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_bot_locations_keyboard():
+def create_bot_locations_keyboard(user_id):
+    from .helpers import get_trans
+    _ = get_trans(user_id)
     main_button_list = [
         [InlineKeyboardButton(_('🎯️ View locations'),
                               callback_data='bot_locations_view')],
