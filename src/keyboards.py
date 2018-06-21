@@ -404,6 +404,20 @@ def create_courier_locations_keyboard(user_id, locations):
     return InlineKeyboardMarkup(main_button_list)
 
 
+def couriers_choose_keyboard(couriers, order_id, message_id):
+    couriers_list = []
+    for courier in couriers:
+        if hasattr(courier.location, 'title'):
+            couriers_list.append([InlineKeyboardButton('@{}, from {}'.format(courier.username, courier.location.title),
+                                                       callback_data='sendto|{}|{}|{}'.format(courier.telegram_id,
+                                                                                              order_id, message_id))])
+        else:
+            couriers_list.append([InlineKeyboardButton('@{}'.format(courier.username),
+                                                       callback_data='sendto|{}|{}|{}'.format(courier.telegram_id,
+                                                                                              order_id, message_id))])
+    return InlineKeyboardMarkup(couriers_list)
+
+
 def create_service_channel_keyboard(user_id, order_id):
     from .helpers import get_trans
     _ = get_trans(user_id)
@@ -414,7 +428,7 @@ def create_service_channel_keyboard(user_id, order_id):
                               callback_data='order_send_to_specific_courier|{}|{}'.format(user_id, order_id))],
         [InlineKeyboardButton(_('🚕 Send order yourself'),
                               callback_data='order_send_to_self|{}|{}'.format(user_id, order_id))],
-        [InlineKeyboardButton(_('⭐ Add user to VIP {}'.format(order_id)),
+        [InlineKeyboardButton(_('⭐ Add user to VIP'),
                               callback_data='order_add_to_vip|{}|{}'.format(user_id, order_id))],
         [InlineKeyboardButton(_('🔥 Add client to ban-list'),
                               callback_data='order_ban_client|{}|{}'.format(user_id, order_id))],

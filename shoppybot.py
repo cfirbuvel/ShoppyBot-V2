@@ -32,7 +32,9 @@ from src.triggers import checkout_fallback_command_handler, on_shipping_method, 
     on_shipping_delivery_address, on_checkout_time, on_shipping_time_text, on_phone_number_text, \
     on_shipping_identify_photo, on_statistics_menu, on_confirm_order, on_bot_language_change, on_settings_menu, \
     on_shipping_identify_stage2, on_bot_settings_menu, on_admin_couriers, on_admin_channels, on_admin_ban_list, \
-    on_cancel, send_welcome_message, service_channel_courier_query_handler, on_service_send_order_to_courier
+    on_cancel, send_welcome_message, service_channel_courier_query_handler, on_service_send_order_to_courier, \
+    service_channel_sendto_courier_handler
+
 
 # will be called when conversation context is lost (e.g. bot is restarted)
 # and the user clicks menu buttons
@@ -313,6 +315,10 @@ def main():
     updater.dispatcher.add_handler(
         CallbackQueryHandler(service_channel_courier_query_handler,
                              pattern='^courier',
+                             pass_user_data=True))
+    updater.dispatcher.add_handler(
+        CallbackQueryHandler(service_channel_sendto_courier_handler,
+                             pattern='^sendto',
                              pass_user_data=True))
     updater.dispatcher.add_handler(
         CallbackQueryHandler(on_service_send_order_to_courier,

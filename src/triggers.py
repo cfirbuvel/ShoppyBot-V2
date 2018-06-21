@@ -6,14 +6,14 @@ from telegram.ext import ConversationHandler
 from .admin import is_admin
 from .messages import create_service_notice
 from .helpers import cart, config, session_client, get_user_session, \
-    get_user_id, get_username, is_vip_customer, set_config_session, get_locale, get_trans
+    get_user_id, get_username, is_vip_customer, set_config_session, get_locale, get_trans, get_config_session
 from .keyboards import create_drop_responsibility_keyboard, \
     create_service_notice_keyboard, create_main_keyboard, create_courier_confirmation_keyboard, \
     create_admin_keyboard, create_statistics_keyboard, \
     create_bot_settings_keyboard, create_bot_couriers_keyboard, \
     create_bot_channels_keyboard, create_bot_order_options_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
-    create_service_channel_keyboard
+    create_service_channel_keyboard, couriers_choose_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
@@ -322,16 +322,36 @@ def on_confirm_order(bot, update, user_data):
         logger.warn("Unknown input %s", key)
 
 
+def service_channel_sendto_courier_handler(bot, update, user_data):
+    query = update.callback_query
+    data = query.data
+    label, telegram_id, order_id, message_id = data.split('|')
+    order = Order.get(id=order_id)
+    user_id = order.user.telegram_id
+    bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                       message_id=update.callback_query.message.message_id,)
+    bot.forward_message(chat_id=telegram_id,
+                        from_chat_id=query.message.chat_id,
+                        message_id=message_id,
+                        reply_markup=create_service_notice_keyboard(user_id, order_id))
+
+    query.answer(text='Message sent', show_alert=True)
+
+
 def on_service_send_order_to_courier(bot, update, user_data):
     query = update.callback_query
     data = query.data
     label, user_id, order_id = data.split('|')
-    # user_id = get_user_id(update)
     user_data = get_user_session(user_id)
+    couriers_channel = config.get_couriers_channel()
     _ = get_trans(user_id)
 
     if label == 'order_show':
-        is_pickup = user_data['shipping']['method'] == _('🏪 Pickup')
+        try:
+            is_pickup = user_data['shipping']['method'] == _('🏪 Pickup')
+        except KeyError:
+            query.answer(text='It seems that user have cancelled the order.\nYou can delete it', show_alert=True)
+            return
         product_info = cart.get_products_info(user_data)
         shipping_data = user_data['shipping']
         total = cart.get_cart_total(user_data)
@@ -347,6 +367,13 @@ def on_service_send_order_to_courier(bot, update, user_data):
         txt = _('Order confirmed from (@{})\n\n').format(username)
         query.edit_message_text(text=txt,
                                 reply_markup=create_show_order_keyboard(user_id, order_id))
+    elif label == 'order_send_to_specific_courier':
+        couriers = Courier.select(Courier.username, Courier.telegram_id, Courier.location)
+        bot.send_message(
+            chat_id=config.get_service_channel(),
+            text=_('Please choose who to send'),
+            reply_markup=couriers_choose_keyboard(couriers, order_id, update.callback_query.message.message_id),
+        )
     elif label == 'order_send_to_couriers':
 
         if config.get_has_courier_option():
@@ -356,7 +383,6 @@ def on_service_send_order_to_courier(bot, update, user_data):
             total = cart.get_cart_total(user_data)
             delivery_cost = config.get_delivery_fee()
             delivery_min = config.get_delivery_min()
-            couriers_channel = config.get_couriers_channel()
             bot.send_message(chat_id=couriers_channel,
                              text=create_service_notice(is_pickup, order_id, product_info, shipping_data,
                                                         total, delivery_min, delivery_cost),
@@ -377,7 +403,37 @@ def on_service_send_order_to_courier(bot, update, user_data):
         user_data['shipping'] = {}
         session_client.json_set(user_id, user_data)
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                           message_id=update.callback_query.message.message_id,)
+                           message_id=update.callback_query.message.message_id, )
+        bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                           message_id=str(int(update.callback_query.message.message_id) - 1), )
+        bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                           message_id=str(int(update.callback_query.message.message_id) - 2), )
+    elif label == 'order_send_to_self':
+        usr_id = get_user_id(update)
+        bot.forward_message(chat_id=usr_id,
+                            from_chat_id=query.message.chat_id,
+                            message_id=query.message.message_id,
+                            reply_markup=create_service_notice_keyboard(usr_id, order_id))
+    elif label == 'order_ban_client':
+        usr = User.get(telegram_id=user_id)
+        username = usr.username
+        banned = config.get_banned_users()
+        if username not in banned:
+            banned.append(username)
+        config_session = get_config_session()
+        config_session['banned'] = banned
+        set_config_session(config_session)
+        user_id = get_user_id(update)
+        bot.send_message(chat_id=query.message.chat_id,
+                         text='@{} was banned'.format(username),
+                         parse_mode=ParseMode.MARKDOWN)
+    elif label == 'order_add_to_vip':
+        bul = is_vip_customer(bot, user_id)
+        if bul:
+            query.answer(text='Client is already VIP', show_alert=True)
+        else:
+            query.answer(text='You should no manually add this user to VIP, '
+                              'while we working on API to do it via bot', show_alert=True)
     else:
         logger.info('that part is not handled yet')
 

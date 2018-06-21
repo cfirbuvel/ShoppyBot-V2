@@ -394,9 +394,10 @@ def resend_responsibility_keyboard(bot, update, user_data):
     else:
         order.courier = None
         order.save()
-    bot.delete_message(config.get_couriers_channel(),
+    couriers_channel = config.get_couriers_channel()
+    bot.delete_message(couriers_channel,
                        message_id=query.message.message_id)
-    bot.send_message(config.get_couriers_channel(),
+    bot.send_message(couriers_channel,
                      text=query.message.text,
                      parse_mode=ParseMode.HTML,
                      reply_markup=create_service_notice_keyboard(user_id, order_id))
@@ -467,12 +468,6 @@ def get_user_session(user_id):
     return user_session
 
 
-def get_courier_nickname(location):
-    courier_location = Courier.location
-
-    return courier_location
-
-
 def get_username(update):
     if update.callback_query is not None:
         username = update.callback_query.from_user.username
@@ -522,4 +517,3 @@ def set_config_session(session):
 
 session_client = JsonRedis(host='localhost', port=6379, db=0)
 cat = gettext.GNUTranslations(open('he.mo', 'rb'))
-# func = get_trans(309840247)
