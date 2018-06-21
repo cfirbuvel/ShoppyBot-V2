@@ -104,6 +104,19 @@ def create_shipping_keyboard(user_id):
     return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
+def create_locations_keyboard(user_id, location_names):
+    from .helpers import get_trans
+    _ = get_trans(user_id)
+    button_row = []
+    for location_name in location_names:
+        button_row.append([InlineKeyboardButton(_(location_name),
+                          callback_data=location_name)])
+    back_button = InlineKeyboardButton(_('↩ Back'), callback_data='back')
+    cancel_button = InlineKeyboardButton(_('❌ Cancel'), callback_data='back')
+    button_row.append([back_button, cancel_button])
+    return InlineKeyboardMarkup(button_row)
+
+
 def create_service_notice_keyboard(user_id, order_id):
     from .helpers import get_trans
     _ = get_trans(user_id)
@@ -115,6 +128,18 @@ def create_service_notice_keyboard(user_id, order_id):
         ]
     ]
     return InlineKeyboardMarkup(buttons)
+
+
+def create_confirmation_inline_keyboard(user_id):
+    from .helpers import get_trans
+    _ = get_trans(user_id)
+    buttons = [
+        InlineKeyboardButton(_('Yes'),
+                             callback_data='yes'),
+        InlineKeyboardButton(_('No'),
+                             callback_data='no'),
+    ]
+    return InlineKeyboardMarkup([buttons])
 
 
 def create_courier_confirmation_keyboard(user_id, order_id, courier_name):
@@ -310,6 +335,23 @@ def create_bot_channels_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
+def create_bot_locations_keyboard(user_id):
+    from .helpers import get_trans
+    _ = get_trans(user_id)
+    main_button_list = [
+        [InlineKeyboardButton(_('🎯️ View locations'),
+                              callback_data='bot_locations_view')],
+        [InlineKeyboardButton(_('➕ Add location'),
+                              callback_data='bot_locations_add')],
+        [InlineKeyboardButton(_('➖ Remove location'),
+                              callback_data='bot_locations_delete')],
+        [InlineKeyboardButton(_('↩ Back'),
+                              callback_data='bot_locations_back')],
+    ]
+
+    return InlineKeyboardMarkup(main_button_list)
+
+
 def create_bot_order_options_keyboard(user_id):
     from .helpers import get_trans
     _ = get_trans(user_id)
@@ -322,6 +364,8 @@ def create_bot_order_options_keyboard(user_id):
                               callback_data='bot_order_options_discount')],
         [InlineKeyboardButton(_('➕ Add delivery fee'),
                               callback_data='bot_order_options_delivery_fee')],
+        [InlineKeyboardButton(_('🎯 locations'),
+                              callback_data='bot_order_options_add_locations')],
         [InlineKeyboardButton(_('👨‍ Edit identify process'),
                               callback_data='bot_order_options_identify')],
         [InlineKeyboardButton(_('🔥 Edit Restricted area'),
