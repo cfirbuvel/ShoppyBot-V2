@@ -17,12 +17,12 @@ def on_start(bot, update, user_data):
     user_id = get_user_id(update)
     username = get_username(update)
     locale = get_locale(update)
-    _ = get_trans(user_id)
     try:
         User.get(telegram_id=user_id)
     except User.DoesNotExist:
         user = User(telegram_id=user_id, username=username, locale=locale)
         user.save()
+    _ = get_trans(user_id)
     BOT_ON = config.get_bot_on_off() and username not in config.get_banned_users()
     if BOT_ON or is_admin(bot, user_id):
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
@@ -90,6 +90,7 @@ def on_menu(bot, update, user_data=None):
                                    photo=image_stream)
                     bot.send_message(query.message.chat_id,
                                      text=create_product_description(
+                                         user_id,
                                          product_title, prices,
                                          product_count, subtotal,
                                          delivery_min, delivery_fee),
@@ -164,6 +165,7 @@ def on_menu(bot, update, user_data=None):
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=create_product_description(
+                                          user_id,
                                           product_title, prices,
                                           product_count, subtotal,
                                           delivery_min, delivery_fee),
@@ -185,6 +187,7 @@ def on_menu(bot, update, user_data=None):
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=create_product_description(
+                                          user_id,
                                           product_title, prices,
                                           product_count, subtotal,
                                           delivery_min, delivery_fee),

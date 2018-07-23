@@ -1,8 +1,9 @@
-from src.enums import _
+from .helpers import get_trans
 
 
-def create_product_description(product_title, product_prices, product_count,
+def create_product_description(user_id, product_title, product_prices, product_count,
                                subtotal, delivery_min, delivery_fee):
+    _ = get_trans(user_id)
     text = _('Product:\n{}').format(product_title)
     text += '\n\n'
     text += '〰️'
@@ -32,9 +33,9 @@ def create_product_description(product_title, product_prices, product_count,
     return text
 
 
-def create_confirmation_text(is_pickup, shipping_data, total, delivery_min, delivery_cost,
+def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_min, delivery_cost,
                              product_info):
-
+    _ = get_trans(user_id)
     text = _('<b>Please confirm your order:</b>')
     text += '\n\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
@@ -65,9 +66,9 @@ def create_confirmation_text(is_pickup, shipping_data, total, delivery_min, deli
     return text
 
 
-def create_service_notice(is_pickup, order_id, product_info, shipping_data,
+def create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
                           total, delivery_min, delivery_cost):
-
+    _ = get_trans(user_id)
     text = _('<b>Order №{} notice:</b>'.format(order_id))
     text += '\n\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'

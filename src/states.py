@@ -35,7 +35,7 @@ def enter_state_courier_location(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(
-        text=_('Please choose where do you want to pickup your order'),
+        text=_('Please choose where do you want to pickup your order:'),
         reply_markup=create_pickup_location_keyboard(user_id, location_names),
         parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_LOCATION_PICKUP
@@ -117,7 +117,7 @@ def enter_state_order_confirm(bot, update, user_data):
     delivery_min = config.get_delivery_min()
     product_info = cart.get_products_info(user_data)
     update.message.reply_text(
-        text=create_confirmation_text(
+        text=create_confirmation_text(user_id,
             is_pickup, shipping_data, total, delivery_cost, delivery_min, product_info),
         reply_markup=create_confirmation_keyboard(user_id),
         parse_mode=ParseMode.HTML,

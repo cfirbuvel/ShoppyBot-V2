@@ -358,7 +358,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
         delivery_cost = config.get_delivery_fee()
         delivery_min = config.get_delivery_min()
         query.edit_message_text(
-            text=create_service_notice(is_pickup, order_id, product_info, shipping_data,
+            text=create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
                                        total, delivery_min, delivery_cost),
             parse_mode=ParseMode.HTML,
             reply_markup=create_service_channel_keyboard(user_id, order_id))
@@ -384,7 +384,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
             delivery_cost = config.get_delivery_fee()
             delivery_min = config.get_delivery_min()
             bot.send_message(chat_id=couriers_channel,
-                             text=create_service_notice(is_pickup, order_id, product_info, shipping_data,
+                             text=create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
                                                         total, delivery_min, delivery_cost),
                              reply_markup=create_service_notice_keyboard(user_id, order_id),
                              parse_mode=ParseMode.HTML,
