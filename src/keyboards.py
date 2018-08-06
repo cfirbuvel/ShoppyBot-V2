@@ -40,7 +40,7 @@ def create_phone_number_request_keyboard(user_id):
             text=_('📞 Allow to send my phone number'),
             request_contact=True
         ),
-            KeyboardButton(_('✒️Enter it manually')),
+            KeyboardButton(_('✒️Enter phone manually')),
         ],
         [KeyboardButton(_('↩ Back'))],
         [KeyboardButton(_('❌ Cancel'))],
@@ -57,7 +57,7 @@ def create_location_request_keyboard(user_id):
             text=_('📍 Allow to send my location'),
             request_location=True
         ),
-            KeyboardButton(text=_('✒️Enter it manually')),
+            KeyboardButton(text=_('✒️Enter location manually')),
         ],
         [KeyboardButton(_('↩ Back'))],
         [KeyboardButton(_('❌ Cancel'))],
@@ -174,7 +174,7 @@ def create_main_keyboard(user_id, review_channel, is_admin=None, total_price=0):
     main_button_list = [
         [InlineKeyboardButton(_('🏪 Our products'),
                               callback_data='menu_products')],
-        [InlineKeyboardButton(_('🛍 Checkout {}').format(total_price),
+        [InlineKeyboardButton(_('🛍 Checkout').format(total_price),
                               callback_data='menu_order')],
         [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
         [InlineKeyboardButton(_('⏰ Working hours'),

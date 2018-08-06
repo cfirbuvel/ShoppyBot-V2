@@ -106,7 +106,7 @@ def on_shipping_delivery_address(bot, update, user_data):
         return enter_state_shipping_method(bot, update, user_data)
     elif key == _('❌ Cancel'):
         return enter_state_init_order_cancelled(bot, update, user_data)
-    elif key == _('✒️Enter it manually'):
+    elif key == _('✒️Enter location manually'):
         return BOT_STATE_CHECKOUT_LOCATION_DELIVERY
     else:
         try:
@@ -173,7 +173,7 @@ def on_phone_number_text(bot, update, user_data):
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
         return enter_state_shipping_time(bot, update, user_data)
-    elif key == _('✒️Enter it manually'):
+    elif key == _('✒️Enter phone manually'):
         return BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
     else:
         try:
@@ -182,10 +182,6 @@ def on_phone_number_text(bot, update, user_data):
             phone_number_text = update.message.text
         user_data['shipping']['phone_number'] = phone_number_text
         session_client.json_set(user_id, user_data)
-
-        if is_vip_customer(bot, user_id):
-            user_data['shipping']['vip'] = True
-            session_client.json_set(user_id, user_data)
 
         if config.get_identification_required():
             return enter_state_identify_photo(bot, update, user_data)
@@ -208,8 +204,13 @@ def on_shipping_identify_photo(bot, update, user_data):
         photo_file = bot.get_file(update.message.photo[-1].file_id)
         user_data['shipping']['photo_id'] = photo_file.file_id
         session_client.json_set(user_id, user_data)
-        #
+
+        # check if vip and if 2nd id photo needed
         if config.get_identification_stage2_required():
+            if is_vip_customer(bot, user_id):
+                user_data['shipping']['vip'] = True
+                session_client.json_set(user_id, user_data)
+                return enter_state_order_confirm(bot, update, user_data)
             return enter_state_identify_stage2(bot, update, user_data)
         else:
             return enter_state_order_confirm(bot, update, user_data)
@@ -268,9 +269,8 @@ def on_confirm_order(bot, update, user_data):
         cart.fill_order(user_data, order)
 
         # ORDER CONFIRMED, send the details to service channel
-        txt = _('Order confirmed by (@{})\n').format(update.message.from_user.username)
+        txt = _('Order confirmed from\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
-
 
         if 'location' in user_data['shipping']:
             if hasattr(user_data['shipping']['location'], 'latitude'):
@@ -287,6 +287,9 @@ def on_confirm_order(bot, update, user_data):
                          reply_markup=create_show_order_keyboard(user_id, order_id),
                          parse_mode=ParseMode.HTML,
                          )
+        user_data['cart'] = {}
+        user_data['shipping'] = {}
+        session_client.json_set(user_id, user_data)
 
         return enter_state_init_order_confirmed(bot, update, user_data)
 
@@ -370,7 +373,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
     elif label == 'order_hide':
         service_channel = config.get_service_channel()
         username = User.get(telegram_id=user_id).username
-        txt = _('Order confirmed from (@{})\n\n').format(username)
+        txt = _('Order confirmed from\n@{}\n').format(username)
         try:
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
                        message_id=update.callback_query.message.message_id, )

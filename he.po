@@ -84,23 +84,19 @@ msgid "👌"
 msgstr "👌"
 
 #: shoppybot.py:123 shoppybot.py:167 shoppybot.py:205
-msgid ""
-"Product:\n"
-"{}"
-msgstr ""
-"מוצר:\n"
-"{}"
+msgid "Product:\n{}"
+msgstr "מוצר:\n{}"
 
 #: shoppybot.py:127 shoppybot.py:181 shoppybot.py:217
 msgid "$"
 msgstr "₪"
 
 #: shoppybot.py:127 shoppybot.py:181 shoppybot.py:217
-msgid "<b>Delivery Fee: {}$</b>"
-msgstr "<b>דמי משלוח: {}₪</b>"
+msgid "Delivery Fee: {}$"
+msgstr "דמי משלוח: {}₪"
 
 #: shoppybot.py:129
-msgid "for orders blow below {}$"
+msgid "for orders below {}$"
 msgstr "להזמנות מתחת ל{}₪"
 
 #: shoppybot.py:133
@@ -112,15 +108,15 @@ msgid "x {} = ${}"
 msgstr "x {} = {}₪"
 
 #: shoppybot.py:145
-msgid "Count: <b>{}</b>"
-msgstr "כמות: <b>{}</b>"
+msgid "Count: {}"
+msgstr "כמות: {}"
 
 #: shoppybot.py:147
-msgid "Subtotal: <b>${}</b>"
-msgstr "סיכום ביניים: <b>{}₪</b>"
+msgid "Subtotal: ${}"
+msgstr "סיכום ביניים: {}₪"
 
 #: shoppybot.py:157
-msgid "<b>Please confirm your order:</b>"
+msgid "Please confirm your order:"
 msgstr "אשר/י את ההזמנה"
 
 #: shoppybot.py:161 shoppybot.py:200
@@ -129,12 +125,12 @@ msgstr "מוצרים בסל:"
 
 #: shoppybot.py:178 shoppybot.py:183 shoppybot.py:186 shoppybot.py:214
 #: shoppybot.py:219 shoppybot.py:222
-msgid "Total: <b>${}</b>"
+msgid "Total: ${}"
 msgstr "סה״כ: {}₪"
 
 #: shoppybot.py:196
-msgid "<b>Order №{} notice:</b>"
-msgstr "<b>פרטי הזמנה מס׳{}:</b>"
+msgid "Order №{} notice:"
+msgstr "פרטי הזמנה מס׳{}:"
 
 #: shoppybot.py:196
 msgid "Vip Costumer"
@@ -325,6 +321,22 @@ msgid "🚕 Add delivery fee"
 msgstr "🚕 הוסף דמי משלוח"
 
 #: shoppybot.py:318
+msgid "🎯 locations"
+msgstr "🎯 איזורי פעילות"
+
+#: shoppybot.py:318
+msgid "🎯️ View locations"
+msgstr "🎯 האיזורים שלי"
+
+#: shoppybot.py:318
+msgid "➕ Add location"
+msgstr "➕ הוסף איזור"
+
+#: shoppybot.py:318
+msgid "➖ Remove location"
+msgstr "➖ מחק איזור"
+
+#: shoppybot.py:318
 msgid "👨‍ Edit identify process"
 msgstr "👨‍ ערוך תהליך אימות"
 
@@ -364,20 +376,46 @@ msgstr "✅ בוט פעיל"
 msgid "OFF"
 msgstr "⛔️ בוט סגור"
 
+
+#: shoppybot.py:318
+msgid "🛵 Send order to courier channel"
+msgstr "🛵 העברת ההזמנה לערוץ שליחים"
+
+#: shoppybot.py:318
+msgid "🚀 Send order to specific courier"
+msgstr "🚀 העברת המשלוח לשליח ספציפי"
+
+#: shoppybot.py:318
+msgid "🚕 Send order yourself"
+msgstr "🚕 שלח הזמנה בעצמך"
+
+#: shoppybot.py:318
+msgid "⭐ Add user to VIP"
+msgstr "⭐ הוסף ללקוחות מיוחדים"
+
+#: shoppybot.py:318
+msgid "🔥 Add client to ban-list"
+msgstr "🔥 הוסף לרשימה השחורה"
+
+#: shoppybot.py:318
+msgid "✅ Order Finished"
+msgstr "✅ ההזמנה הסתיימה"
+
+#: shoppybot.py:318
+msgid "💳 Hide Order"
+msgstr "💳 צמצם הזמנה"
+
+#: shoppybot.py:318
+msgid "💳 Show Order"
+msgstr "💳 הצג הזמנה"
+
 #: shoppybot.py:313
 msgid "Assign @{}"
 msgstr "העבר משלוח ל@{}"
 
 #: shoppybot.py:376
-msgid ""
-"Sorry {}\n"
-"You are not authorized to use this bot"
-msgstr ""
-"סליחה {}\n"
-"אין לך אישור להשתמש בבוט\n"
-"\n"
-"לאישור כנס לקבוצת לקוחות @pilo696969main\n"
-"ולחץ /start שוב "
+msgid "Sorry {}\nYou are not authorized to use this bot"
+msgstr "סליחה {}\nאין לך אישור להשתמש בבוט\n\nלאישור דבר עם המנהל,\nכנס לקבוצת לקוחות\nולחץ /start שוב"
 
 #: shoppybot.py:383
 msgid "Sorry {}, the bot is currently switched off"
@@ -386,10 +424,6 @@ msgstr "סליחה {}, הבוט סגור כעת"
 #: shoppybot.py:397
 msgid "Our products:"
 msgstr "המוצרים שלנו:"
-
-#: shoppybot.py:421
-msgid "#Our_Species:"
-msgstr "#פרפל_קוש, #למון_הייז, #ווייט_ווידו, #כמויות_למון_הייז, #אמ_די, #קוק"
 
 #: shoppybot.py:430
 msgid "Please choose pickup or delivery"
@@ -411,6 +445,14 @@ msgstr "מאיזו עיר תרצה את האיסוף:"
 msgid "Please enter delivery address as text or send a location."
 msgstr "שלח/י כתובת מדוייקת כולל עיר או מיקום"
 
+#: shoppybot.py:525
+msgid "📍 Allow to send my location"
+msgstr "📍שלח מיקום אוטומטי"
+
+#: shoppybot.py:549
+msgid "✒️Enter location manually"
+msgstr "✒️הכנס/י כתובת מדוייקת"
+
 #: shoppybot.py:533
 msgid "When do you want to pickup your order?"
 msgstr "מתי תרצה/י את האיסוף/משלוח?"
@@ -423,17 +465,29 @@ msgstr "שלח/י שעה שתרצה/י את המשלוח"
 msgid "Please send your phone number."
 msgstr "שלח/י מספר טלפון"
 
+#: shoppybot.py:549
+msgid "✒️Enter phone manually"
+msgstr "✒️רשמ/י מספר"
+
+#: shoppybot.py:549
+msgid "📞 Allow to send my phone number"
+msgstr "✒️שלח מספר אוטומטי"
+
 #: shoppybot.py:559
 msgid "Please provide an identification picture. {}"
 msgstr "שלח/י סלפי כשאת/ה עושה{}"
 
 #: shoppybot.py:606
-msgid "<b>Order cancelled</b>"
-msgstr "<b>ההזמנה בוטלה</b>"
+msgid "Order cancelled"
+msgstr "ההזמנה בוטלה"
 
 #: shoppybot.py:768
-msgid "Order confirmed from (@{})"
-msgstr "התקבלה הזמנה חדשה מ (@{})"
+msgid "Order confirmed from\n@{}\n"
+msgstr "התקבלה הזמנה חדשה מ\n@{}\n"
+
+#: shoppybot.py:768
+msgid "__From Location {}__"
+msgstr "__מאיזור: {}__"
 
 #: shoppybot.py:788
 msgid "Stage 1 Identification - Selfie"

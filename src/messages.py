@@ -8,12 +8,15 @@ def create_product_description(user_id, product_title, product_prices, product_c
     text += '\n\n'
     text += '〰️'
     text += '\n'
-    if delivery_fee > 0:
-        text += _('<b>Delivery Fee: {}$</b>').format(delivery_fee)
+    if delivery_fee > 0 and delivery_min > 0:
+        text += _('Delivery Fee: {}$').format(delivery_fee)
         text += '\n'
         text += _('for orders below {}$').format(delivery_min)
         text += '\n'
         text += '〰️'
+    else:
+        text += _('Delivery Fee: {}$').format(delivery_fee)
+        text += '\n'
     text += '\n'
     text += _('Price:')
     text += '\n'
@@ -25,9 +28,9 @@ def create_product_description(user_id, product_title, product_prices, product_c
     q = product_count
     if q > 0:
         text += '\n\n〰️\n\n'
-        text += _('Count: <b>{}</b>').format(q)
+        text += _('Count: {}').format(q)
         text += '\n'
-        text += _('Subtotal: <b>${}</b>').format(int(subtotal))
+        text += _('Subtotal: ${}').format(int(subtotal))
         text += '\n'
 
     return text
@@ -36,7 +39,7 @@ def create_product_description(user_id, product_title, product_prices, product_c
 def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_min, delivery_cost,
                              product_info):
     _ = get_trans(user_id)
-    text = _('<b>Please confirm your order:</b>')
+    text = _('Please confirm your order:')
     text += '\n\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
     text += '\n'
@@ -47,29 +50,29 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
         text += '\n'
         text += _('Product:\n{}').format(title)
         text += '\n'
-        text += _('x {} = ${}').format(product_count, price, )
+        text += _('x {} = ${}').format(product_count, price)
         text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
 
     is_vip = True if 'vip' in shipping_data else False
 
-    if total < delivery_min:
-        if not is_pickup and is_vip:
+    if total < delivery_cost:
+        if not is_pickup or not is_vip:
             text += '\n\n'
-            text += _('<b>Delivery Fee: {}$</b>').format(delivery_cost)
+            text += _('Delivery Fee: {}$').format(delivery_min)
             text += '\n'
-            text += _('Total: <b>${}</b>').format(total + delivery_cost)
+            text += _('Total: ${}').format(total + delivery_min)
             return text
 
     text += '\n\n'
-    text += _('Total: <b>${}</b>').format(total)
+    text += _('Total: ${}').format(total)
     return text
 
 
 def create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
                           total, delivery_min, delivery_cost):
     _ = get_trans(user_id)
-    text = _('<b>Order №{} notice:</b>'.format(order_id))
+    text = _('Order №{} notice:').format(order_id)
     text += '\n\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
     text += '\n'
@@ -80,22 +83,22 @@ def create_service_notice(user_id, is_pickup, order_id, product_info, shipping_d
         text += '\n'
         text += _('Product:\n{}').format(title)
         text += '\n'
-        text += _('x {} = ${}').format(product_count, price, )
+        text += _('x {} = ${}').format(product_count, price)
         text += '\n'
 
     is_vip = True if 'vip' in shipping_data else False
     t = 1
     if total < delivery_min:
-        if not is_pickup and is_vip:
+        if not is_pickup and not is_vip:
             text += '\n\n'
-            text += _('<b>Delivery Fee: {}$</b>').format(delivery_cost)
+            text += _('Delivery Fee: {}$').format(delivery_cost)
             text += '\n'
-            text += _('Total: <b>${}</b>').format(total + delivery_cost)
+            text += _('Total: ${}').format(total + delivery_cost)
             t = 0
 
     if t:
         text += '\n\n'
-        text += _('Total: <b>${}</b>').format(total)
+        text += _('Total: ${}').format(total)
     text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
     text += '\n'
