@@ -658,7 +658,7 @@ msgstr "ערוץ לקוחות"
 
 #: admin.py:565
 msgid "Vip Customer"
-msgstr "ערוץ לקוחות VIP"
+msgstr "לקוח/ה VIP"
 
 #: admin.py:565
 msgid "Courier"

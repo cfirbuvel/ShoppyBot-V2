@@ -287,9 +287,6 @@ def on_confirm_order(bot, update, user_data):
                          reply_markup=create_show_order_keyboard(user_id, order_id),
                          parse_mode=ParseMode.HTML,
                          )
-        user_data['cart'] = {}
-        user_data['shipping'] = {}
-        session_client.json_set(user_id, user_data)
 
         return enter_state_init_order_confirmed(bot, update, user_data)
 
@@ -337,7 +334,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
     user_data = get_user_session(user_id)
     couriers_channel = config.get_couriers_channel()
     _ = get_trans(user_id)
-
+    order = Order.get(id=order_id)
     if label == 'order_show':
         try:
             is_pickup = user_data['shipping']['method'] == _('🏪 Pickup')
@@ -893,7 +890,7 @@ def on_admin_channels(bot, update):
         query.answer()
         return ADMIN_CHANNELS
     elif data == 'bot_channels_add':
-        types = [_('Service'), _('Customer'), _('Vip Customer'), _('Courier')]
+        types = [_('Service Channel'), _('Customer Channel'), _('Vip Customer Channel'), _('Courier Channel')]
         msg = ''
         for i, channel_type in enumerate(types, start=1):
             msg += '\n{} - {}'.format(i, channel_type)
@@ -907,7 +904,7 @@ def on_admin_channels(bot, update):
 
         return ADMIN_CHANNELS_SELECT_TYPE
     elif data == 'bot_channels_remove':
-        types = [_('Service'), _('Customer'), _('Vip Customer'), _('Courier')]
+        types = [_('Service Channel'), _('Customer Channel'), _('Vip Customer Channel'), _('Couriers Channel')]
         msg = ''
         for i, channel_type in enumerate(types, start=1):
             msg += '\n{} - {}'.format(i, channel_type)
