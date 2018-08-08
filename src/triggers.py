@@ -1,6 +1,6 @@
 import datetime
 
-from telegram import ParseMode, InputMediaPhoto
+from telegram import ParseMode, InputMediaPhoto, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
 
 from .admin import is_admin
@@ -13,8 +13,8 @@ from .keyboards import create_drop_responsibility_keyboard, \
     create_bot_settings_keyboard, create_bot_couriers_keyboard, \
     create_bot_channels_keyboard, create_bot_order_options_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
-    create_service_channel_keyboard, couriers_choose_keyboard
-from .models import User, Courier, Order, OrderItem, Location, CourierLocation
+    create_service_channel_keyboard, couriers_choose_keyboard, create_calendar_keyboard
+from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
@@ -148,19 +148,68 @@ def on_checkout_time(bot, update, user_data):
         return enter_state_shipping_time(bot, update, user_data)
 
 
+def separate_callback_data(data):
+    """ Separate the callback data"""
+    return data.split(";")
+
+
+def process_calendar_selection(bot, update):
+    """
+    Process the callback_query. This method generates a new calendar if forward or
+    backward is pressed. This method should be called inside a CallbackQueryHandler.
+    :param telegram.Bot bot: The bot, as provided by the CallbackQueryHandler
+    :param telegram.Update update: The update, as provided by the CallbackQueryHandler
+    :return: Returns a tuple (Boolean,datetime.datetime), indicating if a date is selected
+                and returning the date if so.
+    """
+    ret_data = (False, None)
+    query = update.callback_query
+    (action, year, month, day) = separate_callback_data(query.data)
+    curr = datetime.datetime(int(year), int(month), 1)
+    if action == "IGNORE":
+        bot.answer_callback_query(callback_query_id=query.id)
+    elif action == "DAY":
+        bot.edit_message_text(text=query.message.text,
+                              chat_id=query.message.chat_id,
+                              message_id=query.message.message_id
+                              )
+        ret_data = True, datetime.datetime(int(year), int(month), int(day))
+    elif action == "PREV-MONTH":
+        pre = curr - datetime.timedelta(days=1)
+        bot.edit_message_text(text=query.message.text,
+                              chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              reply_markup=create_calendar_keyboard(int(pre.year), int(pre.month)))
+    elif action == "NEXT-MONTH":
+        ne = curr + datetime.timedelta(days=31)
+        bot.edit_message_text(text=query.message.text,
+                              chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              reply_markup=create_calendar_keyboard(int(ne.year), int(ne.month)))
+    else:
+        bot.answer_callback_query(callback_query_id=query.id, text="Something went wrong!")
+        # UNKNOWN
+    return ret_data
+
+
 def on_shipping_time_text(bot, update, user_data):
-    key = update.message.text
+    # key = update.message.text
     user_id = get_user_id(update)
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
-    if key == _('↩ Back'):
-        return enter_state_shipping_time(bot, update, user_data)
-    elif key == _('❌ Cancel'):
-        return enter_state_init_order_cancelled(bot, update, user_data)
-    else:
-        user_data['shipping']['time_text'] = key
+    # if key == _('↩ Back'):
+    #     return enter_state_shipping_time(bot, update, user_data)
+    # elif key == _('❌ Cancel'):
+    #     return enter_state_init_order_cancelled(bot, update, user_data)
+    # else:
+    selected, date = process_calendar_selection(bot, update)
+    if selected:
+        date_format = date.strftime("%Y-%m-%d")
+        bot.send_message(chat_id=update.callback_query.from_user.id,
+                         text=_("You selected %s") % date_format,
+                         reply_markup=ReplyKeyboardRemove())
+        user_data['shipping']['time'] = date_format
         session_client.json_set(user_id, user_data)
-
         return enter_state_phone_number_text(bot, update, user_data)
 
 
@@ -182,7 +231,9 @@ def on_phone_number_text(bot, update, user_data):
             phone_number_text = update.message.text
         user_data['shipping']['phone_number'] = phone_number_text
         session_client.json_set(user_id, user_data)
-
+        user = User.get(telegram_id=user_id)
+        user.phone_number = phone_number_text
+        user.save()
         if is_vip_customer(bot, user_id):
             user_data['shipping']['vip'] = True
             session_client.json_set(user_id, user_data)
@@ -257,20 +308,20 @@ def on_confirm_order(bot, update, user_data):
                 user = User.create(telegram_id=user_id, locale=locale)
             else:
                 user = User.create(telegram_id=user_id, username=username, locale=locale)
-        try:
-            location = Location.get(
-                title=user_data.get('shipping', {}).get('pickup_location'))
-        except Location.DoesNotExist:
-            location = None
-        order = Order.create(user=user, location=location,
-                             date_created=datetime.datetime.now())
+        location = Location.get(
+            title=user_data['shipping']['pickup_location'])
+        order = Order.create(user=user,
+                             location=location,
+                             shipping_method=DeliveryMethod.DELIVERY.value
+                             if user_data['shipping']['method'] == _('🚚 Delivery') else Order.shipping_method.default,
+                             shipping_time=user_data['shipping']['time'],
+                             )
         order_id = order.id
         cart.fill_order(user_data, order)
 
         # ORDER CONFIRMED, send the details to service channel
         txt = _('Order confirmed by (@{})\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
-
 
         if 'location' in user_data['shipping']:
             if hasattr(user_data['shipping']['location'], 'latitude'):
@@ -287,7 +338,10 @@ def on_confirm_order(bot, update, user_data):
                          reply_markup=create_show_order_keyboard(user_id, order_id),
                          parse_mode=ParseMode.HTML,
                          )
-
+        # clear cart and shipping data
+        # user_data['cart'] = {}
+        # user_data['shipping'] = {}
+        # session_client.json_set(user_id, user_data)
         return enter_state_init_order_confirmed(bot, update, user_data)
 
     elif key == _('❌ Cancel'):
@@ -318,7 +372,7 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
     order = Order.get(id=order_id)
     user_id = order.user.telegram_id
     bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                       message_id=update.callback_query.message.message_id,)
+                       message_id=update.callback_query.message.message_id, )
     bot.forward_message(chat_id=telegram_id,
                         from_chat_id=query.message.chat_id,
                         message_id=message_id,
@@ -360,7 +414,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
                                  media=media)
 
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
-            message_id=update.callback_query.message.message_id, )
+                           message_id=update.callback_query.message.message_id, )
         bot.send_message(
             chat_id=service_channel,
             text=create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
@@ -373,11 +427,11 @@ def on_service_send_order_to_courier(bot, update, user_data):
         txt = _('Order confirmed from (@{})\n\n').format(username)
         try:
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                       message_id=update.callback_query.message.message_id, )
+                               message_id=update.callback_query.message.message_id, )
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                       message_id=str(int(update.callback_query.message.message_id) - 1), )
+                               message_id=str(int(update.callback_query.message.message_id) - 1), )
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                       message_id=str(int(update.callback_query.message.message_id) - 2), )
+                               message_id=str(int(update.callback_query.message.message_id) - 2), )
         except:
             pass
         bot.send_message(
@@ -415,10 +469,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
 
             query.answer(text='Order sent to couriers channel', show_alert=True)
     elif label == 'order_finished':
-        # clear cart and shipping data
-        user_data['cart'] = {}
-        user_data['shipping'] = {}
-        session_client.json_set(user_id, user_data)
+
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
                            message_id=update.callback_query.message.message_id, )
         bot.delete_message(chat_id=update.callback_query.message.chat_id,

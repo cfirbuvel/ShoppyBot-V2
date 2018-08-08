@@ -2,7 +2,7 @@ import datetime
 from os.path import dirname, abspath, join
 from enum import Enum
 from peewee import Model, CharField, IntegerField, SqliteDatabase, \
-    ForeignKeyField, DecimalField, BlobField, BooleanField, DateField
+    ForeignKeyField, DecimalField, BlobField, BooleanField, DateField, DateTimeField
 
 d = dirname(dirname(abspath(__file__)))
 db = SqliteDatabase(join(d, 'db.sqlite'))
@@ -60,10 +60,10 @@ class Order(BaseModel):
     courier = ForeignKeyField(Courier, related_name='courier_orders', null=True)
     shipping_method = IntegerField(default=DeliveryMethod.PICKUP.value,
                                    choices=DeliveryMethod)
-    shipping_time = CharField(null=True)
+    shipping_time = DateTimeField(default=datetime.datetime.now)
     location = ForeignKeyField(Location, null=True)
     confirmed = BooleanField(default=False)
-    date_created = DateField(default=datetime.datetime.now, null=True)
+    date_created = DateField(default=datetime.datetime.now)
 
 
 class OrderItem(BaseModel):

@@ -37,7 +37,6 @@ from src.triggers import checkout_fallback_command_handler, on_shipping_method, 
     service_channel_sendto_courier_handler
 
 
-
 # will be called when conversation context is lost (e.g. bot is restarted)
 # and the user clicks menu buttons
 
@@ -88,10 +87,10 @@ def main():
                                pass_user_data=True),
             ],
             BOT_STATE_CHECKOUT_TIME_TEXT: [
-                CallbackQueryHandler(checkout_fallback_command_handler,
+                # CallbackQueryHandler(checkout_fallback_command_handler,
+                #                      pass_user_data=True),
+                CallbackQueryHandler(on_shipping_time_text,
                                      pass_user_data=True),
-                MessageHandler(Filters.text, on_shipping_time_text,
-                               pass_user_data=True),
             ],
             BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT: [
                 CallbackQueryHandler(checkout_fallback_command_handler,
