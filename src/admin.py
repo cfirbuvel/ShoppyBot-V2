@@ -731,9 +731,11 @@ def on_admin_remove_channel(bot, update, user_data):
 
 
 def on_admin_edit_working_hours(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_settings_keyboard,
+            bot, update, create_bot_settings_keyboard(user_id),
             'Bot settings')
         return ADMIN_BOT_SETTINGS
     user_id = get_user_id(update)
@@ -749,9 +751,11 @@ def on_admin_edit_working_hours(bot, update, user_data):
 
 
 def on_admin_edit_contact_info(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_settings_keyboard,
+            bot, update, create_bot_settings_keyboard(user_id),
             'Bot settings')
         return ADMIN_BOT_SETTINGS
     user_id = get_user_id(update)
@@ -767,9 +771,11 @@ def on_admin_edit_contact_info(bot, update, user_data):
 
 
 def on_admin_add_discount(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard,
+            bot, update, create_bot_order_options_keyboard(user_id),
             'Order options')
         return ADMIN_ORDER_OPTIONS
     user_id = get_user_id(update)
@@ -785,9 +791,11 @@ def on_admin_add_discount(bot, update, user_data):
 
 
 def on_admin_add_delivery(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard,
+            bot, update, create_bot_order_options_keyboard(user_id),
             'Order options')
         return ADMIN_ORDER_OPTIONS
     user_id = get_user_id(update)
@@ -810,9 +818,11 @@ def on_admin_add_delivery(bot, update, user_data):
 
 def on_admin_bot_on_off(bot, update, user_data):
     query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if query.data == 'back':
         option_back_function(
-            bot, update, create_bot_settings_keyboard,
+            bot, update, create_bot_settings_keyboard(user_id),
             'Bot settings')
         return ADMIN_BOT_SETTINGS
     user_id = get_user_id(update)
@@ -838,9 +848,11 @@ def option_back_function(bot, update, return_fnc, return_title):
 
 
 def on_admin_edit_welcome_message(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard,
+            bot, update, create_bot_order_options_keyboard(user_id),
             'Order options')
         return ADMIN_ORDER_OPTIONS
     user_id = get_user_id(update)
@@ -856,9 +868,11 @@ def on_admin_edit_welcome_message(bot, update, user_data):
 
 
 def on_admin_edit_order_message(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard,
+            bot, update, create_bot_order_options_keyboard(user_id),
             'Order options')
         return ADMIN_ORDER_OPTIONS
     user_id = get_user_id(update)
@@ -874,9 +888,11 @@ def on_admin_edit_order_message(bot, update, user_data):
 
 
 def on_admin_edit_final_message(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard,
+            bot, update, create_bot_order_options_keyboard(user_id),
             'Order options')
         return ADMIN_ORDER_OPTIONS
     user_id = get_user_id(update)
@@ -892,9 +908,11 @@ def on_admin_edit_final_message(bot, update, user_data):
 
 
 def on_admin_edit_identification(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard,
+            bot, update, create_bot_order_options_keyboard(user_id),
             'Order options')
         return ADMIN_ORDER_OPTIONS
 
@@ -914,9 +932,11 @@ def on_admin_edit_identification(bot, update, user_data):
 
 
 def on_admin_edit_restriction(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard,
+            bot, update, create_bot_order_options_keyboard(user_id),
             'Order options')
         return ADMIN_ORDER_OPTIONS
 
@@ -935,9 +955,10 @@ def on_admin_edit_restriction(bot, update, user_data):
 
 
 def on_admin_add_ban_list(bot, update, user_data):
+    user_id = get_user_id(update)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_ban_list_keyboard,
+            bot, update, create_ban_list_keyboard(user_id),
             'Ban list')
         return ADMIN_BAN_LIST
 
@@ -957,9 +978,10 @@ def on_admin_add_ban_list(bot, update, user_data):
 
 
 def on_admin_remove_ban_list(bot, update, user_data):
+    user_id = get_user_id(update)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_ban_list_keyboard,
+            bot, update, create_ban_list_keyboard(user_id),
             'Ban list')
         return ADMIN_BAN_LIST
 
