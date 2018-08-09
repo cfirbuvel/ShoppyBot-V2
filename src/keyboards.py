@@ -8,9 +8,9 @@ def create_time_keyboard(user_id):
     from .helpers import get_trans
     _ = get_trans(user_id)
     button_row = [
-        [
-            KeyboardButton(_('⏰ Now'))
-        ],
+        # [
+        #     KeyboardButton(_('⏰ Now'))
+        # ],
         [
             KeyboardButton(_('📅 Set time'))
         ],
@@ -19,7 +19,7 @@ def create_time_keyboard(user_id):
             KeyboardButton(_('❌ Cancel'))
         ],
     ]
-    return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
+    return ReplyKeyboardMarkup(button_row, resize_keyboard=True, one_time_keyboard=True)
 
 
 def create_confirmation_keyboard(user_id):
@@ -534,8 +534,9 @@ def create_calendar_keyboard(year=None, month=None):
                 row.append(InlineKeyboardButton(str(day), callback_data=create_callback_data("DAY", year, month, day)))
         keyboard.append(row)
     # Last row - Buttons
+    nowday = datetime.datetime.today()
     row = [InlineKeyboardButton("<", callback_data=create_callback_data("PREV-MONTH", year, month, day)),
-           InlineKeyboardButton(" ", callback_data=data_ignore),
+           InlineKeyboardButton("⏰ Now", callback_data=create_callback_data("DAY", nowday.year, nowday.month, nowday.day)),
            InlineKeyboardButton(">", callback_data=create_callback_data("NEXT-MONTH", year, month, day))]
     keyboard.append(row)
 

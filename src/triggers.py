@@ -14,7 +14,7 @@ from .keyboards import create_drop_responsibility_keyboard, \
     create_bot_channels_keyboard, create_bot_order_options_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_calendar_keyboard
-from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod
+from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
@@ -127,17 +127,6 @@ def on_checkout_time(bot, update, user_data):
         return enter_state_shipping_method(bot, update, user_data)
     elif key == _('❌ Cancel'):
         return enter_state_init_order_cancelled(bot, update, user_data)
-    elif key == _('⏰ Now'):
-        user_data['shipping']['time'] = key
-        session_client.json_set(user_id, user_data)
-
-        if config.get_phone_number_required():
-            return enter_state_phone_number_text(bot, update, user_data)
-        else:
-            if config.get_identification_required():
-                return enter_state_identify_photo(bot, update, user_data)
-            else:
-                return enter_state_order_confirm(bot, update, user_data)
     elif key == _('📅 Set time'):
         user_data['shipping']['time'] = key
         session_client.json_set(user_id, user_data)
@@ -306,47 +295,66 @@ def on_confirm_order(bot, update, user_data):
     locale = get_locale(update)
     _ = get_trans(user_id)
     if key == _('✅ Confirm'):
+        shipping_data = user_data['shipping']
+        is_pickup = shipping_data['method'] == _('🏪 Pickup')
+        product_info = cart.get_products_info(user_data)
+        total = cart.get_cart_total(user_data)
+        delivery_cost = config.get_delivery_fee()
+        delivery_min = config.get_delivery_min()
+
         try:
             user = User.get(telegram_id=user_id)
         except User.DoesNotExist:
             if not username:
                 user = User.create(telegram_id=user_id, locale=locale)
             else:
-                user = User.create(telegram_id=user_id, username=username, locale=locale)
+                user = User.create(telegram_id=user_id, locale=locale, username=username)
         location = Location.get(
-            title=user_data['shipping']['pickup_location'])
+            title=shipping_data['pickup_location'])
         order = Order.create(user=user,
                              location=location,
                              shipping_method=DeliveryMethod.DELIVERY.value
-                             if user_data['shipping']['method'] == _('🚚 Delivery') else Order.shipping_method.default,
-                             shipping_time=user_data['shipping']['time'],
+                             if shipping_data['method'] == _('🚚 Delivery') else Order.shipping_method.default,
+                             shipping_time=shipping_data['time'],
                              )
         order_id = order.id
         cart.fill_order(user_data, order)
+
+        order_data = OrderPhotos(order=order)
+        if 'photo_id' in shipping_data:
+            order_data.photo_id = shipping_data['photo_id']
+        if 'stage2_id' in shipping_data:
+            order_data.stage2_id = shipping_data['stage2_id']
+
+        text = create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
+                                     total, delivery_min, delivery_cost)
+        order_data.order_text = text
+        order_data.save()
 
         # ORDER CONFIRMED, send the details to service channel
         txt = _('Order confirmed from\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
-        if 'location' in user_data['shipping']:
-            if hasattr(user_data['shipping']['location'], 'latitude'):
+        if 'location' in shipping_data:
+            if hasattr(shipping_data['location'], 'latitude'):
                 bot.send_location(
                     service_channel,
-                    latitude=user_data['shipping']['location']['latitude'],
-                    longitude=user_data['shipping']['location']['longitude'],
+                    latitude=shipping_data['location']['latitude'],
+                    longitude=shipping_data['location']['longitude'],
                 )
         else:
-            txt += 'From {}\n\n'.format(user_data['shipping']['pickup_location'])
+            txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
+        service_channel = config.get_service_channel()
         bot.send_message(service_channel,
                          text=txt,
                          reply_markup=create_show_order_keyboard(user_id, order_id),
                          parse_mode=ParseMode.HTML,
                          )
         # clear cart and shipping data
-        # user_data['cart'] = {}
-        # user_data['shipping'] = {}
-        # session_client.json_set(user_id, user_data)
+        user_data['cart'] = {}
+        user_data['shipping'] = {}
+        session_client.json_set(user_id, user_data)
         return enter_state_init_order_confirmed(bot, update, user_data)
 
     elif key == _('❌ Cancel'):
@@ -390,29 +398,17 @@ def on_service_send_order_to_courier(bot, update, user_data):
     query = update.callback_query
     data = query.data
     label, user_id, order_id = data.split('|')
-    user_data = get_user_session(user_id)
-    couriers_channel = config.get_couriers_channel()
     _ = get_trans(user_id)
-    order = Order.get(id=order_id)
     if label == 'order_show':
-        try:
-            is_pickup = user_data['shipping']['method'] == _('🏪 Pickup')
-        except KeyError:
-            query.answer(text='It seems that user have cancelled the order.\nYou can delete it', show_alert=True)
-            return
-        product_info = cart.get_products_info(user_data)
-        shipping_data = user_data['shipping']
-        total = cart.get_cart_total(user_data)
-        delivery_cost = config.get_delivery_fee()
-        delivery_min = config.get_delivery_min()
+        order = OrderPhotos.get(order_id=order_id)
         service_channel = config.get_service_channel()
         media = []
-        if 'photo_id' in shipping_data:
-            media.append(InputMediaPhoto(media=shipping_data['photo_id'],
+        if order.photo_id:
+            media.append(InputMediaPhoto(media=order.photo_id,
                                          caption=_('Stage 1 Identification - Selfie')))
 
-        if 'stage2_id' in shipping_data:
-            media.append(InputMediaPhoto(media=shipping_data['stage2_id'],
+        if order.stage2_id:
+            media.append(InputMediaPhoto(media=order.stage2_id,
                                          caption=_('Stage 2 Identification - FB')))
         if media:
             bot.send_media_group(service_channel,
@@ -422,23 +418,23 @@ def on_service_send_order_to_courier(bot, update, user_data):
                            message_id=update.callback_query.message.message_id, )
         bot.send_message(
             chat_id=service_channel,
-            text=create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
-                                       total, delivery_min, delivery_cost),
+            text=order.order_text,
             parse_mode=ParseMode.HTML,
             reply_markup=create_service_channel_keyboard(user_id, order_id))
     elif label == 'order_hide':
         service_channel = config.get_service_channel()
-        username = User.get(telegram_id=user_id).username
+        username = User.get(telegram_id=user_id).username or '№1'
         txt = _('Order confirmed from\n@{}\n').format(username)
-        try:
+        order = OrderPhotos.get(order_id=order_id)
+        bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                           message_id=update.callback_query.message.message_id, )
+        if order.photo_id:
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=update.callback_query.message.message_id, )
+                               message_id=int(update.callback_query.message.message_id) - 1, )
+        if order.stage2_id:
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=str(int(update.callback_query.message.message_id) - 1), )
-            bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=str(int(update.callback_query.message.message_id) - 2), )
-        except:
-            pass
+                               message_id=int(update.callback_query.message.message_id) - 2, )
+
         bot.send_message(
             chat_id=service_channel,
             text=txt,
@@ -453,34 +449,33 @@ def on_service_send_order_to_courier(bot, update, user_data):
     elif label == 'order_send_to_couriers':
 
         if config.get_has_courier_option():
-            is_pickup = user_data['shipping']['method'] == _('🏪 Pickup')
-            product_info = cart.get_products_info(user_data)
-            shipping_data = user_data['shipping']
-            total = cart.get_cart_total(user_data)
-            delivery_cost = config.get_delivery_fee()
-            delivery_min = config.get_delivery_min()
+            couriers_channel = config.get_couriers_channel()
+            order = OrderPhotos.get(order_id=order_id)
             bot.send_message(chat_id=couriers_channel,
-                             text=create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
-                                                        total, delivery_min, delivery_cost),
+                             text=order.order_text,
                              reply_markup=create_service_notice_keyboard(user_id, order_id),
                              parse_mode=ParseMode.HTML,
                              )
 
-            if 'photo_id' in user_data['shipping']:
+            if order.photo_id:
                 bot.send_photo(couriers_channel,
-                               photo=user_data['shipping']['photo_id'],
+                               photo=order.photo_id,
                                caption=_('Stage 1 Identification - Selfie'),
                                parse_mode=ParseMode.MARKDOWN, )
 
             query.answer(text='Order sent to couriers channel', show_alert=True)
+        query.answer(text='You have disabled courier\'s option', show_alert=True)
     elif label == 'order_finished':
 
+        order = OrderPhotos.get(order_id=order_id)
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
                            message_id=update.callback_query.message.message_id, )
-        bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                           message_id=str(int(update.callback_query.message.message_id) - 1), )
-        bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                           message_id=str(int(update.callback_query.message.message_id) - 2), )
+        if order.photo_id:
+            bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                               message_id=int(update.callback_query.message.message_id) - 1, )
+        if order.stage2_id:
+            bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                               message_id=int(update.callback_query.message.message_id) - 2, )
     elif label == 'order_send_to_self':
         usr_id = get_user_id(update)
         bot.forward_message(chat_id=usr_id,
