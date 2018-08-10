@@ -1,6 +1,3 @@
-import calendar
-import datetime
-
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
 
@@ -8,9 +5,9 @@ def create_time_keyboard(user_id):
     from .helpers import get_trans
     _ = get_trans(user_id)
     button_row = [
-        # [
-        #     KeyboardButton(_('⏰ Now'))
-        # ],
+        [
+            KeyboardButton(_('⏰ Now'))
+        ],
         [
             KeyboardButton(_('📅 Set time'))
         ],
@@ -19,7 +16,7 @@ def create_time_keyboard(user_id):
             KeyboardButton(_('❌ Cancel'))
         ],
     ]
-    return ReplyKeyboardMarkup(button_row, resize_keyboard=True, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
 def create_confirmation_keyboard(user_id):
@@ -494,50 +491,3 @@ def create_show_order_keyboard(user_id, order_id):
         InlineKeyboardButton(_('💳 Show Order'),
                              callback_data='order_show|{}|{}'.format(user_id, order_id))
     ]])
-
-
-def create_callback_data(action, year, month, day):
-    """ Create the callback data associated to each button"""
-    return ";".join([action, str(year), str(month), str(day)])
-
-
-def create_calendar_keyboard(year=None, month=None):
-    """
-    Create an inline keyboard with the provided year and month
-    :param int year: Year to use in the calendar, if None the current year is used.
-    :param int month: Month to use in the calendar, if None the current month is used.
-    :return: Returns the InlineKeyboardMarkup object with the calendar.
-    """
-    now = datetime.datetime.now()
-    if year is None:
-        year = now.year
-    if month is None:
-        month = now.month
-    data_ignore = create_callback_data("IGNORE", year, month, 0)
-    keyboard = []
-    # First row - Month and Year
-    row = [InlineKeyboardButton(calendar.month_name[month] + " " + str(year), callback_data=data_ignore)]
-    keyboard.append(row)
-    # Second row - Week Days
-    row = []
-    for day in ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]:
-        row.append(InlineKeyboardButton(day, callback_data=data_ignore))
-    keyboard.append(row)
-
-    my_calendar = calendar.monthcalendar(year, month)
-    for week in my_calendar:
-        row = []
-        for day in week:
-            if day == 0:
-                row.append(InlineKeyboardButton(" ", callback_data=data_ignore))
-            else:
-                row.append(InlineKeyboardButton(str(day), callback_data=create_callback_data("DAY", year, month, day)))
-        keyboard.append(row)
-    # Last row - Buttons
-    nowday = datetime.datetime.today()
-    row = [InlineKeyboardButton("<", callback_data=create_callback_data("PREV-MONTH", year, month, day)),
-           InlineKeyboardButton("⏰ Now", callback_data=create_callback_data("DAY", nowday.year, nowday.month, nowday.day)),
-           InlineKeyboardButton(">", callback_data=create_callback_data("NEXT-MONTH", year, month, day))]
-    keyboard.append(row)
-
-    return InlineKeyboardMarkup(keyboard)

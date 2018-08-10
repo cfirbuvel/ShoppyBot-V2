@@ -5,8 +5,7 @@ from .messages import create_confirmation_text
 from .models import Location
 from .keyboards import create_main_keyboard, create_pickup_location_keyboard, \
     create_shipping_keyboard, create_cancel_keyboard, create_time_keyboard, \
-    create_confirmation_keyboard, create_phone_number_request_keyboard, create_location_request_keyboard, \
-    create_calendar_keyboard
+    create_confirmation_keyboard, create_phone_number_request_keyboard, create_location_request_keyboard
 from .helpers import cart, config, session_client, get_user_session, get_user_id, get_trans
 from .enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_PICKUP, \
     BOT_STATE_CHECKOUT_LOCATION_DELIVERY, BOT_STATE_CHECKOUT_TIME, BOT_STATE_CHECKOUT_TIME_TEXT, \
@@ -65,8 +64,8 @@ def enter_state_shipping_time_text(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(text=_(
-        'When do you want your order delivered?'),
-        reply_markup=create_calendar_keyboard(),
+        'When do you want your order delivered? Please send the time as text.'),
+        reply_markup=create_cancel_keyboard(user_id),
         parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_TIME_TEXT
 
@@ -74,9 +73,9 @@ def enter_state_shipping_time_text(bot, update, user_data):
 def enter_state_phone_number_text(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    update.callback_query.message.reply_text(text=_('Please send your phone number.'),
-                                             reply_markup=create_phone_number_request_keyboard(user_id),
-                                             )
+    update.message.reply_text(text=_('Please send your phone number.'),
+                              reply_markup=create_phone_number_request_keyboard(user_id),
+                              )
     return BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
 
 
