@@ -118,7 +118,7 @@ def enter_state_order_confirm(bot, update, user_data):
     product_info = cart.get_products_info(user_data)
     update.message.reply_text(
         text=create_confirmation_text(user_id,
-            is_pickup, shipping_data, total, delivery_cost, delivery_min, product_info),
+            is_pickup, shipping_data, total, delivery_min, delivery_cost, product_info),
         reply_markup=create_confirmation_keyboard(user_id),
         parse_mode=ParseMode.HTML,
     )

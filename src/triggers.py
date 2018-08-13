@@ -184,10 +184,6 @@ def on_phone_number_text(bot, update, user_data):
         user = User.get(telegram_id=user_id)
         user.phone_number = phone_number_text
         user.save()
-        if is_vip_customer(bot, user_id):
-            user_data['shipping']['vip'] = True
-            session_client.json_set(user_id, user_data)
-
         if config.get_identification_required():
             return enter_state_identify_photo(bot, update, user_data)
         return enter_state_order_confirm(bot, update, user_data)
@@ -211,7 +207,11 @@ def on_shipping_identify_photo(bot, update, user_data):
         session_client.json_set(user_id, user_data)
 
         # check if vip and if 2nd id photo needed
-        if config.get_identification_stage2_required():
+        if is_vip_customer(bot, user_id):
+            user_data['shipping']['vip'] = True
+            session_client.json_set(user_id, user_data)
+            return enter_state_order_confirm(bot, update, user_data)
+        elif config.get_identification_stage2_required():
             return enter_state_identify_stage2(bot, update, user_data)
         else:
             return enter_state_order_confirm(bot, update, user_data)
