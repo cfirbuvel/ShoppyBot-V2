@@ -843,7 +843,7 @@ def option_back_function(bot, update, return_fnc, return_title):
     bot.edit_message_text(chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
                           text=return_title,
-                          reply_markup=return_fnc(),
+                          reply_markup=return_fnc,
                           parse_mode=ParseMode.MARKDOWN)
 
 

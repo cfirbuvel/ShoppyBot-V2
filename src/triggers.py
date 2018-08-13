@@ -111,6 +111,10 @@ def on_shipping_delivery_address(bot, update, user_data):
     else:
         try:
             location = update.message.location
+            loc = {}
+            loc['latitude'] = location['latitude']
+            loc['longitude'] = location['longitude']
+            location = loc
         except AttributeError:
             location = update.message.text
         user_data['shipping']['location'] = location
@@ -279,30 +283,26 @@ def on_confirm_order(bot, update, user_data):
 
         order_data = OrderPhotos(order=order)
         if 'photo_id' in shipping_data:
-            order_data.photo_id = shipping_data['photo_id']
+            order_data.photo_id = shipping_data['photo_id'] + '|'
         if 'stage2_id' in shipping_data:
-            order_data.stage2_id = shipping_data['stage2_id']
+            order_data.stage2_id = shipping_data['stage2_id'] + '|'
 
         text = create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
                                      total, delivery_min, delivery_cost)
         order_data.order_text = text
-        order_data.save()
 
         # ORDER CONFIRMED, send the details to service channel
         txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
         if 'location' in shipping_data:
-            if hasattr(shipping_data['location'], 'latitude'):
-                bot.send_location(
-                    service_channel,
-                    latitude=shipping_data['location']['latitude'],
-                    longitude=shipping_data['location']['longitude'],
-                )
+            if 'latitude' in shipping_data['location']:
+
+                order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
         else:
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
-        service_channel = config.get_service_channel()
+        order_data.save()
         bot.send_message(service_channel,
                          text=txt,
                          reply_markup=create_show_order_keyboard(user_id, order_id),
@@ -361,16 +361,32 @@ def on_service_send_order_to_courier(bot, update, user_data):
         service_channel = config.get_service_channel()
         media = []
         if order.photo_id:
+            order.photo_id, msg = order.photo_id.split('|')
             media.append(InputMediaPhoto(media=order.photo_id,
                                          caption=_('Stage 1 Identification - Selfie')))
 
         if order.stage2_id:
+            order.stage2_id, msg = order.stage2_id.split('|')
             media.append(InputMediaPhoto(media=order.stage2_id,
                                          caption=_('Stage 2 Identification - FB')))
         if media:
-            bot.send_media_group(service_channel,
-                                 media=media)
-
+            messages = bot.send_media_group(service_channel,
+                                            media=media)
+            joined = []
+            for hash_id, message in zip([order.photo_id, order.stage2_id], messages):
+                joined.append('|'.join([hash_id, str(message['message_id'])]))
+            order.photo_id = joined[0]
+            order.stage2_id = joined[1]
+            order.save()
+        if order.coordinates:
+            lat, long, msg_id = order.coordinates.split('|')
+            msg = bot.send_location(
+                service_channel,
+                latitude=lat,
+                longitude=long,
+            )
+            order.coordinates = lat + '|' + long + '|' + str(msg['message_id'])
+            order.save()
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
                            message_id=update.callback_query.message.message_id, )
         bot.send_message(
@@ -385,12 +401,18 @@ def on_service_send_order_to_courier(bot, update, user_data):
         order = OrderPhotos.get(order_id=order_id)
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
                            message_id=update.callback_query.message.message_id, )
+        if order.coordinates:
+            coord1, coord2, msg_id = order.coordinates.split('|')
+            bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                               message_id=msg_id, )
         if order.photo_id:
+            ph_id, msg_id = order.photo_id.split('|')
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=int(update.callback_query.message.message_id) - 1, )
+                               message_id=msg_id, )
         if order.stage2_id:
+            st2_id, msg_id = order.stage2_id.split('|')
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=int(update.callback_query.message.message_id) - 2, )
+                               message_id=msg_id, )
 
         bot.send_message(
             chat_id=service_channel,
@@ -428,11 +450,17 @@ def on_service_send_order_to_courier(bot, update, user_data):
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
                            message_id=update.callback_query.message.message_id, )
         if order.photo_id:
+            id, msg_id = order.photo_id.split('|')
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=int(update.callback_query.message.message_id) - 1, )
+                               message_id=msg_id, )
         if order.stage2_id:
+            id, msg_id = order.stage2_id.split('|')
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=int(update.callback_query.message.message_id) - 2, )
+                               message_id=msg_id, )
+        if order.coordinates:
+            lat, long, msg_id = order.coordinates.split('|')
+            bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                               message_id=msg_id, )
     elif label == 'order_send_to_self':
         usr_id = get_user_id(update)
         bot.forward_message(chat_id=usr_id,

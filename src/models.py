@@ -78,6 +78,7 @@ class OrderPhotos(BaseModel):
     order = ForeignKeyField(Order, related_name='order_photos')
     photo_id = CharField(null=True)
     stage2_id = CharField(null=True)
+    coordinates = CharField(null=True)
     order_text = TextField()
 
 

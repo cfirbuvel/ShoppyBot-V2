@@ -76,7 +76,7 @@ def main():
             BOT_STATE_CHECKOUT_LOCATION_DELIVERY: [
                 CallbackQueryHandler(checkout_fallback_command_handler,
                                      pass_user_data=True),
-                MessageHandler(Filters.text or Filters.location,
+                MessageHandler(Filters.text | Filters.location,
                                on_shipping_delivery_address,
                                pass_user_data=True),
             ],
