@@ -111,11 +111,9 @@ def on_shipping_delivery_address(bot, update, user_data):
     else:
         try:
             location = update.message.location
-            loc = {}
-            loc['latitude'] = location['latitude']
-            loc['longitude'] = location['longitude']
+            loc = {'latitude': location['latitude'], 'longitude': location['longitude']}
             location = loc
-        except AttributeError:
+        except:
             location = update.message.text
         user_data['shipping']['location'] = location
         session_client.json_set(user_id, user_data)
