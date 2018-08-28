@@ -22,19 +22,23 @@ from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_P
     ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, ADMIN_EDIT_RESTRICTION, ADMIN_ADD_DELIVERY_FEE, \
     ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_TXT_COURIER_ID, ADMIN_INIT, ADMIN_TXT_PRODUCT_TITLE, \
     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_TXT_DELETE_PRODUCT, ADMIN_EDIT_FINAL_MESSAGE, \
-    ADMIN_TXT_COURIER_LOCATION, ADMIN_TXT_DELETE_LOCATION, ADMIN_TXT_ADD_LOCATION, ADMIN_LOCATIONS
+    ADMIN_TXT_COURIER_LOCATION, ADMIN_TXT_DELETE_LOCATION, ADMIN_TXT_ADD_LOCATION, ADMIN_LOCATIONS, \
+    COURIER_STATE_INIT, COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_REPORT_REASON
 from src.handlers import on_start, on_menu, on_error
-from src.helpers import resend_responsibility_keyboard, make_confirm, make_unconfirm, config, get_user_id, \
+from src.helpers import config, get_user_id, \
     get_user_session
 
-from src.models import create_tables
+from src.shortcuts import resend_responsibility_keyboard, make_confirm, make_unconfirm
+
+from src.models import create_tables, close_db
 
 from src.triggers import checkout_fallback_command_handler, on_shipping_method, on_shipping_pickup_location, \
     on_shipping_delivery_address, on_checkout_time, on_shipping_time_text, on_phone_number_text, \
     on_shipping_identify_photo, on_statistics_menu, on_confirm_order, on_bot_language_change, on_settings_menu, \
     on_shipping_identify_stage2, on_bot_settings_menu, on_admin_couriers, on_admin_channels, on_admin_ban_list, \
     on_cancel, send_welcome_message, service_channel_courier_query_handler, on_service_send_order_to_courier, \
-    service_channel_sendto_courier_handler
+    service_channel_sendto_courier_handler, on_courier_action_to_confirm, on_courier_ping_client, \
+    on_courier_confirm_order, on_courier_confirm_report, on_courier_enter_reason, courier_keyboard_handler
 
 
 # will be called when conversation context is lost (e.g. bot is restarted)
@@ -46,8 +50,51 @@ def fallback_query_handler(bot, update, user_data):
     user_data = get_user_session(user_id)
     return on_menu(bot, update, user_data)
 
+def close_db_on_signal(signum, frame):
+    close_db()
+
 
 def main():
+    courier_conversation_handler = ConversationHandler(
+        entry_points=[
+            CallbackQueryHandler(on_courier_action_to_confirm,
+                                 pattern='^confirm_courier',
+                                 ),
+            CallbackQueryHandler(on_courier_ping_client,
+                                 pattern='^ping'),
+            CallbackQueryHandler(resend_responsibility_keyboard,
+                                 pattern='^dropped',
+                                 )
+        ],
+        states={
+            COURIER_STATE_INIT: [
+                CallbackQueryHandler(on_courier_action_to_confirm,
+                                     pattern='^confirm_courier',
+                                     ),
+                CallbackQueryHandler(on_courier_ping_client,
+                                     pattern='^ping'),
+                CallbackQueryHandler(resend_responsibility_keyboard,
+                                     pattern='^dropped',
+                                     )
+            ],
+            COURIER_STATE_CONFIRM_ORDER: [
+                CallbackQueryHandler(on_courier_confirm_order,)
+                                     #pattern='^confirm_order')
+
+            ],
+            COURIER_STATE_CONFIRM_REPORT: [
+                CallbackQueryHandler(on_courier_confirm_report,)
+                                     #pattern='^confirm_report')
+            ],
+            COURIER_STATE_REPORT_REASON: [
+                MessageHandler(Filters.text, on_courier_enter_reason)
+            ]
+
+        },
+        fallbacks=[
+            CommandHandler('start', on_start, pass_user_data=True)
+        ]
+    )
     user_conversation_handler = ConversationHandler(
         entry_points=[CommandHandler('start', on_start, pass_user_data=True),
                       CommandHandler('admin', on_start_admin),
@@ -325,10 +372,11 @@ def main():
             CommandHandler('start', on_start, pass_user_data=True)
         ])
 
-    updater = Updater(config.get_api_token())
+    updater = Updater(config.get_api_token(), user_sig_handler=close_db_on_signal)
     updater.dispatcher.add_handler(MessageHandler(
         Filters.status_update, send_welcome_message))
     updater.dispatcher.add_handler(user_conversation_handler)
+    updater.dispatcher.add_handler(courier_conversation_handler)
     updater.dispatcher.add_handler(
         CallbackQueryHandler(service_channel_courier_query_handler,
                              pattern='^courier',
@@ -341,10 +389,10 @@ def main():
         CallbackQueryHandler(on_service_send_order_to_courier,
                              pattern='^order',
                              pass_user_data=True))
-    updater.dispatcher.add_handler(
-        CallbackQueryHandler(resend_responsibility_keyboard,
-                             pattern='^dropped',
-                             pass_user_data=True))
+    # updater.dispatcher.add_handler(
+        # CallbackQueryHandler(resend_responsibility_keyboard,
+        #                      pattern='^dropped',
+        #                      pass_user_data=True))
     updater.dispatcher.add_handler(
         CallbackQueryHandler(make_confirm,
                              pattern='^confirmed',
@@ -353,6 +401,7 @@ def main():
         CallbackQueryHandler(make_unconfirm,
                              pattern='^notconfirmed',
                              pass_user_data=True))
+    # updater.dispatcher.add_handler()
     updater.dispatcher.add_error_handler(on_error)
     updater.start_polling()
     updater.idle()

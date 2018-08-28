@@ -70,9 +70,9 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
     return text
 
 
-def create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
+def create_service_notice(trans, is_pickup, order_id, product_info, shipping_data,
                           total, delivery_min, delivery_cost):
-    _ = get_trans(user_id)
+    _ = trans
     text = _('Order №{} notice:').format(order_id)
     text += '\n\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'

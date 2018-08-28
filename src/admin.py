@@ -67,7 +67,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('⚙ Bot settings'),
-                              reply_markup=create_bot_settings_keyboard(user_id),
+                              reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BOT_SETTINGS
@@ -77,7 +77,7 @@ def on_admin_order_options(bot, update):
             message_id=query.message.message_id,
             text=_('Enter new product title'),
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=create_back_button(user_id),
+            reply_markup=create_back_button(_),
         )
         return ADMIN_TXT_PRODUCT_TITLE
     elif data == 'bot_order_options_delete_product':
@@ -87,7 +87,7 @@ def on_admin_order_options(bot, update):
             bot.edit_message_text(chat_id=query.message.chat_id,
                                   message_id=query.message.message_id,
                                   text='No products to delete',
-                                  reply_markup=create_bot_order_options_keyboard(user_id),
+                                  reply_markup=create_bot_order_options_keyboard(_),
                                   parse_mode=ParseMode.MARKDOWN)
             return ADMIN_ORDER_OPTIONS
         else:
@@ -100,7 +100,7 @@ def on_admin_order_options(bot, update):
             message_id=query.message.message_id,
             text=text,
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=create_back_button(user_id),
+            reply_markup=create_back_button(_),
         )
         return ADMIN_TXT_DELETE_PRODUCT
     elif data == 'bot_order_options_discount':
@@ -111,7 +111,7 @@ def on_admin_order_options(bot, update):
                   '50 > 500: all deals above 500$ will be -100$\n'
                   '10% > 500: all deals above 500% will be -10%\n'
                   'Current discount: {}'.format(config.get_discount())),
-            reply_markup=create_back_button(user_id),
+            reply_markup=create_back_button(_),
             parse_mode=ParseMode.MARKDOWN,
         )
         query.answer()
@@ -122,7 +122,7 @@ def on_admin_order_options(bot, update):
             message_id=query.message.message_id,
             text=(
                 _('Enter delivery fee:\nOnly works on delivery\n\nCurrent fee: {}').format(config.get_delivery_fee())),
-            reply_markup=create_back_button(user_id),
+            reply_markup=create_back_button(_),
             parse_mode=ParseMode.MARKDOWN,
         )
         query.answer()
@@ -131,7 +131,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🎯 Locations'),
-                              reply_markup=create_bot_locations_keyboard(user_id),
+                              reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_LOCATIONS
@@ -149,7 +149,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_EDIT_IDENTIFICATION
     elif data == 'bot_order_options_restricted':
@@ -163,7 +163,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_EDIT_RESTRICTION
     elif data == 'bot_order_options_welcome':
@@ -172,7 +172,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_EDIT_WELCOME_MESSAGE
     elif data == 'bot_order_options_details':
@@ -181,7 +181,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_EDIT_ORDER_DETAILS
     elif data == 'bot_order_options_final':
@@ -190,7 +190,7 @@ def on_admin_order_options(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_EDIT_FINAL_MESSAGE
 
@@ -205,7 +205,7 @@ def on_admin_txt_product_title(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('💳 Order options'),
-                              reply_markup=create_bot_order_options_keyboard(user_id),
+                              reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_ORDER_OPTIONS
 
@@ -264,7 +264,7 @@ def on_admin_txt_product_photo(bot, update, user_data):
     _ = get_trans(user_id)
     bot.send_message(chat_id=update.message.chat_id,
                      text=_('New Product Created\n✅'),
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
@@ -331,7 +331,7 @@ def on_admin_txt_delete_product(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('💳 Order options'),
-                              reply_markup=create_bot_order_options_keyboard(user_id),
+                              reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_ORDER_OPTIONS
     product_id = update.message.text
@@ -346,7 +346,7 @@ def on_admin_txt_delete_product(bot, update, user_data):
         logger.info('Product %s - %s was deleted', product_id, product_title)
         update.message.reply_text(
             text=_('💳 Order options'),
-            reply_markup=create_bot_order_options_keyboard(user_id),
+            reply_markup=create_bot_order_options_keyboard(_),
             parse_mode=ParseMode.MARKDOWN,
         )
         return ADMIN_ORDER_OPTIONS
@@ -364,7 +364,7 @@ def on_admin_txt_courier_name(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🛵 Couriers'),
-                              reply_markup=create_bot_couriers_keyboard(user_id),
+                              reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_COURIERS
 
@@ -396,7 +396,7 @@ def on_admin_txt_courier_id(bot, update, user_data):
 
     update.message.reply_text(
         text=text,
-        reply_markup=create_courier_locations_keyboard(user_id, locations)
+        reply_markup=create_courier_locations_keyboard(_, locations)
     )
 
     return ADMIN_TXT_COURIER_LOCATION
@@ -424,13 +424,13 @@ def on_admin_btn_courier_location(bot, update, user_data):
             del user_data['add_courier']
             bot.send_message(chat_id=query.message.chat_id,
                              text=_('Courier added'),
-                             reply_markup=create_bot_couriers_keyboard(user_id),
+                             reply_markup=create_bot_couriers_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
             return ADMIN_COURIERS
 
         bot.send_message(chat_id=query.message.chat_id,
                          text=_('🛵 Couriers'),
-                         reply_markup=create_bot_couriers_keyboard(user_id),
+                         reply_markup=create_bot_couriers_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
 
         return ADMIN_COURIERS
@@ -455,7 +455,7 @@ def on_admin_btn_courier_location(bot, update, user_data):
     bot.edit_message_text(chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
                           text=text,
-                          reply_markup=create_courier_locations_keyboard(user_id, locations),
+                          reply_markup=create_courier_locations_keyboard(_, locations),
                           parse_mode=ParseMode.MARKDOWN)
 
     return ADMIN_TXT_COURIER_LOCATION
@@ -469,7 +469,7 @@ def on_admin_txt_delete_courier(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🛵 Couriers'),
-                              reply_markup=create_bot_couriers_keyboard(user_id),
+                              reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_COURIERS
 
@@ -486,7 +486,7 @@ def on_admin_txt_delete_courier(bot, update, user_data):
     courier.delete_instance()
     bot.send_message(chat_id=update.message.chat_id,
                      text=_('Courier deleted'),
-                     reply_markup=create_bot_couriers_keyboard(user_id),
+                     reply_markup=create_bot_couriers_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_COURIERS
 
@@ -499,7 +499,7 @@ def on_admin_txt_location(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🎯 Locations'),
-                              reply_markup=create_bot_locations_keyboard(user_id),
+                              reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_LOCATIONS
 
@@ -512,7 +512,7 @@ def on_admin_txt_location(bot, update, user_data):
         Location.get(title=location_user_txt)
         update.message.reply_text(text='Location: `{}` '
                                        'already added'.format(location_user_txt),
-                                  reply_markup=create_bot_locations_keyboard(user_id),
+                                  reply_markup=create_bot_locations_keyboard(_),
                                   parse_mode=ParseMode.MARKDOWN
                                   )
         return ADMIN_LOCATIONS
@@ -524,7 +524,7 @@ def on_admin_txt_location(bot, update, user_data):
         bot.send_message(chat_id=update.message.chat_id,
                          message_id=update.message.message_id,
                          text=_('new location added'),
-                         reply_markup=create_bot_locations_keyboard(user_id),
+                         reply_markup=create_bot_locations_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return ADMIN_LOCATIONS
 
@@ -537,7 +537,7 @@ def on_admin_txt_delete_location(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🎯 Locations'),
-                              reply_markup=create_bot_locations_keyboard(user_id),
+                              reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_LOCATIONS
     lct = update.callback_query.data
@@ -552,7 +552,7 @@ def on_admin_txt_delete_location(bot, update, user_data):
     query = update.callback_query
     bot.send_message(chat_id=query.message.chat_id,
                      text='Location deleted',
-                     reply_markup=create_bot_locations_keyboard(user_id),
+                     reply_markup=create_bot_locations_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_LOCATIONS
 
@@ -566,7 +566,7 @@ def on_admin_locations(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('💳 Order options'),
-                              reply_markup=create_bot_order_options_keyboard(user_id),
+                              reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_ORDER_OPTIONS
@@ -578,7 +578,7 @@ def on_admin_locations(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('Your locations:\n\n{}').format(location_names),
-                              reply_markup=create_bot_locations_keyboard(user_id),
+                              reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_LOCATIONS
@@ -587,7 +587,7 @@ def on_admin_locations(bot, update):
                               message_id=query.message.message_id,
                               text=_('Enter new location'),
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button(user_id)
+                              reply_markup=create_back_button(_)
                               ),
         query.answer()
         return ADMIN_TXT_ADD_LOCATION
@@ -599,7 +599,7 @@ def on_admin_locations(bot, update):
                               message_id=query.message.message_id,
                               text=_('Choose location to delete'),
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_locations_keyboard(user_id, location_names)
+                              reply_markup=create_locations_keyboard(location_names, _)
                               )
         query.answer()
         return ADMIN_TXT_DELETE_LOCATION
@@ -646,7 +646,7 @@ def on_admin_select_channel_type(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('✉️ Channels'),
-                              reply_markup=create_bot_channels_keyboard(user_id),
+                              reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_CHANNELS
 
@@ -687,7 +687,7 @@ def on_admin_add_channel_address(bot, update, user_data):
     _ = get_trans(user_id)
     bot.send_message(chat_id=update.message.chat_id,
                      text=_('✉️ Channels'),
-                     reply_markup=create_bot_channels_keyboard(user_id),
+                     reply_markup=create_bot_channels_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_CHANNELS
 
@@ -700,7 +700,7 @@ def on_admin_remove_channel(bot, update, user_data):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('✉️ Channels'),
-                              reply_markup=create_bot_channels_keyboard(user_id),
+                              reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_CHANNELS
 
@@ -713,7 +713,7 @@ def on_admin_remove_channel(bot, update, user_data):
         set_config_session(config_session)
         bot.send_message(chat_id=update.message.chat_id,
                          text='Channel was removed',
-                         reply_markup=create_bot_channels_keyboard(user_id),
+                         reply_markup=create_bot_channels_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return ADMIN_CHANNELS
 
@@ -735,7 +735,7 @@ def on_admin_edit_working_hours(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_settings_keyboard(user_id),
+            bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
         return ADMIN_BOT_SETTINGS
     user_id = get_user_id(update)
@@ -745,7 +745,7 @@ def on_admin_edit_working_hours(bot, update, user_data):
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Working hours was changed',
-                     reply_markup=create_bot_settings_keyboard(user_id),
+                     reply_markup=create_bot_settings_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_BOT_SETTINGS
 
@@ -755,7 +755,7 @@ def on_admin_edit_contact_info(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_settings_keyboard(user_id),
+            bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
         return ADMIN_BOT_SETTINGS
     user_id = get_user_id(update)
@@ -765,7 +765,7 @@ def on_admin_edit_contact_info(bot, update, user_data):
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Contact info was changed',
-                     reply_markup=create_bot_settings_keyboard(user_id),
+                     reply_markup=create_bot_settings_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_BOT_SETTINGS
 
@@ -775,17 +775,17 @@ def on_admin_add_discount(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard(user_id),
+            bot, update, create_bot_order_options_keyboard(_),
             'Order options')
         return ADMIN_ORDER_OPTIONS
-    user_id = get_user_id(update)
+    # user_id = get_user_id(update)
     discount = update.message.text
     config_session = get_config_session()
     config_session['discount'] = discount
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Discount was changed',
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
@@ -795,10 +795,10 @@ def on_admin_add_delivery(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard(user_id),
+            bot, update, create_bot_order_options_keyboard(_),
             'Order options')
         return ADMIN_ORDER_OPTIONS
-    user_id = get_user_id(update)
+    # user_id = get_user_id(update)
     delivery = update.message.text
     cleaned_data = [int(i.strip()) for i in delivery.split('>')]
     config_session = get_config_session()
@@ -811,7 +811,7 @@ def on_admin_add_delivery(bot, update, user_data):
 
     bot.send_message(chat_id=update.message.chat_id,
                      text='Delivery fee was changed',
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
@@ -822,10 +822,9 @@ def on_admin_bot_on_off(bot, update, user_data):
     _ = get_trans(user_id)
     if query.data == 'back':
         option_back_function(
-            bot, update, create_bot_settings_keyboard(user_id),
+            bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
         return ADMIN_BOT_SETTINGS
-    user_id = get_user_id(update)
     status = query.data == 'on'
     config_session = get_config_session()
     config_session['bot_on_off'] = status
@@ -833,7 +832,7 @@ def on_admin_bot_on_off(bot, update, user_data):
     bot.send_message(chat_id=query.message.chat_id,
                      message_id=query.message.chat_id,
                      text='Bot status was changed',
-                     reply_markup=create_bot_settings_keyboard(user_id),
+                     reply_markup=create_bot_settings_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_BOT_SETTINGS
 
@@ -852,17 +851,17 @@ def on_admin_edit_welcome_message(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard(user_id),
+            bot, update, create_bot_order_options_keyboard(_),
             'Order options')
         return ADMIN_ORDER_OPTIONS
-    user_id = get_user_id(update)
+    # user_id = get_user_id(update)
     welcome_message = update.message.text
     config_session = get_config_session()
     config_session['welcome_text'] = welcome_message
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Welcome message was changed',
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
@@ -872,17 +871,17 @@ def on_admin_edit_order_message(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard(user_id),
+            bot, update, create_bot_order_options_keyboard(_),
             'Order options')
         return ADMIN_ORDER_OPTIONS
-    user_id = get_user_id(update)
+    # user_id = get_user_id(update)
     order_message = update.message.text
     config_session = get_config_session()
     config_session['order_text'] = order_message
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Order message was changed',
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
@@ -892,17 +891,16 @@ def on_admin_edit_final_message(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard(user_id),
+            bot, update, create_bot_order_options_keyboard(_),
             'Order options')
         return ADMIN_ORDER_OPTIONS
-    user_id = get_user_id(update)
     final_message = update.message.text
     config_session = get_config_session()
     config_session['order_complete_text'] = final_message
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Final message was changed',
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
@@ -912,13 +910,12 @@ def on_admin_edit_identification(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard(user_id),
+            bot, update, create_bot_order_options_keyboard(_),
             'Order options')
         return ADMIN_ORDER_OPTIONS
 
     message = update.message.text.split(maxsplit=2)
     first, second, question = message
-    user_id = get_user_id(update)
     config_session = get_config_session()
     config_session['identification_required'] = first
     config_session['identification_stage2_required'] = second
@@ -926,7 +923,7 @@ def on_admin_edit_identification(bot, update, user_data):
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Identification was changed',
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
@@ -936,29 +933,29 @@ def on_admin_edit_restriction(bot, update, user_data):
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_bot_order_options_keyboard(user_id),
+            bot, update, create_bot_order_options_keyboard(_),
             'Order options')
         return ADMIN_ORDER_OPTIONS
 
     message = update.message.text.split(maxsplit=1)
     first, second = message
-    user_id = get_user_id(update)
     config_session = get_config_session()
     config_session['only_for_customers'] = first
     config_session['vip_customers'] = second
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
                      text='Restriction options are changed',
-                     reply_markup=create_bot_order_options_keyboard(user_id),
+                     reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_ORDER_OPTIONS
 
 
 def on_admin_add_ban_list(bot, update, user_data):
     user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_ban_list_keyboard(user_id),
+            bot, update, create_ban_list_keyboard(_),
             'Ban list')
         return ADMIN_BAN_LIST
 
@@ -969,19 +966,20 @@ def on_admin_add_ban_list(bot, update, user_data):
     config_session = get_config_session()
     config_session['banned'] = banned
     set_config_session(config_session)
-    user_id = get_user_id(update)
+    # user_id = get_user_id(update)
     bot.send_message(chat_id=update.message.chat_id,
                      text='@{} was banned'.format(username),
-                     reply_markup=create_ban_list_keyboard(user_id),
+                     reply_markup=create_ban_list_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_BAN_LIST
 
 
 def on_admin_remove_ban_list(bot, update, user_data):
     user_id = get_user_id(update)
+    _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
-            bot, update, create_ban_list_keyboard(user_id),
+            bot, update, create_ban_list_keyboard(_),
             'Ban list')
         return ADMIN_BAN_LIST
 
@@ -991,9 +989,9 @@ def on_admin_remove_ban_list(bot, update, user_data):
     config_session = get_config_session()
     config_session['banned'] = banned
     set_config_session(config_session)
-    user_id = get_user_id(update)
+    # user_id = get_user_id(update)
     bot.send_message(chat_id=update.message.chat_id,
                      text='@{} was unbanned'.format(username),
-                     reply_markup=create_ban_list_keyboard(user_id),
+                     reply_markup=create_ban_list_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return ADMIN_BAN_LIST

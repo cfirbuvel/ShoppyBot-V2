@@ -6,7 +6,7 @@ import gettext
 from telegram import ParseMode, TelegramError
 
 from .models import ProductCount, Product, User, OrderItem, Courier, Order
-from .keyboards import create_service_notice_keyboard
+# from .keyboards import create_service_notice_keyboard
 from .enums import logger
 
 
@@ -30,6 +30,7 @@ class ConfigHelper:
             defaults={'api_token': None, 'reviews_channel': None,
                       'service_channel': None, 'customers_channel': None,
                       'vip_customers_channel': None, 'couriers_channel': None,
+                      'channels_language': 'en',
                       'welcome_text': 'Welcome text not configured yet',
                       'order_text': 'Order text not configured yet',
                       'order_complete_text': 'Order text not configured yet',
@@ -77,6 +78,13 @@ class ConfigHelper:
         if value is None:
             value = self.config.get(self.section, 'couriers_channel')
         return value.strip()
+
+    def get_channels_language(self):
+        value = get_config_session().get('channels_language')
+        if value is None:
+            value = self.config.get(self.section, 'channels_language')
+        return value.strip()
+
 
     def get_welcome_text(self):
         value = get_config_session().get('welcome_text')
@@ -342,7 +350,7 @@ class CartHelper:
 
 
 cart = CartHelper()
-config = ConfigHelper(cfgfilename='test_conf.conf')
+config = ConfigHelper(cfgfilename='shoppybot.conf')
 
 
 def is_vip_customer(bot, user_id):
@@ -382,69 +390,6 @@ def is_customer(bot, user_id):
 # we assume people in service channel can administrate the bot
 
 
-def resend_responsibility_keyboard(bot, update, user_data):
-    query = update.callback_query
-    data = query.data
-    label, order_id = data.split('|')
-    user_id = get_user_id(update)
-    try:
-        order = Order.get(id=order_id)
-    except Order.DoesNotExist:
-        logger.info('Order № {} not found!'.format(order_id))
-    else:
-        order.courier = None
-        order.save()
-    couriers_channel = config.get_couriers_channel()
-    bot.delete_message(couriers_channel,
-                       message_id=query.message.message_id)
-    bot.send_message(couriers_channel,
-                     text=query.message.text,
-                     parse_mode=ParseMode.HTML,
-                     reply_markup=create_service_notice_keyboard(user_id, order_id))
-
-
-def make_confirm(bot, update, user_data):
-    query = update.callback_query
-    data = query.data
-    label, order_id, courier_name = data.split('|')
-    bot.delete_message(config.get_service_channel(),
-                       message_id=query.message.message_id)
-    try:
-        order = Order.get(id=order_id)
-    except Order.DoesNotExist:
-        logger.info('Order № {} not found!'.format(order_id))
-    else:
-        order.confirmed = True
-        order.save()
-
-        user_id = order.user.telegram_id
-        _ = get_trans(user_id)
-        bot.send_message(
-            user_id,
-            text=_('Courier @{} assigned to your order').format(courier_name),
-            parse_mode=ParseMode.HTML,
-        )
-
-
-def make_unconfirm(bot, update, user_data):
-    query = update.callback_query
-    data = query.data
-    label, order_id, courier_name = data.split('|')
-    bot.delete_message(config.get_service_channel(),
-                       message_id=query.message.message_id)
-    try:
-        order = Order.get(id=order_id)
-    except Order.DoesNotExist:
-        logger.info('Order № {} not found!'.format(order_id))
-    else:
-        user_id = order.user.telegram_id
-        bot.send_message(config.get_couriers_channel(),
-                         text='The admin did not confirm. Please retake '
-                              'responsibility for order №{}'.format(order_id),
-                         reply_markup=create_service_notice_keyboard(user_id, order_id),
-                         )
-
-
 def get_user_session(user_id):
     user_session = session_client.json_get(user_id)
     updated = False
@@ -460,6 +405,10 @@ def get_user_session(user_id):
 
     if not user_session.get('shipping'):
         user_session["shipping"] = {}
+        updated = True
+
+    if not user_session.get('courier'):
+        user_session['courier'] = {}
         updated = True
 
     if updated:
@@ -482,6 +431,7 @@ def get_locale(update):
         language = update.callback_query.from_user.language_code
     else:
         language = update.message.from_user.language_code
+    print(language)
 
     return language[:2]
 
@@ -498,6 +448,11 @@ def get_user_id(update):
 def get_trans(user_id):
     user_data = get_user_session(user_id)
     locale = user_data.get('locale')
+    return gettext.gettext if locale == 'en' else cat.gettext
+
+
+def get_channel_trans():
+    locale = config.get_channels_language()
     return gettext.gettext if locale == 'en' else cat.gettext
 
 

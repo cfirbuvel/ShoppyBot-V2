@@ -63,6 +63,8 @@ class Order(BaseModel):
     shipping_time = DateTimeField(default=datetime.datetime.now)
     location = ForeignKeyField(Location, null=True)
     confirmed = BooleanField(default=False)
+    delivered = BooleanField(default=False)
+    client_notified = BooleanField(default=False)
     date_created = DateTimeField(default=datetime.datetime.now)
 
 
@@ -80,13 +82,18 @@ class OrderPhotos(BaseModel):
     stage2_id = CharField(null=True)
     coordinates = CharField(null=True)
     order_text = TextField()
+    order_text_msg_id = TextField()
 
 
 def create_tables():
+    # db.close()
     db.connect()
     db.create_tables(
         [
-            Location, CourierLocation, User, Courier, Product, ProductCount,
+            Location, User, Courier, CourierLocation, Product, ProductCount,
             Order, OrderItem, OrderPhotos
         ], safe=True
     )
+
+def close_db():
+    db.close()

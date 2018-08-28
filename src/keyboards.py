@@ -1,9 +1,9 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ParseMode
+from .helpers import get_trans, get_user_id, config
 
 
-def create_time_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_time_keyboard(trans):
+    _ = trans
     button_row = [
         [
             KeyboardButton(_('⏰ Now'))
@@ -19,9 +19,8 @@ def create_time_keyboard(user_id):
     return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
-def create_confirmation_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_confirmation_keyboard(trans):
+    _ = trans
     button_row = [
         [KeyboardButton(_('✅ Confirm'))],
         [
@@ -32,9 +31,8 @@ def create_confirmation_keyboard(user_id):
     return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
-def create_phone_number_request_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_phone_number_request_keyboard(trans):
+    _ = trans
     buttons = [
         [KeyboardButton(
             text=_('📞 Allow to send my phone number'),
@@ -49,9 +47,8 @@ def create_phone_number_request_keyboard(user_id):
     return ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
 
 
-def create_location_request_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_location_request_keyboard(trans):
+    _ = trans
     buttons = [
         [KeyboardButton(
             text=_('📍 Allow to send my location'),
@@ -65,10 +62,15 @@ def create_location_request_keyboard(user_id):
 
     return ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
 
+def create_back_keyboard(trans):
+    _ = trans
+    buttons = [
+        [KeyboardButton(_('↩ Back'))]
+    ]
+    return ReplyKeyboardMarkup(buttons)
 
-def create_cancel_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_cancel_keyboard(trans):
+    _ = trans
     button_row = [
         [
             KeyboardButton(_('↩ Back')),
@@ -78,9 +80,8 @@ def create_cancel_keyboard(user_id):
     return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
-def create_pickup_location_keyboard(user_id, location_names):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_pickup_location_keyboard(trans, location_names):
+    _ = trans
     button_column = []
     for location_name in location_names:
         button_column.append([KeyboardButton(location_name)])
@@ -93,9 +94,8 @@ def create_pickup_location_keyboard(user_id, location_names):
     return ReplyKeyboardMarkup(button_column, resize_keyboard=True)
 
 
-def create_shipping_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_shipping_keyboard(trans):
+    _ = trans
     button_row = [
         [KeyboardButton(_('🏪 Pickup'))],
         [KeyboardButton(_('🚚 Delivery'))],
@@ -104,9 +104,8 @@ def create_shipping_keyboard(user_id):
     return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
-def create_locations_keyboard(user_id, location_names):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_locations_keyboard(location_names, trans):
+    _ = trans
     button_row = []
     for location_name in location_names:
         button_row.append([InlineKeyboardButton(_(location_name),
@@ -117,60 +116,45 @@ def create_locations_keyboard(user_id, location_names):
     return InlineKeyboardMarkup(button_row)
 
 
-def create_service_notice_keyboard(user_id, order_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_service_notice_keyboard(order_id, trans, photo_msg_id):
+    _ = trans
     buttons = [
         [
             InlineKeyboardButton(
                 _('Take Responsibility'),
-                callback_data='courier|{}|{}'.format(user_id, order_id))
+                callback_data='courier|{}|{}'.format(order_id, photo_msg_id))
         ]
     ]
     return InlineKeyboardMarkup(buttons)
 
 
-def create_confirmation_inline_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_courier_confirmation_keyboard(order_id, courier_name, trans, photo_msg_id, assigned_msg_id):
+    #_ = get_trans(user_id)
+    _ = trans
     buttons = [
         InlineKeyboardButton(_('Yes'),
-                             callback_data='yes'),
+                             callback_data='confirmed_courier|{}|{}'.format(
+                                 order_id, courier_name)),
         InlineKeyboardButton(_('No'),
-                             callback_data='no'),
+                             callback_data='notconfirmed_courier|{}|{}|{}|{}'.format(
+                                 order_id, courier_name, photo_msg_id, assigned_msg_id)),
     ]
     return InlineKeyboardMarkup([buttons])
 
 
-def create_courier_confirmation_keyboard(user_id, order_id, courier_name):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
-    buttons = [
-        InlineKeyboardButton(_('Yes'),
-                             callback_data='confirmed|{}|{}'.format(
-                                 order_id, courier_name)),
-        InlineKeyboardButton(_('No'),
-                             callback_data='notconfirmed|{}|{}'.format(
-                                 order_id, courier_name)),
-    ]
-    return InlineKeyboardMarkup([buttons])
-
-
-def create_drop_responsibility_keyboard(user_id, courier_nickname, order_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_courier_assigned_keyboard(courier_nickname, order_id, trans):
+    _ = trans
     buttons = [
         [InlineKeyboardButton(_('Assigned to @{}').format(courier_nickname),
                               url='https://t.me/{}'.format(courier_nickname))],
-        [InlineKeyboardButton(_('Drop responsibility'),
-                              callback_data='dropped|{}'.format(order_id))],
+        # [InlineKeyboardButton(_('Drop responsibility'),
+        #                       callback_data='dropped|{}'.format(order_id))],
     ]
     return InlineKeyboardMarkup(buttons)
 
 
-def create_main_keyboard(user_id, review_channel, is_admin=None, total_price=0):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_main_keyboard(trans, review_channel, is_admin=None, total_price=0):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('🏪 Our products'),
                               callback_data='menu_products')],
@@ -191,9 +175,8 @@ def create_main_keyboard(user_id, review_channel, is_admin=None, total_price=0):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_bot_language_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_bot_language_keyboard(trans):
+    _ = trans
     keyboard = [
         [InlineKeyboardButton(
             _('Hebrew'), callback_data='iw')],
@@ -203,10 +186,9 @@ def create_bot_language_keyboard(user_id):
     return InlineKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
-def create_product_keyboard(user_id, product_id, user_data, cart):
+def create_product_keyboard(trans, product_id, user_data, cart):
     button_row = []
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+    _ = trans
     if cart.get_product_count(user_data, product_id) > 0:
         button = InlineKeyboardButton(
             _('➕ Add more'), callback_data='product_add|{}'.format(product_id))
@@ -223,9 +205,8 @@ def create_product_keyboard(user_id, product_id, user_data, cart):
     return InlineKeyboardMarkup([button_row])
 
 
-def create_bot_config_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_bot_config_keyboard(trans):
+    _ = trans
     button_row = [
         [InlineKeyboardButton(
             _('Set welcome message'),
@@ -236,9 +217,8 @@ def create_bot_config_keyboard(user_id):
     return InlineKeyboardMarkup(button_row, resize_keyboard=True)
 
 
-def create_admin_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_admin_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('📈 Statistics'),
                               callback_data='settings_statistics')],
@@ -251,9 +231,8 @@ def create_admin_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_statistics_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_statistics_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('💵 Get statistics by all sells'),
                               callback_data='statistics_all_sells')],
@@ -274,9 +253,8 @@ def create_statistics_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_bot_settings_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_bot_settings_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('🛵 Couriers'),
                               callback_data='bot_settings_couriers')],
@@ -301,9 +279,8 @@ def create_bot_settings_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_bot_couriers_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_bot_couriers_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('🛵 View couriers'),
                               callback_data='bot_couriers_view')],
@@ -318,9 +295,8 @@ def create_bot_couriers_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_bot_channels_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_bot_channels_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('✉️ View channels'),
                               callback_data='bot_channels_view')],
@@ -328,6 +304,8 @@ def create_bot_channels_keyboard(user_id):
                               callback_data='bot_channels_add')],
         [InlineKeyboardButton(_('➖ Remove channel'),
                               callback_data='bot_channels_remove')],
+        [InlineKeyboardButton(_('🈚︎ Change channels language'),
+                              callback_data='bot_channels_language')],
         [InlineKeyboardButton(_('↩ Back'),
                               callback_data='bot_channels_back')],
     ]
@@ -335,9 +313,8 @@ def create_bot_channels_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_bot_locations_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_bot_locations_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('🎯️ View locations'),
                               callback_data='bot_locations_view')],
@@ -352,9 +329,8 @@ def create_bot_locations_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_bot_order_options_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_bot_order_options_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('➕️ Add new product'),
                               callback_data='bot_order_options_product')],
@@ -383,17 +359,15 @@ def create_bot_order_options_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_back_button(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_back_button(trans):
+    _ = trans
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(_('❌ Cancel'), callback_data='back')]
     ])
 
 
-def create_on_off_buttons(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_on_off_buttons(trans):
+    _ = trans
     return InlineKeyboardMarkup([
         [InlineKeyboardButton('ON', callback_data='on')],
         [InlineKeyboardButton('OFF', callback_data='off')],
@@ -401,9 +375,8 @@ def create_on_off_buttons(user_id):
     ])
 
 
-def create_ban_list_keyboard(user_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_ban_list_keyboard(trans):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('🔥 View ban list'),
                               callback_data='bot_ban_list_view')],
@@ -418,9 +391,8 @@ def create_ban_list_keyboard(user_id):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_courier_locations_keyboard(user_id, locations):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_courier_locations_keyboard(trans, locations):
+    _ = trans
     main_button_list = []
     for location_name, location_id, is_picked in locations:
         if is_picked:
@@ -462,32 +434,57 @@ def couriers_choose_keyboard(couriers, order_id, message_id):
     return InlineKeyboardMarkup(couriers_list)
 
 
-def create_service_channel_keyboard(user_id, order_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_service_channel_keyboard(trans, order_id):
+    _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('🛵 Send order to courier channel'),
-                              callback_data='order_send_to_couriers|{}|{}'.format(user_id, order_id))],
+                              callback_data='order_send_to_couriers|{}'.format(order_id))],
         [InlineKeyboardButton(_('🚀 Send order to specific courier'),
-                              callback_data='order_send_to_specific_courier|{}|{}'.format(user_id, order_id))],
+                              callback_data='order_send_to_specific_courier|{}'.format(order_id))],
         [InlineKeyboardButton(_('🚕 Send order yourself'),
-                              callback_data='order_send_to_self|{}|{}'.format(user_id, order_id))],
+                              callback_data='order_send_to_self|{}'.format(order_id))],
         [InlineKeyboardButton(_('⭐ Add user to VIP'),
-                              callback_data='order_add_to_vip|{}|{}'.format(user_id, order_id))],
+                              callback_data='order_add_to_vip|{}'.format(order_id))],
         [InlineKeyboardButton(_('🔥 Add client to ban-list'),
-                              callback_data='order_ban_client|{}|{}'.format(user_id, order_id))],
+                              callback_data='order_ban_client|{}'.format(order_id))],
         [InlineKeyboardButton(_('✅ Order Finished'),
-                              callback_data='order_finished|{}|{}'.format(user_id, order_id))],
+                              callback_data='order_finished|{}'.format(order_id))],
         [InlineKeyboardButton(_('💳 Hide Order'),
-                              callback_data='order_hide|{}|{}'.format(user_id, order_id))],
+                              callback_data='order_hide|{}'.format(order_id))],
     ]
     return InlineKeyboardMarkup(main_button_list)
 
 
-def create_show_order_keyboard(user_id, order_id):
-    from .helpers import get_trans
-    _ = get_trans(user_id)
+def create_show_order_keyboard(trans, order_id):
+    _ = trans
     return InlineKeyboardMarkup([[
         InlineKeyboardButton(_('💳 Show Order'),
-                             callback_data='order_show|{}|{}'.format(user_id, order_id))
+                             callback_data='order_show|{}'.format(order_id))
     ]])
+
+
+def create_courier_order_status_keyboard(trans, order_id):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('✅ Order Done'), callback_data='confirm_courier_order_delivered|{}'.format(order_id))],
+        [InlineKeyboardButton(_('🔥 Report client to admin'), callback_data='confirm_courier_report_client|{}'.format(order_id))],
+        [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))],
+        [InlineKeyboardButton(_('Drop responsibility'), callback_data='dropped|{}'.format(order_id))]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+def create_admin_order_status_keyboard(trans, order_id):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_are_you_sure_keyboard(trans, callback_mapping):
+    _ = trans
+    buttons = [
+        InlineKeyboardButton(_('✅ Yes'), callback_data=callback_mapping['yes']),
+        InlineKeyboardButton(_('❌ No'), callback_data=callback_mapping['no'])
+    ]
+    return InlineKeyboardMarkup([buttons])

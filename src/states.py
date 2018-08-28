@@ -24,7 +24,7 @@ def enter_state_shipping_method(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(text=_('Please choose pickup or delivery:'),
-                              reply_markup=create_shipping_keyboard(user_id),
+                              reply_markup=create_shipping_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_SHIPPING
 
@@ -36,7 +36,7 @@ def enter_state_courier_location(bot, update, user_data):
     _ = get_trans(user_id)
     update.message.reply_text(
         text=_('Please choose where do you want to pickup your order:'),
-        reply_markup=create_pickup_location_keyboard(user_id, location_names),
+        reply_markup=create_pickup_location_keyboard(_, location_names),
         parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_LOCATION_PICKUP
 
@@ -46,7 +46,7 @@ def enter_state_location_delivery(bot, update, user_data):
     _ = get_trans(user_id)
     update.message.reply_text(
         text=_('Please enter delivery address as text or send a location.'),
-        reply_markup=create_location_request_keyboard(user_id),
+        reply_markup=create_location_request_keyboard(_),
         parse_mode=ParseMode.MARKDOWN)
     return BOT_STATE_CHECKOUT_LOCATION_DELIVERY
 
@@ -55,7 +55,7 @@ def enter_state_shipping_time(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(text=_('When do you want to pickup your order?'),
-                              reply_markup=create_time_keyboard(user_id),
+                              reply_markup=create_time_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_TIME
 
@@ -65,7 +65,7 @@ def enter_state_shipping_time_text(bot, update, user_data):
     _ = get_trans(user_id)
     update.message.reply_text(text=_(
         'When do you want your order delivered? Please send the time as text.'),
-        reply_markup=create_cancel_keyboard(user_id),
+        reply_markup=create_cancel_keyboard(_),
         parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_TIME_TEXT
 
@@ -74,7 +74,7 @@ def enter_state_phone_number_text(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(text=_('Please send your phone number.'),
-                              reply_markup=create_phone_number_request_keyboard(user_id),
+                              reply_markup=create_phone_number_request_keyboard(_),
                               )
     return BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
 
@@ -92,15 +92,16 @@ def enter_state_identify_photo(bot, update, user_data):
     session_client.json_set(user_id, session)
     text = _('Please provide an identification picture. {}').format(
         session['shipping']['photo_question'])
-    update.message.reply_text(text=text, reply_markup=create_cancel_keyboard(user_id),
+    update.message.reply_text(text=text, reply_markup=create_cancel_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN, )
     return BOT_STATE_CHECKOUT_IDENTIFY_STAGE1
 
 
 def enter_state_identify_stage2(bot, update, user_data):
     user_id = get_user_id(update)
+    _ = get_trans(user_id)
     update.message.reply_text(text=config.get_identification_stage2_question(),
-                              reply_markup=create_cancel_keyboard(user_id),
+                              reply_markup=create_cancel_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN,
                               )
 
@@ -119,7 +120,7 @@ def enter_state_order_confirm(bot, update, user_data):
     update.message.reply_text(
         text=create_confirmation_text(user_id,
             is_pickup, shipping_data, total, delivery_min, delivery_cost, product_info),
-        reply_markup=create_confirmation_keyboard(user_id),
+        reply_markup=create_confirmation_keyboard(_),
         parse_mode=ParseMode.HTML,
     )
 
@@ -129,6 +130,7 @@ def enter_state_order_confirm(bot, update, user_data):
 def enter_state_init_order_confirmed(bot, update, user_data):
     user_id = get_user_id(update)
     total = cart.get_cart_total(get_user_session(user_id))
+    _ = get_trans(user_id)
     bot.send_message(
         update.message.chat_id,
         text=config.get_order_complete_text().format(
@@ -138,7 +140,7 @@ def enter_state_init_order_confirmed(bot, update, user_data):
     bot.send_message(
         update.message.chat_id,
         text='〰〰〰〰〰〰〰〰〰〰〰〰️',
-        reply_markup=create_main_keyboard(user_id, config.get_reviews_channel(), is_admin(bot, user_id), total),
+        reply_markup=create_main_keyboard(_, config.get_reviews_channel(), is_admin(bot, user_id), total),
     )
 
     return BOT_STATE_INIT
@@ -158,6 +160,6 @@ def enter_state_init_order_cancelled(bot, update, user_data):
     bot.send_message(update.message.chat_id,
                      text=config.get_welcome_text().format(
                          update.message.from_user.first_name),
-                     reply_markup=create_main_keyboard(user_id, config.get_reviews_channel(),
+                     reply_markup=create_main_keyboard(_, config.get_reviews_channel(),
                                                        is_admin(bot, user_id), total))
     return BOT_STATE_INIT

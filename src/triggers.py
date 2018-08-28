@@ -6,14 +6,16 @@ from telegram.ext import ConversationHandler
 from .admin import is_admin
 from .messages import create_service_notice
 from .helpers import cart, config, session_client, get_user_session, \
-    get_user_id, get_username, is_vip_customer, set_config_session, get_locale, get_trans, get_config_session
-from .keyboards import create_drop_responsibility_keyboard, \
+    get_user_id, get_username, is_vip_customer, set_config_session, get_locale, get_trans, get_config_session, \
+    get_channel_trans
+from .keyboards import create_courier_assigned_keyboard, \
     create_service_notice_keyboard, create_main_keyboard, create_courier_confirmation_keyboard, \
     create_admin_keyboard, create_statistics_keyboard, \
     create_bot_settings_keyboard, create_bot_couriers_keyboard, \
     create_bot_channels_keyboard, create_bot_order_options_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
-    create_service_channel_keyboard, couriers_choose_keyboard
+    create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
+    create_courier_order_status_keyboard, create_admin_order_status_keyboard, create_back_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
@@ -23,7 +25,9 @@ from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ORDER_OPTIO
     ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, ADMIN_CHANNELS, ADMIN_CHANNELS_SELECT_TYPE, \
     ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT, ADMIN_MENU, \
     ADMIN_STATISTICS, ADMIN_COURIERS, ADMIN_EDIT_WORKING_HOURS, ADMIN_EDIT_CONTACT_INFO, ADMIN_BOT_ON_OFF, \
-    ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, BOT_STATE_CHECKOUT_LOCATION_DELIVERY
+    ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, BOT_STATE_CHECKOUT_LOCATION_DELIVERY, \
+    COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_INIT, \
+    COURIER_STATE_REPORT_REASON
 
 
 def on_shipping_method(bot, update, user_data):
@@ -58,7 +62,7 @@ def on_bot_language_change(bot, update, user_data):
                               message_id=query.message.message_id,
                               text=config.get_welcome_text().format(
                                   query.message.chat.first_name),
-                              reply_markup=create_main_keyboard(user_id, config.get_reviews_channel(),
+                              reply_markup=create_main_keyboard(_, config.get_reviews_channel(),
                                                                 is_admin(bot, user_id)),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -285,7 +289,9 @@ def on_confirm_order(bot, update, user_data):
         if 'stage2_id' in shipping_data:
             order_data.stage2_id = shipping_data['stage2_id'] + '|'
 
-        text = create_service_notice(user_id, is_pickup, order_id, product_info, shipping_data,
+        _ = get_channel_trans()
+
+        text = create_service_notice(_, is_pickup, order_id, product_info, shipping_data,
                                      total, delivery_min, delivery_cost)
         order_data.order_text = text
 
@@ -300,12 +306,14 @@ def on_confirm_order(bot, update, user_data):
         else:
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
-        order_data.save()
-        bot.send_message(service_channel,
+        # order_data.save()
+        order_msg = bot.send_message(service_channel,
                          text=txt,
-                         reply_markup=create_show_order_keyboard(user_id, order_id),
+                         reply_markup=create_show_order_keyboard(_, order_id),
                          parse_mode=ParseMode.HTML,
                          )
+        order_data.order_text_msg_id = str(order_msg['message_id'])
+        order_data.save()
         # clear cart and shipping data
         user_data['cart'] = {}
         user_data['shipping'] = {}
@@ -338,25 +346,39 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
     data = query.data
     label, telegram_id, order_id, message_id = data.split('|')
     order = Order.get(id=order_id)
-    user_id = order.user.telegram_id
+    order.courier = Courier.get(telegram_id=telegram_id)
+    order.save()
+    user_data = get_user_session(telegram_id)
+    user_data['courier']['order_id'] = order_id
+    session_client.json_set(telegram_id, user_data)
+    # user_id = order.user.telegram_id
+    # _ = get_trans(telegram_id)
+    # msg = _('Manage Order')
+    order_data = OrderPhotos.get(order=order)
     bot.delete_message(chat_id=update.callback_query.message.chat_id,
                        message_id=update.callback_query.message.message_id, )
-    bot.forward_message(chat_id=telegram_id,
-                        from_chat_id=query.message.chat_id,
-                        message_id=message_id,
-                        reply_markup=create_service_notice_keyboard(user_id, order_id))
-
+    # bot.forward_message(chat_id=telegram_id,
+    #                     from_chat_id=query.message.chat_id,
+    #                     message_id=message_id,
+    #                     # reply_markup=create_service_notice_keyboard(telegram_id, order_id),
+    #                     )
+    _ = get_trans(telegram_id)
+    bot.send_message(chat_id=telegram_id,
+                     text=order_data.order_text,
+                     reply_markup=create_courier_order_status_keyboard(_, order_id),
+                     parse_mode=ParseMode.HTML)
     query.answer(text='Message sent', show_alert=True)
 
 
 def on_service_send_order_to_courier(bot, update, user_data):
     query = update.callback_query
     data = query.data
-    label, user_id, order_id = data.split('|')
-    _ = get_trans(user_id)
+    label, order_id = data.split('|')
+    # _ = get_trans(user_id)
     if label == 'order_show':
         order = OrderPhotos.get(order_id=order_id)
         service_channel = config.get_service_channel()
+        _ = get_channel_trans()
         media = []
         if order.photo_id:
             order.photo_id, msg = order.photo_id.split('|')
@@ -374,8 +396,11 @@ def on_service_send_order_to_courier(bot, update, user_data):
             for hash_id, message in zip([order.photo_id, order.stage2_id], messages):
                 joined.append('|'.join([hash_id, str(message['message_id'])]))
             order.photo_id = joined[0]
-            order.stage2_id = joined[1]
-            order.save()
+            try:
+                order.stage2_id = joined[1]
+            except IndexError:
+                pass
+            # order.save()
         if order.coordinates:
             lat, long, msg_id = order.coordinates.split('|')
             msg = bot.send_location(
@@ -384,17 +409,23 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 longitude=long,
             )
             order.coordinates = lat + '|' + long + '|' + str(msg['message_id'])
-            order.save()
+            # order.save()
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
                            message_id=update.callback_query.message.message_id, )
-        bot.send_message(
+        order_msg = bot.send_message(
             chat_id=service_channel,
             text=order.order_text,
             parse_mode=ParseMode.HTML,
-            reply_markup=create_service_channel_keyboard(user_id, order_id))
+            reply_markup=create_service_channel_keyboard(_, order_id))
+        order.order_text_msg_id = str(order_msg['message_id'])
+        order.save()
     elif label == 'order_hide':
         service_channel = config.get_service_channel()
-        username = User.get(telegram_id=user_id).username or '№1'
+        _ = get_channel_trans()
+        order = Order.get(id=order_id)
+        username = order.user.username or '№1'
+        # username = User.get(order_id=order_id).username or '№1'
+        # username = User.get(telegram_id=user_id).username or '№1'
         txt = _('Order confirmed by\n@{}\n').format(username)
         order = OrderPhotos.get(order_id=order_id)
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
@@ -412,12 +443,15 @@ def on_service_send_order_to_courier(bot, update, user_data):
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
                                message_id=msg_id, )
 
-        bot.send_message(
+        order_msg = bot.send_message(
             chat_id=service_channel,
             text=txt,
-            reply_markup=create_show_order_keyboard(user_id, order_id))
+            reply_markup=create_show_order_keyboard(_, order_id))
+        order.order_text_msg_id = str(order_msg['message_id'])
+        order.save()
     elif label == 'order_send_to_specific_courier':
         couriers = Courier.select(Courier.username, Courier.telegram_id, Courier.location)
+        _ = get_channel_trans()
         bot.send_message(
             chat_id=config.get_service_channel(),
             text=_('Please choose who to send'),
@@ -426,47 +460,63 @@ def on_service_send_order_to_courier(bot, update, user_data):
     elif label == 'order_send_to_couriers':
 
         if config.get_has_courier_option():
+            _ = get_channel_trans()
             couriers_channel = config.get_couriers_channel()
             order = OrderPhotos.get(order_id=order_id)
-            bot.send_message(chat_id=couriers_channel,
-                             text=order.order_text,
-                             reply_markup=create_service_notice_keyboard(user_id, order_id),
-                             parse_mode=ParseMode.HTML,
-                             )
-
+            photo_msg_id = ''
             if order.photo_id:
-                bot.send_photo(couriers_channel,
-                               photo=order.photo_id,
+                photo_id, msg_id = order.photo_id.split('|')
+                photo_msg = bot.send_photo(couriers_channel,
+                               photo=photo_id,
                                caption=_('Stage 1 Identification - Selfie'),
                                parse_mode=ParseMode.MARKDOWN, )
+                photo_msg_id = photo_msg['message_id']
+            bot.send_message(chat_id=couriers_channel,
+                             text=order.order_text,
+                             reply_markup=create_service_notice_keyboard(order_id, _, photo_msg_id),
+                             parse_mode=ParseMode.HTML,
+                             )
 
             query.answer(text='Order sent to couriers channel', show_alert=True)
         query.answer(text='You have disabled courier\'s option', show_alert=True)
     elif label == 'order_finished':
-
-        order = OrderPhotos.get(order_id=order_id)
-        bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                           message_id=update.callback_query.message.message_id, )
-        if order.photo_id:
-            id, msg_id = order.photo_id.split('|')
+        order = Order.get(id=order_id)
+        if not order.delivered:
+            _ = get_channel_trans()
+            not_delivered_msg = _('Order cannot be finished because it was not delivered yet')
+            query.answer(text=not_delivered_msg, show_alert=True)
+        else:
+            order = OrderPhotos.get(order_id=order_id)
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=msg_id, )
-        if order.stage2_id:
-            id, msg_id = order.stage2_id.split('|')
-            bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=msg_id, )
-        if order.coordinates:
-            lat, long, msg_id = order.coordinates.split('|')
-            bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=msg_id, )
+                               message_id=update.callback_query.message.message_id, )
+            if order.photo_id:
+                id, msg_id = order.photo_id.split('|')
+                bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                                   message_id=msg_id, )
+            if order.stage2_id:
+                id, msg_id = order.stage2_id.split('|')
+                bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                                   message_id=msg_id, )
+            if order.coordinates:
+                lat, long, msg_id = order.coordinates.split('|')
+                bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                                   message_id=msg_id, )
     elif label == 'order_send_to_self':
         usr_id = get_user_id(update)
-        bot.forward_message(chat_id=usr_id,
-                            from_chat_id=query.message.chat_id,
-                            message_id=query.message.message_id,
-                            reply_markup=create_service_notice_keyboard(usr_id, order_id))
+        order = Order.get(id=order_id)
+        order_data = OrderPhotos.get(order=order)
+        order.courier = User.get(telegram_id=usr_id)
+        order.save()
+        _ = get_trans(usr_id)
+        bot.send_message(chat_id=usr_id,
+                         text=order_data.order_text,
+                         reply_markup=create_admin_order_status_keyboard(_, order_id),
+                         parse_mode=ParseMode.HTML)
+        query.answer(text='Message sent', show_alert=True)
     elif label == 'order_ban_client':
-        usr = User.get(telegram_id=user_id)
+        order = Order.get(id=order_id)
+        # usr = User.get(order_id=order_id)
+        usr = order.usr
         username = usr.username
         banned = config.get_banned_users()
         if username not in banned:
@@ -474,11 +524,14 @@ def on_service_send_order_to_courier(bot, update, user_data):
         config_session = get_config_session()
         config_session['banned'] = banned
         set_config_session(config_session)
-        user_id = get_user_id(update)
+        # user_id = get_user_id(update)
         bot.send_message(chat_id=query.message.chat_id,
                          text='@{} was banned'.format(username),
                          parse_mode=ParseMode.MARKDOWN)
     elif label == 'order_add_to_vip':
+        order = Order.get(id=order_id)
+        user_id = order.user.telegram_id
+        # user_id = User.get(order_id=order_id).telegram_id
         bul = is_vip_customer(bot, user_id)
         if bul:
             query.answer(text='Client is already VIP', show_alert=True)
@@ -510,8 +563,9 @@ def service_channel_courier_query_handler(bot, update, user_data):
     data = query.data
     courier_nickname = get_username(update)
     courier_id = get_user_id(update)
-    label, user_id, order_id = data.split('|')
-    _ = get_trans(user_id)
+    label, order_id, photo_msg_id = data.split('|')
+    # _ = get_trans(user_id)
+    _ = get_channel_trans()
     try:
         if order_id:
             order = Order.get(id=order_id)
@@ -530,22 +584,26 @@ def service_channel_courier_query_handler(bot, update, user_data):
                 CourierLocation.get(courier=courier, location=order.location)
                 order.courier = courier
                 order.save()
-                bot.delete_message(chat_id=config.get_couriers_channel(),
+                couriers_channel = config.get_couriers_channel()
+                # if photo_msg_id:
+                #     bot.delete_message(chat_id=couriers_channel,
+                #                        message_id=photo_msg_id)
+                bot.delete_message(chat_id=couriers_channel,
                                    message_id=query.message.message_id)
-                bot.send_message(
+                assigned_msg = bot.send_message(
                     config.get_couriers_channel(),
                     text=query.message.text,
                     parse_mode=ParseMode.HTML,
-                    reply_markup=create_drop_responsibility_keyboard(
-                        user_id, courier_nickname, order_id),
+                    reply_markup=create_courier_assigned_keyboard(courier_nickname, order_id, _),
                 )
+                assigned_msg_id = assigned_msg['message_id']
                 bot.send_message(
                     config.get_service_channel(),
                     text='Courier: {}, apply for order №{}. '
                          'Confirm this?'.format(
                         courier_nickname, order_id),
-                    reply_markup=create_courier_confirmation_keyboard(user_id,
-                                                                      order_id, courier_nickname),
+                    reply_markup=create_courier_confirmation_keyboard(order_id, courier_nickname, _,
+                                                                      photo_msg_id, assigned_msg_id)
                 )
                 bot.answer_callback_query(
                     query.id,
@@ -583,7 +641,7 @@ def on_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('📈 Statistics'),
-                              reply_markup=create_statistics_keyboard(user_id),
+                              reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_STATISTICS
@@ -591,7 +649,7 @@ def on_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('⚙ Bot settings'),
-                              reply_markup=create_bot_settings_keyboard(user_id),
+                              reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
 
         query.answer()
@@ -602,7 +660,7 @@ def on_settings_menu(bot, update):
                               message_id=query.message.message_id,
                               text=config.get_welcome_text().format(
                                   update.callback_query.from_user.first_name),
-                              reply_markup=create_main_keyboard(user_id,
+                              reply_markup=create_main_keyboard(_,
                                                                 config.get_reviews_channel(),
                                                                 is_admin(bot, user_id), total),
                               parse_mode=ParseMode.MARKDOWN)
@@ -628,7 +686,7 @@ def on_statistics_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('⚙️ Settings'),
-                              reply_markup=create_admin_keyboard(user_id),
+                              reply_markup=create_admin_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_MENU
@@ -644,7 +702,7 @@ def on_statistics_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=message,
-                              reply_markup=create_statistics_keyboard(user_id),
+                              reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_STATISTICS
@@ -664,7 +722,7 @@ def on_statistics_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_statistics_keyboard(user_id),
+                              reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_STATISTICS
@@ -685,7 +743,7 @@ def on_statistics_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_statistics_keyboard(user_id),
+                              reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_STATISTICS
@@ -703,7 +761,7 @@ def on_statistics_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_statistics_keyboard(user_id),
+                              reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_STATISTICS
@@ -721,7 +779,7 @@ def on_statistics_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_statistics_keyboard(user_id),
+                              reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_STATISTICS
@@ -741,7 +799,7 @@ def on_statistics_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_statistics_keyboard(user_id),
+                              reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_STATISTICS
@@ -758,7 +816,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('⚙️ Settings'),
-                              reply_markup=create_admin_keyboard(user_id),
+                              reply_markup=create_admin_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_MENU
@@ -767,7 +825,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('🛵 Couriers'),
-                              reply_markup=create_bot_couriers_keyboard(user_id),
+                              reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_COURIERS
@@ -775,7 +833,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('✉️ Channels'),
-                              reply_markup=create_bot_channels_keyboard(user_id),
+                              reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_CHANNELS
@@ -783,7 +841,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('💳 Order options'),
-                              reply_markup=create_bot_order_options_keyboard(user_id),
+                              reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_ORDER_OPTIONS
@@ -793,7 +851,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_EDIT_WORKING_HOURS
@@ -801,7 +859,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text='Ban list',
-                              reply_markup=create_ban_list_keyboard(user_id),
+                              reply_markup=create_ban_list_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BAN_LIST
@@ -811,7 +869,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_EDIT_CONTACT_INFO
@@ -822,7 +880,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_on_off_buttons(user_id),
+                              reply_markup=create_on_off_buttons(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BOT_ON_OFF
@@ -832,7 +890,7 @@ def on_bot_settings_menu(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text='Config options were deleted',
-                              reply_markup=create_bot_settings_keyboard(user_id),
+                              reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BOT_SETTINGS
@@ -849,7 +907,7 @@ def on_admin_couriers(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('⚙ Bot settings'),
-                              reply_markup=create_bot_settings_keyboard(user_id),
+                              reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BOT_SETTINGS
@@ -868,7 +926,7 @@ def on_admin_couriers(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_bot_couriers_keyboard(user_id),
+                              reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_COURIERS
@@ -877,7 +935,7 @@ def on_admin_couriers(bot, update):
                               message_id=query.message.message_id,
                               text=_('Enter new courier nickname'),
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button(user_id)
+                              reply_markup=create_back_button(_)
                               ),
 
         return ADMIN_TXT_COURIER_NAME
@@ -887,7 +945,7 @@ def on_admin_couriers(bot, update):
                               message_id=query.message.message_id,
                               text=_('Choose courier ID to delete'),
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button(user_id)
+                              reply_markup=create_back_button(_)
                               )
 
         return ADMIN_TXT_DELETE_COURIER
@@ -904,7 +962,7 @@ def on_admin_channels(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('⚙ Bot settings'),
-                              reply_markup=create_bot_settings_keyboard(user_id),
+                              reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BOT_SETTINGS
@@ -919,7 +977,7 @@ def on_admin_channels(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_bot_channels_keyboard(user_id),
+                              reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_CHANNELS
@@ -933,7 +991,7 @@ def on_admin_channels(bot, update):
                               message_id=query.message.message_id,
                               text=msg,
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button(user_id)
+                              reply_markup=create_back_button(_)
                               )
 
         return ADMIN_CHANNELS_SELECT_TYPE
@@ -947,7 +1005,7 @@ def on_admin_channels(bot, update):
                               message_id=query.message.message_id,
                               text=msg,
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button(user_id)
+                              reply_markup=create_back_button(_)
                               )
 
         return ADMIN_CHANNELS_REMOVE
@@ -964,7 +1022,7 @@ def on_admin_ban_list(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('⚙ Bot settings'),
-                              reply_markup=create_bot_settings_keyboard(user_id),
+                              reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BOT_SETTINGS
@@ -976,7 +1034,7 @@ def on_admin_ban_list(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_ban_list_keyboard(user_id),
+                              reply_markup=create_ban_list_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BAN_LIST
@@ -985,7 +1043,7 @@ def on_admin_ban_list(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_BAN_LIST_REMOVE
     elif data == 'bot_ban_list_add':
@@ -993,8 +1051,137 @@ def on_admin_ban_list(bot, update):
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_back_button(user_id),
+                              reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return ADMIN_BAN_LIST_ADD
 
     return ConversationHandler.END
+
+
+def courier_keyboard_handler(bot, update):
+    pass
+
+def on_courier_action_to_confirm(bot, update):
+    query = update.callback_query
+    data = query.data
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, order_id = data.split('|')
+    callback_mapping = {
+        'yes': 'yes|{}'.format(order_id),
+        'no': 'no|{}'.format(order_id)
+    }
+    msg = _('Are you sure?')
+    bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text=msg,
+        reply_markup=create_are_you_sure_keyboard(_, callback_mapping)
+    )
+    if action == 'confirm_courier_order_delivered':
+        return COURIER_STATE_CONFIRM_ORDER
+    elif action == 'confirm_courier_report_client':
+        return COURIER_STATE_CONFIRM_REPORT
+
+
+def on_courier_ping_client(bot, update):
+    query = update.callback_query
+    data = query.data
+    order_id = data.split('|')[1]
+    order = Order.get(id=order_id)
+    if order.client_notified:
+        user_id = get_user_id(update)
+        _ = get_trans(user_id)
+        msg = _('Client was notified already')
+        query.answer(text=msg, show_alert=True)
+        return COURIER_STATE_INIT
+    else:
+        user_id = order.user.telegram_id
+        _ = get_trans(user_id)
+        msg = _('Courier has arrived to deliver your order.')
+        bot.send_message(chat_id=user_id,
+                         text=msg)
+        order.client_notified = True
+        order.save()
+        return COURIER_STATE_INIT
+
+def on_courier_confirm_order(bot, update):
+    query = update.callback_query
+    data = query.data
+    user_id = get_user_id(update)
+    action, order_id = data.split('|')
+    _ = get_trans(user_id)
+    if action == 'yes':
+        order = Order.get(id=order_id)
+        order.delivered = True
+        order.save()
+        courier_msg = _('Order №{} is completed!'.format(order_id))
+        courier = Courier.get(telegram_id=user_id)
+        bot.edit_message_text(chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              text=courier_msg)
+        service_channel = config.get_service_channel()
+        _ = get_channel_trans()
+        service_msg = _('Order №{} was delivered by courier {}\n'
+                        'Order can be finished now.').format(order_id, courier.username)
+        bot.send_message(service_channel,
+                         text=service_msg)
+        # ADD ORDER MESSAGES HERE
+        return BOT_STATE_INIT
+        #bot.send_message(chat_id=servi)
+
+
+    elif action == 'no':
+        order_data = OrderPhotos.get(order_id=order_id)
+        # msg = _('Manage Order')
+        bot.edit_message_text(chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              text=order_data.order_text,
+                              reply_markup=create_courier_order_status_keyboard(_, order_id))
+        return COURIER_STATE_INIT
+
+def on_courier_confirm_report(bot, update):
+    query = update.callback_query
+    data = query.data
+    user_id = get_user_id(update)
+    action, order_id = data.split('|')
+    _ = get_trans(user_id)
+    if action == 'yes':
+        msg = _('Please enter report reason')
+        # bot.edit_message_text(chat_id=query.message.chat_id,
+        #                       message_id=query.message.message_id,
+        #                       text=msg,
+        #                       reply_markup=create_back_keyboard(_))
+        bot.send_message(chat_id=query.message.chat_id,
+                         message_id=query.message.message_id,
+                         text=msg,
+                         reply_markup=create_back_keyboard(_))
+        return COURIER_STATE_REPORT_REASON
+    elif action == 'no':
+        order_data = OrderPhotos.get(order_id=order_id)
+        bot.edit_message_text(chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              text=order_data.order_text,
+                              reply_markup=create_courier_order_status_keyboard(_, order_id))
+        return COURIER_STATE_INIT
+
+
+def on_courier_enter_reason(bot, update):
+    # query = update.callback_query
+    # data = query.data
+    data = update.message.text
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    if data == _('↩ Back'):
+        bot.delete_message(chat_id=update.message.chat_id,
+                           message_id=update.message.message_id)
+    else:
+        order_id = get_user_session(user_id)['courier']['order_id']
+        reported_username = Order.get(id=order_id).user.username
+        courier_username = Courier.get(telegram_id=user_id).username
+        report_msg = _('Order №{}:\n'
+                       'Courier {} has reported {}\n'
+                       'Reason: {}'.format(order_id, reported_username, courier_username, data))
+        service_channel = config.get_couriers_channel()
+        
+

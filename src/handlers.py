@@ -33,7 +33,7 @@ def on_start(bot, update, user_data):
             update.message.reply_text(
                 text=config.get_welcome_text().format(
                     update.message.from_user.first_name),
-                reply_markup=create_main_keyboard(user_id, config.get_reviews_channel(),
+                reply_markup=create_main_keyboard(_, config.get_reviews_channel(),
                                                   is_admin(bot, user_id),
                                                   total),
             )
@@ -94,7 +94,7 @@ def on_menu(bot, update, user_data=None):
                                          product_title, prices,
                                          product_count, subtotal,
                                          delivery_min, delivery_fee),
-                                     reply_markup=create_product_keyboard(user_id,
+                                     reply_markup=create_product_keyboard(_,
                                                                           product.id, user_data, cart),
                                      parse_mode=ParseMode.HTML,
                                      timeout=20, )
@@ -102,7 +102,7 @@ def on_menu(bot, update, user_data=None):
                 # send menu again as a new message
                 bot.send_message(query.message.chat_id,
                                  text=config.get_order_text(),
-                                 reply_markup=create_main_keyboard(user_id,
+                                 reply_markup=create_main_keyboard(_,
                                                                    config.get_reviews_channel(),
                                                                    is_admin(bot, user_id), total),
                                  parse_mode=ParseMode.HTML, )
@@ -112,7 +112,7 @@ def on_menu(bot, update, user_data=None):
                     #  on update.message
                     bot.send_message(query.message.chat_id,
                                      text=_('Please choose pickup or delivery'),
-                                     reply_markup=create_shipping_keyboard(user_id),
+                                     reply_markup=create_shipping_keyboard(_),
                                      parse_mode=ParseMode.MARKDOWN, )
                     query.answer()
                     return BOT_STATE_CHECKOUT_SHIPPING
@@ -128,7 +128,7 @@ def on_menu(bot, update, user_data=None):
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=_('🈚︎  Languages'),
-                                      reply_markup=create_bot_language_keyboard(user_id),
+                                      reply_markup=create_bot_language_keyboard(_),
                                       parse_mode=ParseMode.MARKDOWN)
 
                 query.answer()
@@ -138,7 +138,7 @@ def on_menu(bot, update, user_data=None):
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=config.get_working_hours(),
-                                      reply_markup=create_main_keyboard(user_id,
+                                      reply_markup=create_main_keyboard(_,
                                                                         config.get_reviews_channel(),
                                                                         is_admin(bot, user_id), total),
                                       parse_mode=ParseMode.MARKDOWN, )
@@ -146,7 +146,7 @@ def on_menu(bot, update, user_data=None):
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=config.get_contact_info(),
-                                      reply_markup=create_main_keyboard(user_id,
+                                      reply_markup=create_main_keyboard(_,
                                                                         config.get_reviews_channel(),
                                                                         is_admin(bot, user_id), total),
                                       parse_mode=ParseMode.MARKDOWN, )
@@ -169,7 +169,7 @@ def on_menu(bot, update, user_data=None):
                                           product_title, prices,
                                           product_count, subtotal,
                                           delivery_min, delivery_fee),
-                                      reply_markup=create_product_keyboard(user_id,
+                                      reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
                                       parse_mode=ParseMode.HTML, )
             elif data.startswith('product_remove'):
@@ -191,14 +191,14 @@ def on_menu(bot, update, user_data=None):
                                           product_title, prices,
                                           product_count, subtotal,
                                           delivery_min, delivery_fee),
-                                      reply_markup=create_product_keyboard(user_id,
+                                      reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
                                       parse_mode=ParseMode.HTML, )
             elif data == 'menu_settings':
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=_('⚙️ Settings'),
-                                      reply_markup=create_admin_keyboard(user_id),
+                                      reply_markup=create_admin_keyboard(_),
                                       parse_mode=ParseMode.MARKDOWN, )
                 query.answer()
                 return ADMIN_MENU
