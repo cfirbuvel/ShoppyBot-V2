@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
-from telegram.ext import CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, MessageHandler, Updater
+from telegram.ext import CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, MessageHandler, Updater, \
+    Handler
 
 from src.admin import on_start_admin, on_admin_select_channel_type, on_admin_add_channel_address, on_admin_cancel, \
     on_admin_remove_channel, on_admin_remove_ban_list, on_admin_add_ban_list, on_admin_edit_working_hours, \
@@ -8,9 +9,10 @@ from src.admin import on_start_admin, on_admin_select_channel_type, on_admin_add
     on_admin_edit_identification, on_admin_edit_restriction, on_admin_add_delivery, on_admin_edit_welcome_message, \
     on_admin_edit_order_message, on_admin_edit_final_message, on_admin_cmd_add_product, on_admin_cmd_delete_product, \
     on_admin_cmd_add_courier, on_admin_txt_courier_name, on_admin_cmd_bot_on, on_admin_cmd_bot_off, on_admin_fallback, \
-    on_admin_txt_product_title, on_admin_txt_product_prices, on_admin_txt_product_photo, on_admin_txt_delete_product, \
+    on_admin_txt_product_title, on_admin_txt_product_prices, on_admin_txt_product_photo, \
     on_admin_cmd_delete_courier, on_admin_txt_courier_id, on_admin_btn_courier_location, on_admin_txt_delete_courier, \
-    on_admin_txt_delete_location, on_admin_txt_location, on_admin_locations
+    on_admin_txt_delete_location, on_admin_txt_location, on_admin_locations, on_admin_products, on_admin_product_add, \
+    on_admin_product_last_select, on_admin_delete_product
 from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_PICKUP, \
     BOT_STATE_CHECKOUT_LOCATION_DELIVERY, BOT_STATE_CHECKOUT_TIME, BOT_STATE_CHECKOUT_TIME_TEXT, \
     BOT_STATE_CHECKOUT_IDENTIFY_STAGE1, BOT_STATE_CHECKOUT_IDENTIFY_STAGE2, \
@@ -21,10 +23,11 @@ from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_P
     ADMIN_EDIT_CONTACT_INFO, ADMIN_BOT_ON_OFF, ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, ADMIN_CHANNELS_ADDRESS, \
     ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, ADMIN_EDIT_RESTRICTION, ADMIN_ADD_DELIVERY_FEE, \
     ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_TXT_COURIER_ID, ADMIN_INIT, ADMIN_TXT_PRODUCT_TITLE, \
-    ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_TXT_DELETE_PRODUCT, ADMIN_EDIT_FINAL_MESSAGE, \
+    ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_EDIT_FINAL_MESSAGE, \
     ADMIN_TXT_COURIER_LOCATION, ADMIN_TXT_DELETE_LOCATION, ADMIN_TXT_ADD_LOCATION, ADMIN_LOCATIONS, \
-    COURIER_STATE_INIT, COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_REPORT_REASON
-from src.handlers import on_start, on_menu, on_error
+    COURIER_STATE_INIT, COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_REPORT_REASON, \
+    ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT
+from src.handlers import on_start, on_menu, on_error, on_chat_update_handler
 from src.helpers import config, get_user_id, \
     get_user_session
 
@@ -38,7 +41,8 @@ from src.triggers import checkout_fallback_command_handler, on_shipping_method, 
     on_shipping_identify_stage2, on_bot_settings_menu, on_admin_couriers, on_admin_channels, on_admin_ban_list, \
     on_cancel, send_welcome_message, service_channel_courier_query_handler, on_service_send_order_to_courier, \
     service_channel_sendto_courier_handler, on_courier_action_to_confirm, on_courier_ping_client, \
-    on_courier_confirm_order, on_courier_confirm_report, on_courier_enter_reason, courier_keyboard_handler
+    on_courier_confirm_order, on_courier_confirm_report, on_courier_enter_reason, courier_keyboard_handler, \
+    on_courier_cancel_reason
 
 
 # will be called when conversation context is lost (e.g. bot is restarted)
@@ -87,7 +91,8 @@ def main():
                                      #pattern='^confirm_report')
             ],
             COURIER_STATE_REPORT_REASON: [
-                MessageHandler(Filters.text, on_courier_enter_reason)
+                MessageHandler(Filters.text, on_courier_enter_reason),
+                CallbackQueryHandler(on_courier_cancel_reason, pattern='^back')
             ]
 
         },
@@ -184,6 +189,15 @@ def main():
             ADMIN_LOCATIONS: [
                 CallbackQueryHandler(
                     on_admin_locations, pattern='^bot_locations')],
+            ADMIN_PRODUCTS: [
+                CallbackQueryHandler(on_admin_products, pattern='^bot_products')
+            ],
+            ADMIN_PRODUCT_ADD: [
+                CallbackQueryHandler(on_admin_product_add, pattern='^bot_product')
+            ],
+            ADMIN_PRODUCT_LAST_ADD: [
+                CallbackQueryHandler(on_admin_product_last_select, pattern='^bot_last_product')
+            ],
             ADMIN_CHANNELS: [
                 CallbackQueryHandler(on_admin_channels, pattern='^bot_channels')
             ],
@@ -322,12 +336,16 @@ def main():
                                pass_user_data=True),
                 CommandHandler('cancel', on_admin_cancel),
             ],
-            ADMIN_TXT_DELETE_PRODUCT: [
-                CallbackQueryHandler(
-                    on_admin_txt_delete_product, pass_user_data=True),
-                MessageHandler(Filters.text, on_admin_txt_delete_product,
-                               pass_user_data=True),
-                CommandHandler('cancel', on_admin_cancel),
+            # ADMIN_TXT_DELETE_PRODUCT: [
+            #     CallbackQueryHandler(
+            #         on_admin_txt_delete_product, pass_user_data=True),
+            #     MessageHandler(Filters.text, on_admin_txt_delete_product,
+            #                    pass_user_data=True),
+            #     CommandHandler('cancel', on_admin_cancel),
+            # ],
+            ADMIN_DELETE_PRODUCT: [
+                CallbackQueryHandler(on_admin_delete_product, pattern='^bot_delete_product'),
+                CommandHandler('cancel', on_admin_cancel)
             ],
             ADMIN_TXT_COURIER_NAME: [
                 CallbackQueryHandler(
@@ -373,8 +391,9 @@ def main():
         ])
 
     updater = Updater(config.get_api_token(), user_sig_handler=close_db_on_signal)
+    # updater.dispatcher.add_handler(CallbackQueryHandler(on_chat_update_handler))
     updater.dispatcher.add_handler(MessageHandler(
-        Filters.status_update, send_welcome_message))
+        Filters.status_update.new_chat_members, send_welcome_message))
     updater.dispatcher.add_handler(user_conversation_handler)
     updater.dispatcher.add_handler(courier_conversation_handler)
     updater.dispatcher.add_handler(
@@ -401,6 +420,11 @@ def main():
         CallbackQueryHandler(make_unconfirm,
                              pattern='^notconfirmed',
                              pass_user_data=True))
+    # updater.dispatcher.add_handler(on_courier_action_to_confirm,
+    #                                pattern='^confirm_courier')
+    # updater.dispatcher.add_handler(on_courier_ping_client,
+    #                                pattern='^ping')
+    #
     # updater.dispatcher.add_handler()
     updater.dispatcher.add_error_handler(on_error)
     updater.start_polling()

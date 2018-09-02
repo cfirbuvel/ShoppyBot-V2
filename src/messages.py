@@ -35,6 +35,18 @@ def create_product_description(user_id, product_title, product_prices, product_c
 
     return text
 
+def create_admin_product_description(trans, product_title, product_prices):
+    _ = trans
+    text = _('Product:\n{}'
+             '\n\n'
+             '~~'
+             '\n'
+             'Price:\n').format(product_title)
+    for q, price in product_prices:
+        text += '\n'
+        text += _('x {} = ${}').format(q, price)
+    text += '\n\n~~\n'
+    return text
 
 def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_min, delivery_cost,
                              product_info):

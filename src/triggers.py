@@ -1,6 +1,6 @@
 import datetime
 
-from telegram import ParseMode, InputMediaPhoto
+from telegram import ParseMode, InputMediaPhoto, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
 
 from .admin import is_admin
@@ -15,7 +15,7 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_bot_channels_keyboard, create_bot_order_options_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
-    create_courier_order_status_keyboard, create_admin_order_status_keyboard, create_back_keyboard
+    create_courier_order_status_keyboard, create_admin_order_status_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
@@ -28,6 +28,8 @@ from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ORDER_OPTIO
     ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, BOT_STATE_CHECKOUT_LOCATION_DELIVERY, \
     COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_INIT, \
     COURIER_STATE_REPORT_REASON
+
+from . import shortcuts
 
 
 def on_shipping_method(bot, update, user_data):
@@ -307,13 +309,15 @@ def on_confirm_order(bot, update, user_data):
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
         # order_data.save()
-        order_msg = bot.send_message(service_channel,
-                         text=txt,
-                         reply_markup=create_show_order_keyboard(_, order_id),
-                         parse_mode=ParseMode.HTML,
-                         )
-        order_data.order_text_msg_id = str(order_msg['message_id'])
-        order_data.save()
+        shortcuts.bot_send_order_msg(bot, service_channel, txt, _, order_id)
+        # order_msg = bot.send_message(service_channel,
+        #                  text=txt,
+        #                  reply_markup=create_show_order_keyboard(_, order_id),
+        #                  parse_mode=ParseMode.HTML,
+        #                  )
+        # order_data.order_hidden_text = txt
+        # order_data.order_text_msg_id = str(order_msg['message_id'])
+        # order_data.save()
         # clear cart and shipping data
         user_data['cart'] = {}
         user_data['shipping'] = {}
@@ -351,17 +355,9 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
     user_data = get_user_session(telegram_id)
     user_data['courier']['order_id'] = order_id
     session_client.json_set(telegram_id, user_data)
-    # user_id = order.user.telegram_id
-    # _ = get_trans(telegram_id)
-    # msg = _('Manage Order')
     order_data = OrderPhotos.get(order=order)
     bot.delete_message(chat_id=update.callback_query.message.chat_id,
                        message_id=update.callback_query.message.message_id, )
-    # bot.forward_message(chat_id=telegram_id,
-    #                     from_chat_id=query.message.chat_id,
-    #                     message_id=message_id,
-    #                     # reply_markup=create_service_notice_keyboard(telegram_id, order_id),
-    #                     )
     _ = get_trans(telegram_id)
     bot.send_message(chat_id=telegram_id,
                      text=order_data.order_text,
@@ -422,12 +418,14 @@ def on_service_send_order_to_courier(bot, update, user_data):
     elif label == 'order_hide':
         service_channel = config.get_service_channel()
         _ = get_channel_trans()
-        order = Order.get(id=order_id)
-        username = order.user.username or '№1'
+        # order = Order.get(id=order_id)
+        # username = order.user.username or '№1'
         # username = User.get(order_id=order_id).username or '№1'
         # username = User.get(telegram_id=user_id).username or '№1'
-        txt = _('Order confirmed by\n@{}\n').format(username)
+        # txt = _('Order confirmed by\n@{}\n').format(username)
         order = OrderPhotos.get(order_id=order_id)
+        txt = order.order_hidden_text
+
         bot.delete_message(chat_id=update.callback_query.message.chat_id,
                            message_id=update.callback_query.message.message_id, )
         if order.coordinates:
@@ -443,12 +441,8 @@ def on_service_send_order_to_courier(bot, update, user_data):
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
                                message_id=msg_id, )
 
-        order_msg = bot.send_message(
-            chat_id=service_channel,
-            text=txt,
-            reply_markup=create_show_order_keyboard(_, order_id))
-        order.order_text_msg_id = str(order_msg['message_id'])
-        order.save()
+        shortcuts.bot_send_order_msg(bot, update.callback_query.message.chat_id, txt, _, order_id)
+
     elif label == 'order_send_to_specific_courier':
         couriers = Courier.select(Courier.username, Courier.telegram_id, Courier.location)
         _ = get_channel_trans()
@@ -564,7 +558,6 @@ def service_channel_courier_query_handler(bot, update, user_data):
     courier_nickname = get_username(update)
     courier_id = get_user_id(update)
     label, order_id, photo_msg_id = data.split('|')
-    # _ = get_trans(user_id)
     _ = get_channel_trans()
     try:
         if order_id:
@@ -624,10 +617,10 @@ def send_welcome_message(bot, update):
         users = update.message.new_chat_members
         for user in users:
             if user:
+                Courier.create(username=user.username, telegram_id=user.id, is_active=False)
                 bot.send_message(
                     config.get_couriers_channel(),
-                    text=_('Hello `@{}`\nID number `{}`').format(
-                        user.username, user.id),
+                    text=_('Hello `@{}`').format(user.username),
                     parse_mode=ParseMode.MARKDOWN)
 
 
@@ -1072,9 +1065,8 @@ def on_courier_action_to_confirm(bot, update):
         'no': 'no|{}'.format(order_id)
     }
     msg = _('Are you sure?')
-    bot.edit_message_text(
+    bot.send_message(
         chat_id=query.message.chat_id,
-        message_id=query.message.message_id,
         text=msg,
         reply_markup=create_are_you_sure_keyboard(_, callback_mapping)
     )
@@ -1111,33 +1103,26 @@ def on_courier_confirm_order(bot, update):
     user_id = get_user_id(update)
     action, order_id = data.split('|')
     _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
     if action == 'yes':
         order = Order.get(id=order_id)
         order.delivered = True
         order.save()
         courier_msg = _('Order №{} is completed!'.format(order_id))
         courier = Courier.get(telegram_id=user_id)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=courier_msg)
         service_channel = config.get_service_channel()
         _ = get_channel_trans()
         service_msg = _('Order №{} was delivered by courier {}\n'
                         'Order can be finished now.').format(order_id, courier.username)
-        bot.send_message(service_channel,
-                         text=service_msg)
-        # ADD ORDER MESSAGES HERE
-        return BOT_STATE_INIT
-        #bot.send_message(chat_id=servi)
-
-
+        shortcuts.bot_send_order_msg(bot, service_channel, service_msg, _, order_id)
+        return COURIER_STATE_INIT
     elif action == 'no':
-        order_data = OrderPhotos.get(order_id=order_id)
-        # msg = _('Manage Order')
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=order_data.order_text,
-                              reply_markup=create_courier_order_status_keyboard(_, order_id))
+        bot.delete_message(chat_id=chat_id,
+                           message_id=message_id)
         return COURIER_STATE_INIT
 
 def on_courier_confirm_report(bot, update):
@@ -1146,42 +1131,56 @@ def on_courier_confirm_report(bot, update):
     user_id = get_user_id(update)
     action, order_id = data.split('|')
     _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
     if action == 'yes':
         msg = _('Please enter report reason')
-        # bot.edit_message_text(chat_id=query.message.chat_id,
-        #                       message_id=query.message.message_id,
-        #                       text=msg,
-        #                       reply_markup=create_back_keyboard(_))
-        bot.send_message(chat_id=query.message.chat_id,
-                         message_id=query.message.message_id,
+        bot.delete_message(chat_id=chat_id,
+                           message_id=message_id)
+        bot.send_message(chat_id =chat_id,
                          text=msg,
-                         reply_markup=create_back_keyboard(_))
+                         reply_markup=create_back_button(_)
+                         )
         return COURIER_STATE_REPORT_REASON
     elif action == 'no':
-        order_data = OrderPhotos.get(order_id=order_id)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=order_data.order_text,
-                              reply_markup=create_courier_order_status_keyboard(_, order_id))
+        bot.delete_message(chat_id=chat_id,
+                           message_id=message_id)
         return COURIER_STATE_INIT
 
 
 def on_courier_enter_reason(bot, update):
-    # query = update.callback_query
-    # data = query.data
     data = update.message.text
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    if data == _('↩ Back'):
-        bot.delete_message(chat_id=update.message.chat_id,
-                           message_id=update.message.message_id)
-    else:
-        order_id = get_user_session(user_id)['courier']['order_id']
-        reported_username = Order.get(id=order_id).user.username
-        courier_username = Courier.get(telegram_id=user_id).username
-        report_msg = _('Order №{}:\n'
-                       'Courier {} has reported {}\n'
-                       'Reason: {}'.format(order_id, reported_username, courier_username, data))
-        service_channel = config.get_couriers_channel()
-        
+    order_id = get_user_session(user_id)['courier']['order_id']
+    order_data = OrderPhotos.get(order_id=order_id)
+    chat_id = update.message.chat_id
+    message_id = update.message.message_id
+    courier_msg = _('User was reported!')
+    bot.send_message(chat_id, text=courier_msg)
+    bot.send_message(chat_id=chat_id,
+                     text=order_data.order_text,
+                     reply_markup=create_courier_order_status_keyboard(_, order_id),
+                     parse_mode=ParseMode.HTML)
+    reported_username = Order.get(id=order_id).user.username
+    courier_username = Courier.get(telegram_id=user_id).username
+    _ = get_channel_trans()
+    report_msg = _('Order №{}:\n'
+                               'Courier {} has reported {}\n'
+                               'Reason: {}').format(order_id, courier_username, reported_username, data)
+    service_channel = config.get_service_channel()
+    shortcuts.bot_send_order_msg(bot, service_channel, report_msg, _, order_id)
+    return COURIER_STATE_INIT
 
+def on_courier_cancel_reason(bot, update):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    order_id = get_user_session(user_id)['courier']['order_id']
+    order_data = OrderPhotos.get(order_id=order_id)
+    bot.edit_message_text(chat_id=query.message.chat_id,
+                          message_id=query.message.message_id,
+                          text=order_data.order_text,
+                          reply_markup=create_courier_order_status_keyboard(_, order_id),
+                          parse_mode=ParseMode.HTML)
+    return COURIER_STATE_INIT

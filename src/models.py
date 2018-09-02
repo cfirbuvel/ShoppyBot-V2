@@ -2,7 +2,7 @@ import datetime
 from os.path import dirname, abspath, join
 from enum import Enum
 from peewee import Model, CharField, IntegerField, SqliteDatabase, \
-    ForeignKeyField, DecimalField, BlobField, BooleanField, DateField, DateTimeField, TextField
+    ForeignKeyField, DecimalField, BlobField, BooleanField, DateField, DateTimeField, TextField, OperationalError
 
 d = dirname(dirname(abspath(__file__)))
 db = SqliteDatabase(join(d, 'db.sqlite'))
@@ -36,6 +36,7 @@ class User(BaseModel):
 
 class Courier(User):
     location = ForeignKeyField(Location, null=True)
+    is_active = BooleanField(default=True)
 
 
 class CourierLocation(BaseModel):
@@ -81,13 +82,18 @@ class OrderPhotos(BaseModel):
     photo_id = CharField(null=True)
     stage2_id = CharField(null=True)
     coordinates = CharField(null=True)
+    order_hidden_text = TextField()
     order_text = TextField()
     order_text_msg_id = TextField()
 
 
 def create_tables():
-    # db.close()
-    db.connect()
+    try:
+        db.connect()
+    except OperationalError:
+        db.close()
+        db.connect()
+
     db.create_tables(
         [
             Location, User, Courier, CourierLocation, Product, ProductCount,

@@ -6,18 +6,23 @@ from telegram.error import TelegramError
 from telegram.ext import ConversationHandler
 
 from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ADD_DELIVERY_FEE, ADMIN_TXT_PRODUCT_TITLE, \
-    ADMIN_ORDER_OPTIONS, ADMIN_TXT_DELETE_PRODUCT, ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, \
+    ADMIN_ORDER_OPTIONS, ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, \
     ADMIN_EDIT_RESTRICTION, ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_EDIT_FINAL_MESSAGE, \
     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_INIT, ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, \
     ADMIN_TXT_COURIER_ID, ADMIN_COURIERS, ADMIN_TXT_COURIER_LOCATION, ADMIN_CHANNELS, ADMIN_CHANNELS_ADDRESS, \
     ADMIN_CHANNELS_SELECT_TYPE, ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, ADMIN_LOCATIONS, ADMIN_TXT_ADD_LOCATION, \
-    ADMIN_TXT_DELETE_LOCATION
+    ADMIN_TXT_DELETE_LOCATION, ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans
 from .models import Product, ProductCount, Courier, Location, CourierLocation
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
     create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
-    create_locations_keyboard
+    create_locations_keyboard, create_bot_products_keyboard, create_bot_product_add_keyboard, \
+    create_select_products_chunk_keyboard
+
+from . import shortcuts
+
+from . import messages
 
 
 def is_admin(bot, user_id):
@@ -71,38 +76,14 @@ def on_admin_order_options(bot, update):
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return ADMIN_BOT_SETTINGS
-    elif data == 'bot_order_options_product':
-        bot.edit_message_text(
-            chat_id=query.message.chat_id,
-            message_id=query.message.message_id,
-            text=_('Enter new product title'),
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=create_back_button(_),
-        )
-        return ADMIN_TXT_PRODUCT_TITLE
-    elif data == 'bot_order_options_delete_product':
-        products = Product.filter(is_active=True)
-        if products.count() == 0:
-            query = update.callback_query
-            bot.edit_message_text(chat_id=query.message.chat_id,
-                                  message_id=query.message.message_id,
-                                  text='No products to delete',
-                                  reply_markup=create_bot_order_options_keyboard(_),
-                                  parse_mode=ParseMode.MARKDOWN)
-            return ADMIN_ORDER_OPTIONS
-        else:
-            text = _('Choose product ID to delete:')
-            for product in products:
-                text += '\n'
-                text += '{}. {}'.format(product.id, product.title)
-        bot.edit_message_text(
-            chat_id=query.message.chat_id,
-            message_id=query.message.message_id,
-            text=text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=create_back_button(_),
-        )
-        return ADMIN_TXT_DELETE_PRODUCT
+    if data == 'bot_order_options_product':
+        bot.edit_message_text(chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              text=_('🏪 Products'),
+                              reply_markup=create_bot_products_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return ADMIN_PRODUCTS
     elif data == 'bot_order_options_discount':
         bot.edit_message_text(
             chat_id=query.message.chat_id,
@@ -196,6 +177,148 @@ def on_admin_order_options(bot, update):
 
     return ConversationHandler.END
 
+def on_admin_products(bot, update):
+    query = update.callback_query
+    data = query.data
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    if data == 'bot_products_back':
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
+                              text = _('💳 Order options'),
+                              reply_markup=create_bot_order_options_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return ADMIN_ORDER_OPTIONS
+    elif data == 'bot_products_view':
+        bot.delete_message(chat_id=chat_id,
+                           message_id=message_id)
+        bot.send_message(chat_id=chat_id,
+                         text=_('Active products:'))
+        for product in Product.filter(is_active=True):
+            shortcuts.send_product_info(bot, product, chat_id, _)
+        bot.send_message(chat_id=query.message.chat_id,
+                              text=_('🏪 Products'),
+                              reply_markup=create_bot_products_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        return ADMIN_PRODUCTS
+    elif data == 'bot_products_add':
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
+                              text=_('➕ Add product'),
+                              reply_markup=create_bot_product_add_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return ADMIN_PRODUCT_ADD
+    elif data == 'bot_products_remove':
+        products = Product.select(Product.title, Product.id).where(Product.is_active == True).tuples()
+        if not products:
+            query.answer('No products to delete')
+            return ADMIN_PRODUCTS
+        msg = 'Select a product which you want to remove:'
+        if len(products) <= 50:
+            products_keyboad = create_select_products_chunk_keyboard(_, products, 'bot_delete_product_select',
+                                                                     'bot_delete_product_back')
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_(msg),
+                                  reply_markup=products_keyboad, parse_mode=ParseMode.MARKDOWN)
+        else:
+            shortcuts.send_chunks(bot, products, chat_id, 'bot_delete_product_select', 'bot_delete_product_back',
+                                  msg, _)
+        return ADMIN_DELETE_PRODUCT
+
+
+def on_admin_delete_product(bot, update):
+    query = update.callback_query
+    data = query.data
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, product_id = data.split('|')
+    if action == 'bot_delete_product_select':
+        try:
+            product = Product.get(id=int(product_id))
+        except Product.DoesNotExist:
+            msg = _('Product doesn\'t exist')
+        else:
+            product.is_active = False
+            product.save()
+            msg = _('Product has been removed!')
+        query.answer(text=msg)
+    bot.edit_message_text(chat_id=query.message.chat_id,
+                          message_id=query.message.message_id,
+                          text=_('🏪 Products'),
+                          reply_markup=create_bot_products_keyboard(_),
+                          parse_mode=ParseMode.MARKDOWN)
+    return ADMIN_PRODUCTS
+
+
+def on_admin_product_add(bot, update):
+    query = update.callback_query
+    data = query.data
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    if data == 'bot_product_back':
+        bot.edit_message_text(chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              text=_('🏪 Products'),
+                              reply_markup=create_bot_products_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return ADMIN_PRODUCTS
+    elif data == 'bot_product_new':
+        bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=_('Enter new product title'),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=create_back_button(_),
+            )
+        return ADMIN_TXT_PRODUCT_TITLE
+    elif data == 'bot_product_last':
+        # inactive_products = Product.filter(is_active=False)
+        inactive_products = Product.select(Product.title, Product.id).where(Product.is_active == False).tuples()
+        if not inactive_products:
+            msg = _('You don\'t have last products')
+            query.answer(text=msg)
+            return ADMIN_PRODUCT_ADD
+        msg = 'Select a product which you want to activate again:'
+        if len(inactive_products) <= 50:
+            products_keyboad = create_select_products_chunk_keyboard(_, inactive_products, 'bot_last_product_select',
+                                                                     'bot_last_product_back')
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_(msg),
+                                  reply_markup=products_keyboad, parse_mode=ParseMode.MARKDOWN)
+        else:
+            shortcuts.send_chunks(bot, inactive_products, chat_id, 'bot_last_product_select', 'bot_last_product_back',
+                                  msg, _)
+        return ADMIN_PRODUCT_LAST_ADD
+
+
+def on_admin_product_last_select(bot, update):
+    query = update.callback_query
+    data = query.data
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, product_id = data.split('|')
+    if action == 'bot_last_product_select':
+        try:
+            product = Product.get(id=int(product_id))
+        except Product.DoesNotExist:
+            msg = _('Product doesn\'t exist')
+        else:
+            product.is_active = True
+            product.save()
+            msg = _('Product has been added!')
+        query.answer(text=msg)
+    bot.edit_message_text(_('➕ Add product'), query.message.chat_id, query.message.message_id,
+                          reply_markup=create_bot_product_add_keyboard(_), parse_mode=ParseMode.MARKDOWN)
+    return ADMIN_PRODUCT_ADD
+
+
+
+
 
 def on_admin_txt_product_title(bot, update, user_data):
     user_id = get_user_id(update)
@@ -204,10 +327,10 @@ def on_admin_txt_product_title(bot, update, user_data):
         query = update.callback_query
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
-                              text=_('💳 Order options'),
-                              reply_markup=create_bot_order_options_keyboard(_),
+                              text=_('➕ Add product'),
+                              reply_markup=create_bot_product_add_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_ORDER_OPTIONS
+        return ADMIN_PRODUCT_ADD
 
     title = update.message.text
     # initialize new product data
@@ -262,27 +385,27 @@ def on_admin_txt_product_photo(bot, update, user_data):
     del user_data['add_product']
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    bot.send_message(chat_id=update.message.chat_id,
-                     text=_('New Product Created\n✅'),
-                     reply_markup=create_bot_order_options_keyboard(_),
+    chat_id = update.message.chat_id
+    bot.send_message(chat_id=chat_id,
+                     text=_('New Product Created\n✅'))
+    bot.send_message(chat_id=chat_id,
+                     text=_('🏪 Products'),
+                     reply_markup=create_bot_products_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return ADMIN_PRODUCTS
 
 
 def on_admin_cmd_delete_product(bot, update):
-    products = Product.filter(is_active=True)
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    if products.count() == 0:
+    products = Product.select(Product.title, Product.id).where(Product.is_active == True)
+    if not products:
         update.message.reply_text(text='No products to delete')
         return ADMIN_INIT
     else:
-        text = _('Choose product ID to delete:')
-        for product in products:
-            text += '\n'
-            text += '{}. {}'.format(product.id, product.title)
-        update.message.reply_text(text=text)
-        return ADMIN_TXT_DELETE_PRODUCT
+        shortcuts.send_chunks(bot, products, chat_id, 'bot_delete_product_select', 'bot_delete_product_back',
+                              'Select a product which you want to activate again:', _)
+        return ADMIN_DELETE_PRODUCT
 
 
 def on_admin_cmd_bot_on(bot, update):
@@ -323,37 +446,37 @@ def on_admin_cmd_delete_courier(bot, update):
     return ADMIN_TXT_DELETE_COURIER
 
 
-def on_admin_txt_delete_product(bot, update, user_data):
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    if update.callback_query and update.callback_query.data == 'back':
-        query = update.callback_query
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=_('💳 Order options'),
-                              reply_markup=create_bot_order_options_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_ORDER_OPTIONS
-    product_id = update.message.text
-    try:
-        # get title to check if product is valid
-        product = Product.get(id=product_id)
-        product_title = product.title
-        product.is_active = False
-        product.save()
-        update.message.reply_text(
-            text=_('Product {} - {} was deleted').format(product_id, product_title))
-        logger.info('Product %s - %s was deleted', product_id, product_title)
-        update.message.reply_text(
-            text=_('💳 Order options'),
-            reply_markup=create_bot_order_options_keyboard(_),
-            parse_mode=ParseMode.MARKDOWN,
-        )
-        return ADMIN_ORDER_OPTIONS
-    except Product.DoesNotExist:
-        update.message.reply_text(
-            text='Invalid product id, please enter number')
-        return ADMIN_TXT_DELETE_PRODUCT
+# def on_admin_txt_delete_product(bot, update, user_data):
+#     user_id = get_user_id(update)
+#     _ = get_trans(user_id)
+#     if update.callback_query and update.callback_query.data == 'back':
+#         query = update.callback_query
+#         bot.edit_message_text(chat_id=query.message.chat_id,
+#                               message_id=query.message.message_id,
+#                               text=_('💳 Order options'),
+#                               reply_markup=create_bot_order_options_keyboard(_),
+#                               parse_mode=ParseMode.MARKDOWN)
+#         return ADMIN_ORDER_OPTIONS
+#     product_id = update.message.text
+#     try:
+#         # get title to check if product is valid
+#         product = Product.get(id=product_id)
+#         product_title = product.title
+#         product.is_active = False
+#         product.save()
+#         update.message.reply_text(
+#             text=_('Product {} - {} was deleted').format(product_id, product_title))
+#         logger.info('Product %s - %s was deleted', product_id, product_title)
+#         update.message.reply_text(
+#             text=_('💳 Order options'),
+#             reply_markup=create_bot_order_options_keyboard(_),
+#             parse_mode=ParseMode.MARKDOWN,
+#         )
+#         return ADMIN_ORDER_OPTIONS
+#     except Product.DoesNotExist:
+#         update.message.reply_text(
+#             text='Invalid product id, please enter number')
+#         return ADMIN_TXT_DELETE_PRODUCT
 
 
 def on_admin_txt_courier_name(bot, update, user_data):

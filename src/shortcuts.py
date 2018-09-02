@@ -1,9 +1,12 @@
-from telegram import ParseMode
+from telegram import ParseMode, TelegramError
+import io
 
 from .models import Order, OrderPhotos
 
 from .helpers import config, get_trans, logger, get_user_id, get_channel_trans, get_user_session, session_client
-from .keyboards import create_service_notice_keyboard, create_courier_order_status_keyboard
+# from .keyboards import create_service_notice_keyboard, create_courier_order_status_keyboard
+from . import keyboards
+from . import messages
 
 def make_confirm(bot, update, user_data):
     query = update.callback_query
@@ -34,7 +37,7 @@ def make_confirm(bot, update, user_data):
         _ = get_trans(courier_id)
         bot.send_message(courier_id,
                          text=order_data.order_text,
-                         reply_markup=create_courier_order_status_keyboard(_, order_id),
+                         reply_markup=keyboards.create_courier_order_status_keyboard(_, order_id),
                          parse_mode=ParseMode.HTML)
 
 
@@ -73,7 +76,7 @@ def make_unconfirm(bot, update, user_data):
 
         bot.send_message(chat_id=couriers_channel,
                          text=order_data.order_text,
-                         reply_markup=create_service_notice_keyboard(order_id, _, photo_msg_id),
+                         reply_markup=keyboards.create_service_notice_keyboard(order_id, _, photo_msg_id),
                          parse_mode=ParseMode.HTML,
                          )
 
@@ -107,8 +110,82 @@ def resend_responsibility_keyboard(bot, update):
         photo_msg_id = photo_msg['message_id']
     bot.send_message(chat_id=couriers_channel,
                      text=order.order_text,
-                     reply_markup=create_service_notice_keyboard(order_id, _, photo_msg_id),
+                     reply_markup=keyboards.create_service_notice_keyboard(order_id, _, photo_msg_id),
                      parse_mode=ParseMode.HTML,
                      )
 
     query.answer(text='Order sent to couriers channel', show_alert=True)
+
+def bot_send_order_msg(bot, chat_id, message, trans_func, order_id):
+    order_data = OrderPhotos.get(order_id=order_id)
+    _ = trans_func
+    order_msg = bot.send_message(chat_id,
+                         text=message,
+                         reply_markup=keyboards.create_show_order_keyboard(_, order_id))
+    order_data.order_hidden_text = message
+    order_data.order_text_msg_id = str(order_msg['message_id'])
+    order_data.save()
+
+
+def send_product_info(bot, product, chat_id, trans):
+    product_prices = ((obj.count, obj.price) for obj in product.product_counts)
+    image_data = product.image
+    image_stream = io.BytesIO(image_data)
+    bot.send_photo(chat_id,
+                   photo=image_stream)
+    msg = messages.create_admin_product_description(trans, product.title, product_prices)
+    bot.send_message(chat_id,
+                     text=msg)
+
+def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
+    _ = trans
+    # first_iter = True
+    while True:
+        chunk = obj_list[:chunk_size]
+        obj_list = obj_list[chunk_size:]
+        # if first_iter:
+        #     msg = _(first_message)
+        #     first_iter = False
+        # else:
+        #     msg = '~' * len(first_message)
+        msg = _(first_message)
+        if obj_list:
+            markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command)
+        else:
+            markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command, back_command)
+        bot.send_message(chat_id, msg, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+        if not obj_list:
+            break
+
+
+
+
+
+# def bot_hide_order(bot, chat_id, message, trans_func, order_id):
+#     order_data = OrderPhotos.get(order_id=order_id)
+#     print(order_data.order_text_msg_id)
+#     bot.delete_message(chat_id=chat_id, message_id=order_data.order_text_msg_id)
+#     try:
+#         if order_data.coordinates:
+#             msg_id = order_data.coordinates.split('|')[2]
+#             bot.delete_message(chat_id=chat_id,
+#                                 message_id=msg_id,)
+#         if order_data.photo_id:
+#             msg_id = order_data.photo_id.split('|')[1]
+#             bot.delete_message(chat_id=chat_id,
+#                                message_id=msg_id)
+#         if order_data.stage2_id:
+#             msg_id = order_data.stage2_id.split('|')[1]
+#             bot.delete_message(chat_id=chat_id,
+#                                message_id=msg_id)
+#     except TelegramError:
+#         pass
+#     _ = trans_func
+#     order_msg = bot.send_message(
+#         chat_id=chat_id,
+#         text=message,
+#         reply_markup=keyboards.create_show_order_keyboard(_, order_id))
+#     order_data.order_hidden_text = message
+#     order_data.order_text_msg_id = str(order_msg['message_id'])
+#     order_data.save()
+#     #@return order_data

@@ -62,12 +62,12 @@ def create_location_request_keyboard(trans):
 
     return ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
 
-def create_back_keyboard(trans):
-    _ = trans
-    buttons = [
-        [KeyboardButton(_('↩ Back'))]
-    ]
-    return ReplyKeyboardMarkup(buttons)
+# def create_back_keyboard(trans):
+#     _ = trans
+#     buttons = [
+#         [InlineKeyboardButton(_('↩ Back'))]
+#     ]
+#     return InlineKeyboardMarkup(buttons)
 
 def create_cancel_keyboard(trans):
     _ = trans
@@ -312,6 +312,50 @@ def create_bot_channels_keyboard(trans):
 
     return InlineKeyboardMarkup(main_button_list)
 
+def create_bot_products_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('🏪 View Products'), callback_data='bot_products_view')],
+        [InlineKeyboardButton(_('➕ Add product'), callback_data='bot_products_add')],
+        [InlineKeyboardButton(_('➖ Remove product'), callback_data='bot_products_remove')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='bot_products_back')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+def create_bot_product_add_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('New Product'), callback_data='bot_product_new')],
+        [InlineKeyboardButton(_('Last Products'), callback_data='bot_product_last')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='bot_product_back')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+def create_select_products_chunk_keyboard(trans, chunk, selected_command, back_command=None):
+    _ = trans
+    buttons = []
+    for name, id in chunk:
+        callback_command = '{}|{}'.format(selected_command, id)
+        btn = [InlineKeyboardButton(name, callback_data=callback_command)]
+        buttons.append(btn)
+    if back_command:
+        back_command = '{}|'.format(back_command)
+        buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data=back_command)])
+    return InlineKeyboardMarkup(buttons)
+
+# def create_bot_last_products_keyboard(trans, products):
+#     _ = trans
+#     buttons = []
+#     for i in range(50):
+#         btn = [InlineKeyboardButton(str(i), callback_data='bot_last_product_select|{}'.format(i))]
+#         buttons.append(btn)
+#     # for product in products:
+#     #     product_btn = [InlineKeyboardButton(product.title, callback_data='bot_last_product_select|{}'.format(product.id))]
+#     #     buttons.append(product_btn)
+#     buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data='bot_last_product_back')])
+#     return InlineKeyboardMarkup(buttons)
+
+
 
 def create_bot_locations_keyboard(trans):
     _ = trans
@@ -332,10 +376,11 @@ def create_bot_locations_keyboard(trans):
 def create_bot_order_options_keyboard(trans):
     _ = trans
     main_button_list = [
-        [InlineKeyboardButton(_('➕️ Add new product'),
-                              callback_data='bot_order_options_product')],
-        [InlineKeyboardButton(_('➖️ Delete product'),
-                              callback_data='bot_order_options_delete_product')],
+        [InlineKeyboardButton(_('🏪 Products'), callback_data='bot_order_options_product')],
+        # [InlineKeyboardButton(_('➕️ Add new product'),
+        #                       callback_data='bot_order_options_product')],
+        # [InlineKeyboardButton(_('➖️ Delete product'),
+        #                       callback_data='bot_order_options_delete_product')],
         [InlineKeyboardButton(_('➕ Add discount'),
                               callback_data='bot_order_options_discount')],
         [InlineKeyboardButton(_('➕ Add delivery fee'),

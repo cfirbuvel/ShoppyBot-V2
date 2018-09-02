@@ -230,3 +230,10 @@ def on_menu(bot, update, user_data=None):
 
 def on_error(bot, update, error):
     logger.error('Error: %s', error)
+
+
+def on_chat_update_handler(bot, update):
+    for val in dir(update):
+        if not val.startswith('_'):
+            print('{}: {}'.format(val, getattr(update, val)))
+
