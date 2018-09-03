@@ -12,7 +12,7 @@ from src.admin import on_start_admin, on_admin_select_channel_type, on_admin_add
     on_admin_txt_product_title, on_admin_txt_product_prices, on_admin_txt_product_photo, \
     on_admin_cmd_delete_courier, on_admin_txt_courier_id, on_admin_btn_courier_location, on_admin_txt_delete_courier, \
     on_admin_txt_delete_location, on_admin_txt_location, on_admin_locations, on_admin_products, on_admin_product_add, \
-    on_admin_product_last_select, on_admin_delete_product
+    on_admin_product_last_select, on_admin_delete_product, on_admin_add_courier, on_admin_delete_courier
 from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_PICKUP, \
     BOT_STATE_CHECKOUT_LOCATION_DELIVERY, BOT_STATE_CHECKOUT_TIME, BOT_STATE_CHECKOUT_TIME_TEXT, \
     BOT_STATE_CHECKOUT_IDENTIFY_STAGE1, BOT_STATE_CHECKOUT_IDENTIFY_STAGE2, \
@@ -26,7 +26,8 @@ from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_P
     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_EDIT_FINAL_MESSAGE, \
     ADMIN_TXT_COURIER_LOCATION, ADMIN_TXT_DELETE_LOCATION, ADMIN_TXT_ADD_LOCATION, ADMIN_LOCATIONS, \
     COURIER_STATE_INIT, COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_REPORT_REASON, \
-    ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT
+    ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT, ADMIN_COURIER_ADD, \
+    ADMIN_COURIER_DELETE
 from src.handlers import on_start, on_menu, on_error, on_chat_update_handler
 from src.helpers import config, get_user_id, \
     get_user_session
@@ -43,7 +44,6 @@ from src.triggers import checkout_fallback_command_handler, on_shipping_method, 
     service_channel_sendto_courier_handler, on_courier_action_to_confirm, on_courier_ping_client, \
     on_courier_confirm_order, on_courier_confirm_report, on_courier_enter_reason, courier_keyboard_handler, \
     on_courier_cancel_reason
-
 
 # will be called when conversation context is lost (e.g. bot is restarted)
 # and the user clicks menu buttons
@@ -186,17 +186,23 @@ def main():
             ADMIN_COURIERS: [
                 CallbackQueryHandler(
                     on_admin_couriers, pattern='^bot_couriers')],
+            ADMIN_COURIER_ADD: [
+                CallbackQueryHandler(on_admin_add_courier, pass_user_data=True)
+            ],
+            ADMIN_COURIER_DELETE: [
+                CallbackQueryHandler(on_admin_delete_courier)
+            ],
             ADMIN_LOCATIONS: [
                 CallbackQueryHandler(
                     on_admin_locations, pattern='^bot_locations')],
             ADMIN_PRODUCTS: [
-                CallbackQueryHandler(on_admin_products, pattern='^bot_products')
+                CallbackQueryHandler(on_admin_products, pattern='^bot_products', pass_user_data=True)
             ],
             ADMIN_PRODUCT_ADD: [
-                CallbackQueryHandler(on_admin_product_add, pattern='^bot_product')
+                CallbackQueryHandler(on_admin_product_add, pattern='^bot_product', pass_user_data=True)
             ],
             ADMIN_PRODUCT_LAST_ADD: [
-                CallbackQueryHandler(on_admin_product_last_select, pattern='^bot_last_product')
+                CallbackQueryHandler(on_admin_product_last_select, pass_user_data=True)
             ],
             ADMIN_CHANNELS: [
                 CallbackQueryHandler(on_admin_channels, pattern='^bot_channels')
@@ -311,7 +317,7 @@ def main():
             ],
             ADMIN_INIT: [
                 CommandHandler('addproduct', on_admin_cmd_add_product),
-                CommandHandler('delproduct', on_admin_cmd_delete_product),
+                CommandHandler('delproduct', on_admin_cmd_delete_product, pass_user_data=True),
                 CommandHandler('addcourier', on_admin_cmd_add_courier),
                 CommandHandler('delcourier', on_admin_cmd_delete_courier),
                 CommandHandler('on', on_admin_cmd_bot_on),
@@ -344,7 +350,7 @@ def main():
             #     CommandHandler('cancel', on_admin_cancel),
             # ],
             ADMIN_DELETE_PRODUCT: [
-                CallbackQueryHandler(on_admin_delete_product, pattern='^bot_delete_product'),
+                CallbackQueryHandler(on_admin_delete_product, pass_user_data=True),
                 CommandHandler('cancel', on_admin_cancel)
             ],
             ADMIN_TXT_COURIER_NAME: [
@@ -394,6 +400,8 @@ def main():
     # updater.dispatcher.add_handler(CallbackQueryHandler(on_chat_update_handler))
     updater.dispatcher.add_handler(MessageHandler(
         Filters.status_update.new_chat_members, send_welcome_message))
+    # updater.dispatcher.add_handler(MessageHandler(
+    #     Filters.status_update.left_chat_member, on_courier_left))
     updater.dispatcher.add_handler(user_conversation_handler)
     updater.dispatcher.add_handler(courier_conversation_handler)
     updater.dispatcher.add_handler(

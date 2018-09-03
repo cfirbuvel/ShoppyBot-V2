@@ -1,6 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ParseMode
 from .helpers import get_trans, get_user_id, config
-
+import math
 
 def create_time_keyboard(trans):
     _ = trans
@@ -343,6 +343,8 @@ def create_select_products_chunk_keyboard(trans, chunk, selected_command, back_c
         buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data=back_command)])
     return InlineKeyboardMarkup(buttons)
 
+
+
 # def create_bot_last_products_keyboard(trans, products):
 #     _ = trans
 #     buttons = []
@@ -434,6 +436,64 @@ def create_ban_list_keyboard(trans):
     ]
 
     return InlineKeyboardMarkup(main_button_list)
+
+
+def general_select_keyboard(trans, objects, cmd_prefix= '', page_num=1, page_len=50):
+    _ = trans
+    buttons = []
+    prev_page = None
+    next_page = None
+    if len(objects) > 50:
+        max_pages = math.ceil(len(objects) / float(page_len))
+        objects = objects[(page_num - 1) * page_len: (page_num - 1) * page_len]
+        prev_page = page_num - 1 if page_num > 1 else None
+        next_page = page_num + 1 if page_num < max_pages else None
+    for name, id, is_picked in objects:
+        if is_picked:
+            is_picked = '➖'
+        else:
+            is_picked = '➕'
+        callback_data = 'select|{}'.format(id)
+        name = '{} {}'.format(is_picked, name)
+        button = [InlineKeyboardButton(name, callback_data=callback_data)]
+        buttons.append(button)
+    if prev_page:
+        callback_data = 'page|{}'.format(prev_page)
+        button = [InlineKeyboardButton(_('◀️ Previous'), callback_data=callback_data)]
+        buttons.append(button)
+    if next_page:
+        callback_data = 'page|{}'.format(next_page)
+        button = [InlineKeyboardButton(_('▶️ Next'), callback_data=callback_data)]
+        buttons.append(button)
+    back_btn = [InlineKeyboardButton(_('Done'), callback_data='done|')]
+    buttons.append(back_btn)
+    return InlineKeyboardMarkup(buttons)
+
+def general_select_one_keyboard(trans, objects, page_num=1, page_len=50):
+    _ = trans
+    buttons = []
+    prev_page = None
+    next_page = None
+    if len(objects) > 50:
+        max_pages = math.ceil(len(objects) / float(page_len))
+        objects = objects[(page_num - 1) * page_len: (page_num - 1) * page_len]
+        prev_page = page_num - 1 if page_num > 1 else None
+        next_page = page_num + 1 if page_num < max_pages else None
+    for name, id in objects:
+        callback_data = 'select|{}'.format(id)
+        button = [InlineKeyboardButton(name, callback_data=callback_data)]
+        buttons.append(button)
+    if prev_page:
+        callback_data = 'page|{}'.format(prev_page)
+        button = [InlineKeyboardButton(_('◀️ Previous'), callback_data=callback_data)]
+        buttons.append(button)
+    if next_page:
+        callback_data = 'page|{}'.format(next_page)
+        button = [InlineKeyboardButton(_('▶️ Next'), callback_data=callback_data)]
+        buttons.append(button)
+    back_btn = [InlineKeyboardButton(_('↩ Back'), callback_data='back|')]
+    buttons.append(back_btn)
+    return InlineKeyboardMarkup(buttons)
 
 
 def create_courier_locations_keyboard(trans, locations):

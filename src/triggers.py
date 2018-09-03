@@ -15,7 +15,7 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_bot_channels_keyboard, create_bot_order_options_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
-    create_courier_order_status_keyboard, create_admin_order_status_keyboard
+    create_courier_order_status_keyboard, create_admin_order_status_keyboard, general_select_one_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
@@ -27,7 +27,7 @@ from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ORDER_OPTIO
     ADMIN_STATISTICS, ADMIN_COURIERS, ADMIN_EDIT_WORKING_HOURS, ADMIN_EDIT_CONTACT_INFO, ADMIN_BOT_ON_OFF, \
     ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, BOT_STATE_CHECKOUT_LOCATION_DELIVERY, \
     COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_INIT, \
-    COURIER_STATE_REPORT_REASON
+    COURIER_STATE_REPORT_REASON, ADMIN_COURIER_ADD, ADMIN_COURIER_DELETE
 
 from . import shortcuts
 
@@ -52,14 +52,13 @@ def on_bot_language_change(bot, update, user_data):
     data = query.data
     user_id = get_user_id(update)
     user_data = get_user_session(user_id)
-    _ = get_trans(user_id)
     if data == 'iw' or data == 'en':
         user_data['locale'] = data
         session_client.json_set(user_id, user_data)
         user = User.get(telegram_id=user_id)
         user.locale = data
         user.save()
-
+        _ = get_trans(user_id)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=config.get_welcome_text().format(
@@ -315,9 +314,8 @@ def on_confirm_order(bot, update, user_data):
         #                  reply_markup=create_show_order_keyboard(_, order_id),
         #                  parse_mode=ParseMode.HTML,
         #                  )
-        # order_data.order_hidden_text = txt
-        # order_data.order_text_msg_id = str(order_msg['message_id'])
-        # order_data.save()
+        order_data.order_hidden_text = txt
+        order_data.save()
         # clear cart and shipping data
         user_data['cart'] = {}
         user_data['shipping'] = {}
@@ -612,16 +610,25 @@ def service_channel_courier_query_handler(bot, update, user_data):
 
 def send_welcome_message(bot, update):
     user_id = get_user_id(update)
-    _ = get_trans(user_id)
+    # _ = get_trans(user_id)
+    _ = get_channel_trans()
     if str(update.message.chat_id) == config.get_couriers_channel():
         users = update.message.new_chat_members
         for user in users:
             if user:
-                Courier.create(username=user.username, telegram_id=user.id, is_active=False)
+                try:
+                    Courier.get(telegram_id=user.id)
+                except Courier.DoesNotExist:
+                    Courier.create(username=user.username, telegram_id=user.id, is_active=False)
                 bot.send_message(
                     config.get_couriers_channel(),
                     text=_('Hello `@{}`').format(user.username),
                     parse_mode=ParseMode.MARKDOWN)
+
+# def on_courier_left(bot, update):
+#     user_id = get_user_id(update)
+#     _ = get_channel_trans()
+#     if str(update.message.chat_id) ==
 
 
 def on_settings_menu(bot, update):
@@ -896,9 +903,11 @@ def on_admin_couriers(bot, update):
     data = query.data
     user_id = get_user_id(update)
     _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
     if data == 'bot_couriers_back':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=_('⚙ Bot settings'),
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -906,7 +915,8 @@ def on_admin_couriers(bot, update):
         return ADMIN_BOT_SETTINGS
     elif data == 'bot_couriers_view':
         msg = ''
-        couriers = Courier.select()
+        #couriers = Courier.select()
+        couriers = Courier.filter(is_active=True)
         for courier in couriers:
             locations = CourierLocation.filter(courier=courier)
             locations = [item.location.title for item in locations]
@@ -916,32 +926,49 @@ def on_admin_couriers(bot, update):
             msg += _('locations:\n{}\n').format(locations)
             # msg += _('locale:\n`{}`').format(courier.locale)
             msg += '~~~~~~\n\n'
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=msg,
-                              reply_markup=create_bot_couriers_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
+        if not msg:
+            query.answer(_('You don\'t have couriers'))
+        else:
+            bot.edit_message_text(chat_id=chat_id,
+                                  message_id=message_id,
+                                  text=msg,
+                                  reply_markup=create_bot_couriers_keyboard(_),
+                                  parse_mode=ParseMode.MARKDOWN)
+            query.answer()
         return ADMIN_COURIERS
     elif data == 'bot_couriers_add':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=_('Enter new courier nickname'),
-                              parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button(_)
-                              ),
-
-        return ADMIN_TXT_COURIER_NAME
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
+        if not couriers:
+            msg = _('There\'s no couriers to add')
+            query.answer(msg)
+            return ADMIN_COURIERS
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('Select a courier to add'),
+                              reply_markup=general_select_one_keyboard(_, couriers),
+                              parse_mode=ParseMode.MARKDOWN)
+        return ADMIN_COURIER_ADD
+        # # bot.edit_message_text(chat_id=query.message.chat_id,
+        # #                       message_id=query.message.message_id,
+        # #                       text=_('Enter new courier nickname'),
+        # #                       parse_mode=ParseMode.MARKDOWN,
+        # #                       reply_markup=create_back_button(_)
+        # #                       ),
+        #
+        # return ADMIN_TXT_COURIER_NAME
     elif data == 'bot_couriers_delete':
-
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
+        if not couriers:
+            msg = _('There\'s not couriers to delete')
+            query.answer(msg)
+            return ADMIN_COURIERS
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
-                              text=_('Choose courier ID to delete'),
+                              text=_('Select a courier to delete'),
                               parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_back_button(_)
+                              reply_markup=general_select_one_keyboard(_, couriers)
                               )
 
-        return ADMIN_TXT_DELETE_COURIER
+        return ADMIN_COURIER_DELETE
 
     return ConversationHandler.END
 

@@ -158,6 +158,8 @@ def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_me
             break
 
 
+# def process_
+
 
 
 
