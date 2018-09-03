@@ -84,7 +84,7 @@ class OrderPhotos(BaseModel):
     coordinates = CharField(null=True)
     order_hidden_text = TextField()
     order_text = TextField()
-    order_text_msg_id = TextField()
+    order_text_msg_id = TextField(null=True)
 
 
 def create_tables():

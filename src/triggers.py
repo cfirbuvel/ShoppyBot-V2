@@ -308,15 +308,9 @@ def on_confirm_order(bot, update, user_data):
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
         # order_data.save()
-        shortcuts.bot_send_order_msg(bot, service_channel, txt, _, order_id)
-        # order_msg = bot.send_message(service_channel,
-        #                  text=txt,
-        #                  reply_markup=create_show_order_keyboard(_, order_id),
-        #                  parse_mode=ParseMode.HTML,
-        #                  )
         order_data.order_hidden_text = txt
         order_data.save()
-        # clear cart and shipping data
+        shortcuts.bot_send_order_msg(bot, service_channel, txt, _, order_id)
         user_data['cart'] = {}
         user_data['shipping'] = {}
         session_client.json_set(user_id, user_data)
