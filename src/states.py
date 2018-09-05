@@ -2,7 +2,7 @@ from telegram import ParseMode, ReplyKeyboardRemove
 
 from .admin import is_admin
 from .messages import create_confirmation_text
-from .models import Location
+from .models import Location, User
 from .keyboards import create_main_keyboard, create_pickup_location_keyboard, \
     create_shipping_keyboard, create_cancel_keyboard, create_time_keyboard, \
     create_confirmation_keyboard, create_phone_number_request_keyboard, create_location_request_keyboard
@@ -131,6 +131,7 @@ def enter_state_init_order_confirmed(bot, update, user_data):
     user_id = get_user_id(update)
     total = cart.get_cart_total(get_user_session(user_id))
     _ = get_trans(user_id)
+    user = User.get(telegram_id=user_id)
     bot.send_message(
         update.message.chat_id,
         text=config.get_order_complete_text().format(
@@ -140,7 +141,7 @@ def enter_state_init_order_confirmed(bot, update, user_data):
     bot.send_message(
         update.message.chat_id,
         text='〰〰〰〰〰〰〰〰〰〰〰〰️',
-        reply_markup=create_main_keyboard(_, config.get_reviews_channel(), is_admin(bot, user_id), total),
+        reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user, is_admin(bot, user_id), total),
     )
 
     return BOT_STATE_INIT
@@ -153,6 +154,7 @@ def enter_state_init_order_cancelled(bot, update, user_data):
     user_data['shipping'] = {}
     session_client.json_set(user_id, user_data)
     _ = get_trans(user_id)
+    user = User.get(telegram_id=user_id)
     update.message.reply_text(text=_('<b>Order cancelled</b>'),
                               reply_markup=ReplyKeyboardRemove(),
                               parse_mode=ParseMode.HTML, )
@@ -160,6 +162,6 @@ def enter_state_init_order_cancelled(bot, update, user_data):
     bot.send_message(update.message.chat_id,
                      text=config.get_welcome_text().format(
                          update.message.from_user.first_name),
-                     reply_markup=create_main_keyboard(_, config.get_reviews_channel(),
+                     reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user,
                                                        is_admin(bot, user_id), total))
     return BOT_STATE_INIT

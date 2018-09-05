@@ -225,6 +225,7 @@ def on_admin_products(bot, update, user_data):
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=_('Select a product which you want to remove'),
                               reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_DELETE_PRODUCT
 
 
@@ -251,6 +252,7 @@ def on_admin_delete_product(bot, update, user_data):
                               text=_('🏪 Products'),
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_PRODUCTS
     products = []
     current_page = user_data['products_remove']['page']
@@ -272,6 +274,7 @@ def on_admin_delete_product(bot, update, user_data):
     bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                           text=_('Select a product which you want to remove'),
                           reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
+    query.answer()
     return ADMIN_DELETE_PRODUCT
 
 
@@ -298,6 +301,7 @@ def on_admin_product_add(bot, update, user_data):
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=create_back_button(_),
             )
+        query.answer()
         return ADMIN_TXT_PRODUCT_TITLE
     elif data == 'bot_product_last':
         inactive_products = Product.filter(is_active=False)
@@ -311,6 +315,7 @@ def on_admin_product_add(bot, update, user_data):
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=_('Select a product which you want to activate again'),
                               reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_PRODUCT_LAST_ADD
 
 
@@ -335,6 +340,7 @@ def on_admin_product_last_select(bot, update, user_data):
         bot.edit_message_text(_('➕ Add product'), chat_id, message_id,
                               reply_markup=create_bot_product_add_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_PRODUCT_ADD
     inactive_products = []
     current_page = user_data['last_products_add']['page']
@@ -356,6 +362,7 @@ def on_admin_product_last_select(bot, update, user_data):
     bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                           text=_('Select a product which you want to activate again'),
                           reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
+    query.answer()
     return ADMIN_PRODUCT_LAST_ADD
 
 
@@ -471,10 +478,6 @@ def on_admin_cmd_bot_off(bot, update):
 
 
 def on_admin_cmd_add_courier(bot, update):
-    # user_id = get_user_id(update)
-    # _ = get_trans(user_id)
-    # update.message.reply_text(text=_('Enter new courier nickname'))
-    # return ADMIN_TXT_COURIER_NAME
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     chat_id = update.message.chat_id
@@ -493,14 +496,6 @@ def on_admin_cmd_delete_courier(bot, update):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     chat_id = update.message.chat_id
-    # text = _('Choose courier ID to delete:')
-    #
-    # for courier in Courier.select():
-    #     text += '\n'
-    #     text += '{}. {}'.format(courier.id, courier.username)
-    #
-    # update.message.reply_text(text=text)
-    # return ADMIN_TXT_DELETE_COURIER
     couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
     if not couriers:
         msg = _('There\'s not couriers to delete')
@@ -534,29 +529,18 @@ def on_admin_add_courier(bot, update, user_data):
                               text=_('Select a courier to add'),
                               reply_markup=general_select_one_keyboard(_, couriers, current_page),
                               parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_COURIER_ADD
     elif action == 'select':
-        # if 'location_ids' not in user_data['add_courier']:
         user_data['add_courier'] = {'location_ids': [], 'courier_id': param}
-        #     user_data['add_courier']['location_ids'] = []
-        # location_ids = user_data['add_courier']['location_ids']
-
         text = _('Choose locations for new courier')
         locations = []
         for location in Location:
             is_picked = False
-            # if location.id in location_ids:
-            #     is_picked = True
             locations.append((location.title, location.id, is_picked))
-
-
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
                               reply_markup=create_courier_locations_keyboard(_, locations))
-        # update.message.reply_text(
-        #     text=text,
-        #     reply_markup=create_courier_locations_keyboard(_, locations)
-        # )
-
+        query.answer()
         return ADMIN_TXT_COURIER_LOCATION
 
 
@@ -581,6 +565,7 @@ def on_admin_delete_courier(bot, update):
                               text=_('Select a courier to delete'),
                               reply_markup=general_select_one_keyboard(_, couriers, current_page),
                               parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_COURIER_DELETE
     elif action == 'select':
         courier = Courier.get(id=param)
@@ -590,48 +575,8 @@ def on_admin_delete_courier(bot, update):
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        # bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
-        #                       reply_markup=create_courier_locations_keyboard(_, locations))
-        # update.message.reply_text(
-        #     text=text,
-        #     reply_markup=create_courier_locations_keyboard(_, locations)
-        # )
-
+        query.answer()
         return ADMIN_COURIERS
-
-
-
-# def on_admin_txt_delete_product(bot, update, user_data):
-#     user_id = get_user_id(update)
-#     _ = get_trans(user_id)
-#     if update.callback_query and update.callback_query.data == 'back':
-#         query = update.callback_query
-#         bot.edit_message_text(chat_id=query.message.chat_id,
-#                               message_id=query.message.message_id,
-#                               text=_('💳 Order options'),
-#                               reply_markup=create_bot_order_options_keyboard(_),
-#                               parse_mode=ParseMode.MARKDOWN)
-#         return ADMIN_ORDER_OPTIONS
-#     product_id = update.message.text
-#     try:
-#         # get title to check if product is valid
-#         product = Product.get(id=product_id)
-#         product_title = product.title
-#         product.is_active = False
-#         product.save()
-#         update.message.reply_text(
-#             text=_('Product {} - {} was deleted').format(product_id, product_title))
-#         logger.info('Product %s - %s was deleted', product_id, product_title)
-#         update.message.reply_text(
-#             text=_('💳 Order options'),
-#             reply_markup=create_bot_order_options_keyboard(_),
-#             parse_mode=ParseMode.MARKDOWN,
-#         )
-#         return ADMIN_ORDER_OPTIONS
-#     except Product.DoesNotExist:
-#         update.message.reply_text(
-#             text='Invalid product id, please enter number')
-#         return ADMIN_TXT_DELETE_PRODUCT
 
 
 def on_admin_txt_courier_name(bot, update, user_data):
@@ -713,6 +658,7 @@ def on_admin_btn_courier_location(bot, update, user_data):
                               text=_('Courier added'),
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_COURIERS
         #
         # bot.send_message(chat_id=query.message.chat_id,
@@ -744,7 +690,7 @@ def on_admin_btn_courier_location(bot, update, user_data):
                           text=text,
                           reply_markup=create_courier_locations_keyboard(_, locations),
                           parse_mode=ParseMode.MARKDOWN)
-
+    query.answer()
     return ADMIN_TXT_COURIER_LOCATION
 
 
@@ -758,6 +704,7 @@ def on_admin_txt_delete_courier(bot, update, user_data):
                               text=_('🛵 Couriers'),
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_COURIERS
 
     courier_id = update.message.text
@@ -788,6 +735,7 @@ def on_admin_txt_location(bot, update, user_data):
                               text=_('🎯 Locations'),
                               reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
+        query.answer()
         return ADMIN_LOCATIONS
 
     location_user_txt = update.message.text

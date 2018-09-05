@@ -15,21 +15,170 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_bot_channels_keyboard, create_bot_order_options_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
-    create_courier_order_status_keyboard, create_admin_order_status_keyboard, general_select_one_keyboard
+    create_courier_order_status_keyboard, create_admin_order_status_keyboard, general_select_one_keyboard, \
+    create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
     enter_state_init_order_confirmed
-from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ORDER_OPTIONS, \
-    ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, ADMIN_CHANNELS, ADMIN_CHANNELS_SELECT_TYPE, \
-    ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT, ADMIN_MENU, \
-    ADMIN_STATISTICS, ADMIN_COURIERS, ADMIN_EDIT_WORKING_HOURS, ADMIN_EDIT_CONTACT_INFO, ADMIN_BOT_ON_OFF, \
-    ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, BOT_STATE_CHECKOUT_LOCATION_DELIVERY, \
-    COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_INIT, \
-    COURIER_STATE_REPORT_REASON, ADMIN_COURIER_ADD, ADMIN_COURIER_DELETE
+# from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ORDER_OPTIONS, \
+#     ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, ADMIN_CHANNELS, ADMIN_CHANNELS_SELECT_TYPE, \
+#     ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT, ADMIN_MENU, \
+#     ADMIN_STATISTICS, ADMIN_COURIERS, ADMIN_EDIT_WORKING_HOURS, ADMIN_EDIT_CONTACT_INFO, ADMIN_BOT_ON_OFF, \
+#     ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, BOT_STATE_CHECKOUT_LOCATION_DELIVERY, \
+#     COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_INIT, \
+#     COURIER_STATE_REPORT_REASON, ADMIN_COURIER_ADD, ADMIN_COURIER_DELETE, ADMIN_STATISTICS_GENERAL, \
+#     ADMIN_STATISTICS_COURIERS, ADMIN_STATISTICS_USER, ADMIN_STATISTICS_LOCATIONS, ADMIN_STATISTICS_COURIERS_DATE, \
+#     ADMIN_STATISTICS_LOCATIONS_DATE, ADMIN_STATISTICS_USER_DATE
+from . import enums
+
 
 from . import shortcuts
+
+
+def on_my_orders(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    data = query.data
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    if data == 'back':
+        user = User.get(telegram_id=user_id)
+        total = cart.get_cart_total(get_user_session(user_id))
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=config.get_welcome_text().format(query.from_user.first_name),
+                              reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user, is_admin(bot, user_id), total),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.BOT_STATE_INIT
+    elif data == 'by_date':
+        state = enums.BOT_STATE_MY_ORDER_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+        return state
+    elif data == 'last_order':
+        last_order = Order.select().order_by(Order.date_created.desc()).get()
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📦 My last order'),
+                              reply_markup=create_my_order_keyboard(last_order.id, not last_order.delivered, _),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.BOT_STATE_MY_LAST_ORDER
+
+def on_my_order_date(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    if action == 'ignore':
+        return enums.BOT_STATE_MY_ORDER_DATE
+    elif action in ('year', 'month'):
+        query.answer(_('Please select a day'))
+        return enums.BOT_STATE_MY_ORDER_DATE
+    elif action == 'back':
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
+                              text=_('📖 My Orders'),
+                              reply_markup=create_my_orders_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.BOT_STATE_MY_ORDERS
+    elif action == 'day':
+        #order = Order.select().order_by(Order.date_created).get()
+        # user_data['my_order_date'] = user_data['calendar_date'], val
+        year, month = user_data['calendar_date']
+        queries = shortcuts.get_order_subquery(action, val, month, year)
+        orders = Order.select().where(*queries)
+        if len(orders) == 1:
+            order = orders[0]
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📆 Order by date'),
+                                  reply_markup=create_my_order_keyboard(order, not order.delivered, _),
+                                  parse_mode=ParseMode.MARKDOWN)
+            query.answer()
+            # return enums.BOT_STATE_MY_ORDER_BY_DATE
+            return enums.BOT_STATE_MY_LAST_ORDER
+        else:
+            orders_ids = [order.id for order in orders]
+            orders = [('Order №{}'.format(val), val) for val in orders_ids]
+            user_data['my_orders_by_date_ids'] = orders_ids
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
+                                  reply_markup=general_select_one_keyboard(_, orders),
+                                  parse_mode=ParseMode.MARKDOWN)
+            query.answer()
+            return enums.BOT_STATE_MY_ORDER_SELECT
+
+def on_my_order_select(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    if action == 'back':
+        state = enums.BOT_STATE_MY_ORDER_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+        return state
+    elif action == 'page':
+        current_page = int(val)
+        orders = [('Order №{}'.format(val), val) for val in user_data['my_orders_by_date_ids']]
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('Select order:'),
+                              reply_markup=general_select_one_keyboard(_, orders, current_page),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.BOT_STATE_MY_ORDER_SELECT
+    else:
+        order = Order.get(id=val)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📆 Order by date'),
+                              reply_markup=create_my_order_keyboard(order.id, not order.delivered, _),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        # return enums.BOT_STATE_MY_ORDER_BY_DATE
+        return enums.BOT_STATE_MY_LAST_ORDER
+
+def on_my_last_order(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    if action == 'back':
+        bot.edit_message_text(chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              text=_('📖 My Orders'),
+                              reply_markup=create_my_orders_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.BOT_STATE_MY_ORDERS
+        # query.answer()
+        # return enums.BOT_STATE_MY_LAST_ORDER
+    order_id = int(val)
+    order = Order.get(id=order_id)
+    if action == 'cancel':
+        if not order.delivered:
+            service_chat = config.get_service_channel()
+            channel_trans = get_channel_trans()
+            msg = channel_trans('Order was cancelled by user')
+            shortcuts.bot_send_order_msg(bot, service_chat, msg, channel_trans, order_id)
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Order was cancelled!'),
+                                  reply_markup=create_my_order_keyboard(order.id, False, _),
+                                  parse_mode=ParseMode.MARKDOWN)
+            query.answer()
+        else:
+            query.answer('Cannot cancel - order was delivered')
+        return enums.BOT_STATE_MY_LAST_ORDER
+        #     query.answer()
+        # return enums.BOT_STATE_MY_LAST_ORDER
+    elif action == 'show':
+        order_data = OrderPhotos.get(order=order)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=order_data.order_text,
+                              reply_markup=create_my_order_keyboard(order_id, not order.delivered, _),
+                              parse_mode=ParseMode.MARKDOWN)
+        # query.answer()
+        query.answer()
+        return enums.BOT_STATE_MY_LAST_ORDER
+
+# def on_my_order_by_date(bot, update, user_data):
 
 
 def on_shipping_method(bot, update, user_data):
@@ -63,13 +212,13 @@ def on_bot_language_change(bot, update, user_data):
                               message_id=query.message.message_id,
                               text=config.get_welcome_text().format(
                                   query.message.chat.first_name),
-                              reply_markup=create_main_keyboard(_, config.get_reviews_channel(),
+                              reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user,
                                                                 is_admin(bot, user_id)),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return BOT_STATE_INIT
+        return enums.BOT_STATE_INIT
     else:
-        logger.info('Unknown command - {}'.format(data))
+        enums.logger.info('Unknown command - {}'.format(data))
         bot.send_message(
             query.message.chat_id,
             text='Unknown command',
@@ -112,7 +261,7 @@ def on_shipping_delivery_address(bot, update, user_data):
     elif key == _('❌ Cancel'):
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('✒️Enter location manually'):
-        return BOT_STATE_CHECKOUT_LOCATION_DELIVERY
+        return enums.BOT_STATE_CHECKOUT_LOCATION_DELIVERY
     else:
         try:
             location = update.message.location
@@ -151,7 +300,7 @@ def on_checkout_time(bot, update, user_data):
 
         return enter_state_shipping_time_text(bot, update, user_data)
     else:
-        logger.warn("Unknown input %s", key)
+        enums.logger.warn("Unknown input %s", key)
         return enter_state_shipping_time(bot, update, user_data)
 
 
@@ -180,7 +329,7 @@ def on_phone_number_text(bot, update, user_data):
     elif key == _('↩ Back'):
         return enter_state_shipping_time(bot, update, user_data)
     elif key == _('✒️Enter phone manually'):
-        return BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
+        return enums.BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
     else:
         try:
             phone_number_text = update.message.contact.phone_number
@@ -308,7 +457,7 @@ def on_confirm_order(bot, update, user_data):
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
         # order_data.save()
-        order_data.order_hidden_text = txt
+        # order_data.order_hidden_text = txt
         order_data.save()
         shortcuts.bot_send_order_msg(bot, service_channel, txt, _, order_id)
         user_data['cart'] = {}
@@ -334,7 +483,7 @@ def on_confirm_order(bot, update, user_data):
         else:
             return enter_state_shipping_time(bot, update, user_data)
     else:
-        logger.warn("Unknown input %s", key)
+        enums.logger.warn("Unknown input %s", key)
 
 
 def service_channel_sendto_courier_handler(bot, update, user_data):
@@ -342,6 +491,7 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
     data = query.data
     label, telegram_id, order_id, message_id = data.split('|')
     order = Order.get(id=order_id)
+    order.confirmed = True
     order.courier = Courier.get(telegram_id=telegram_id)
     order.save()
     user_data = get_user_session(telegram_id)
@@ -492,6 +642,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
         order = Order.get(id=order_id)
         order_data = OrderPhotos.get(order=order)
         order.courier = User.get(telegram_id=usr_id)
+        order.confirmed = True
         order.save()
         _ = get_trans(usr_id)
         bot.send_message(chat_id=usr_id,
@@ -525,7 +676,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
             query.answer(text='You should no manually add this user to VIP, '
                               'while we working on API to do it via bot', show_alert=True)
     else:
-        logger.info('that part is not handled yet')
+        enums.logger.info('that part is not handled yet')
 
 
 def on_cancel(bot, update, user_data):
@@ -557,7 +708,7 @@ def service_channel_courier_query_handler(bot, update, user_data):
         else:
             raise Order.DoesNotExist()
     except Order.DoesNotExist:
-        logger.info('Order №{} not found!'.format(order_id))
+        enums.logger.info('Order №{} not found!'.format(order_id))
     else:
         try:
             courier = Courier.get(telegram_id=courier_id)
@@ -638,7 +789,7 @@ def on_settings_menu(bot, update):
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_STATISTICS
+        return enums.ADMIN_STATISTICS
     elif data == 'settings_bot':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -647,21 +798,23 @@ def on_settings_menu(bot, update):
                               parse_mode=ParseMode.MARKDOWN)
 
         query.answer()
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
 
     elif data == 'settings_back':
+        user = User.get(telegram_id=user_id)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=config.get_welcome_text().format(
                                   update.callback_query.from_user.first_name),
                               reply_markup=create_main_keyboard(_,
                                                                 config.get_reviews_channel(),
+                                                                user,
                                                                 is_admin(bot, user_id), total),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return BOT_STATE_INIT
+        return enums.BOT_STATE_INIT
     else:
-        logger.info('Unknown command - {}'.format(data))
+        enums.logger.info('Unknown command - {}'.format(data))
         bot.send_message(
             query.message.chat_id,
             text=_('Unknown command'),
@@ -670,135 +823,256 @@ def on_settings_menu(bot, update):
         )
         return ConversationHandler.END
 
+# def on_ignore(bot, update, user_data):
+#     state = user_data['']
 
-def on_statistics_menu(bot, update):
+def on_statistics_general(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    if action == 'back':
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
+                              text=_('📈 Statistics'),
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS
+    elif action == 'ignore':
+        return enums.ADMIN_STATISTICS_GENERAL
+    else:
+        year, month = user_data['calendar_date']
+        subquery = shortcuts.get_order_subquery(action, val, month, year)
+        count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), *subquery)
+        message = _('Total confirmed orders\n\nCount: {}\nTotal cost: {}').format(
+                count, price)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS
+
+def on_statistics_courier_select(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    if action == 'back':
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('📈 Statistics'),
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS
+    elif action == 'page':
+        current_page = int(val)
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('Select a courier:'),
+                              reply_markup=general_select_one_keyboard(_, couriers, current_page),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS_COURIERS
+    else:
+        user_data['statistics'] = {'courier_id': val}
+        state = enums.ADMIN_STATISTICS_COURIERS_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+        return state
+
+def on_statistics_couriers(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    try:
+        courier_id = user_data['statistics']['courier_id']
+    except KeyError:
+        action = 'back'
+    if action == 'back':
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
+        msg = _('Select a courier:')
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=msg, reply_markup=general_select_one_keyboard(_, couriers),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS_COURIERS
+    elif action == 'ignore':
+        return enums.ADMIN_STATISTICS_COURIERS_DATE
+    else:
+        courier = Courier.get(id=courier_id)
+        year, month = user_data['calendar_date']
+        subquery = shortcuts.get_order_subquery(action, val, month, year)
+        count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), (Order.courier == courier), *subquery)
+
+        message = _('Courier: `@{}`\n\nOrders count: {}\nTotal cost: {}').format(courier.username, count, price)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS
+
+def on_statistics_locations_select(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    if action == 'back':
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('📈 Statistics'),
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS
+    elif action == 'page':
+        current_page = int(val)
+        locations = Location.select(Location.title, Location.id).tuples()
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('Select location:'),
+                              reply_markup=general_select_one_keyboard(_, locations, current_page),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS_LOCATIONS
+    else:
+        user_data['statistics'] = {'location_id': val}
+        state = enums.ADMIN_STATISTICS_LOCATIONS_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+        return state
+
+def on_statistics_locations(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    try:
+        location_id = user_data['statistics']['location_id']
+    except KeyError:
+        action = 'back'
+    if action == 'back':
+        locations = Location.select(Location.title, Location.id).tuples()
+        msg = _('Select location:')
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=msg, reply_markup=general_select_one_keyboard(_, locations),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS_LOCATIONS
+    elif action == 'ignore':
+        return enums.ADMIN_STATISTICS_LOCATIONS_DATE
+    else:
+        location = Location.get(id=location_id)
+        year, month = user_data['calendar_date']
+        subquery = shortcuts.get_order_subquery(action, val, month, year)
+        count, price = shortcuts.get_order_count_and_price((Order.confirmed == True),
+                                                           Order.location == location, *subquery)
+
+        message = _('Location: `@{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS
+
+def on_statistics_username(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    if query and query.data == 'back':
+        bot.send_message(chat_id=query.message.chat_id,
+                              text=_('📈 Statistics'),
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_STATISTICS
+    username = update.message.text
+    users_ids = list(User.select(User.id).where(User.username == username))
+    chat_id, message_id = update.message.chat_id, update.message.message_id
+    if not users_ids:
+        msg = _('User `{}` was not found').format(username)
+        bot.send_message(chat_id=chat_id,
+                              text=msg, reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_STATISTICS
+    else:
+        user_data['statistics'] = {'users_ids': users_ids}
+        state = enums.ADMIN_STATISTICS_USER_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _)
+        return state
+
+def on_statistics_user(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    try:
+        user_ids = user_data['statistics']['users_ids']
+    except KeyError:
+        action = 'back'
+    if action == 'back':
+        msg = _('Enter username:')
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg, reply_markup=create_back_button(_))
+        return enums.ADMIN_STATISTICS_USER
+    elif action == 'ignore':
+        return enums.ADMIN_STATISTICS_USER_DATE
+    else:
+        users = User.filter(User.id.in_(user_ids))
+        text = ''
+        year, month = user_data['calendar_date']
+        subquery = shortcuts.get_order_subquery(action, val, month, year)
+        for user in users:
+            count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), Order.user == user, *subquery)
+            message = _('User: `@{}`\n\nOrders count: {}\nTotal cost: {}\n\n').format(user.username, count, price)
+            text += message
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_STATISTICS
+
+
+def on_statistics_menu(bot, update, user_data):
     query = update.callback_query
     data = query.data
     user_id = get_user_id(update)
     _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
     if data == 'statistics_back':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=_('⚙️ Settings'),
                               reply_markup=create_admin_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_MENU
-    elif data == 'statistics_all_sells':
-        orders_count = Order.select().where(Order.confirmed == True).count()
-        total_price = 0
-        orders_items = OrderItem.select().join(Order).where(
-            Order.confirmed == True)
-        for order_item in orders_items:
-            total_price += order_item.count * order_item.total_price
-        message = _('Total confirmed orders\n\ncount: {}\ntotal cost: {}').format(
-            orders_count, total_price)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=message,
-                              reply_markup=create_statistics_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
-        return ADMIN_STATISTICS
+        return enums.ADMIN_MENU
+    elif data == 'statistics_general':
+        state = enums.ADMIN_STATISTICS_GENERAL
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+        return state
     elif data == 'statistics_couriers':
-        msg = ''
-        couriers = Courier.select()
-        for courier in couriers:
-            orders_count = Order.select().where(Order.courier == courier,
-                                                Order.confirmed == True).count()
-            total_price = 0
-            orders_items = OrderItem.select().join(Order).where(
-                Order.confirmed == True, Order.courier == courier)
-            for order_item in orders_items:
-                total_price += order_item.count * order_item.total_price
-            msg += _('Courier: `@{}`\nOrders: {}, orders cost {}').format(
-                courier.username, orders_count, total_price)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=msg,
-                              reply_markup=create_statistics_keyboard(_),
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
+        msg = _('Select a courier:')
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=msg, reply_markup=general_select_one_keyboard(_, couriers),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_STATISTICS
+        return enums.ADMIN_STATISTICS_COURIERS
     elif data == 'statistics_locations':
-        msg = ''
-        locations = Location.select()
-        for location in locations:
-            orders_count = Order.select().where(Order.location == location,
-                                                Order.confirmed == True).count()
-            total_price = 0
-            orders_items = OrderItem.select().join(Order).where(
-                Order.confirmed == True, Order.location == location)
-            for order_item in orders_items:
-                total_price += order_item.count * order_item.total_price
-            msg += _('Location: {}\nOrders: {}, orders cost {}').format(
-                location.title, orders_count, total_price)
-            msg += '\n\n'
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=msg,
-                              reply_markup=create_statistics_keyboard(_),
+        locations = Location.select(Location.title, Location.id).tuples()
+        msg = _('Select location:')
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=msg, reply_markup=general_select_one_keyboard(_, locations),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_STATISTICS
-    elif data == 'statistics_yearly':
-        now = datetime.datetime.now()
-        orders_count = Order.select().where(Order.date_created.year == now.year,
-                                            Order.confirmed == True).count()
-        total_price = 0
-        orders_items = OrderItem.select().join(Order).where(
-            Order.confirmed == True, Order.date_created.year == now.year)
-        for order_item in orders_items:
-            total_price += order_item.count * order_item.total_price
-        msg = _('Orders: {}, orders cost {}').format(
-            orders_count, total_price)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=msg,
-                              reply_markup=create_statistics_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
-        return ADMIN_STATISTICS
-    elif data == 'statistics_monthly':
-        now = datetime.datetime.now()
-        orders_count = Order.select().where(Order.date_created.year == now.month,
-                                            Order.confirmed == True).count()
-        total_price = 0
-        orders_items = OrderItem.select().join(Order).where(
-            Order.confirmed == True, Order.date_created.year == now.month)
-        for order_item in orders_items:
-            total_price += order_item.count * order_item.total_price
-        msg = _('Orders: {}, orders cost {}').format(
-            orders_count, total_price)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=msg,
-                              reply_markup=create_statistics_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
-        return ADMIN_STATISTICS
+        return enums.ADMIN_STATISTICS_LOCATIONS
     elif data == 'statistics_user':
-        msg = ''
-        users = User.select()
-        for user in users:
-            orders_count = Order.select().where(Order.user == user,
-                                                Order.confirmed == True).count()
-            total_price = 0
-            orders_items = OrderItem.select().join(Order).where(
-                Order.confirmed == True, Order.location == user)
-            for order_item in orders_items:
-                total_price += order_item.count * order_item.total_price
-            msg += '\nUser: @{}, orders: {}, orders cost {}'.format(
-                user.username, orders_count, total_price)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=msg,
-                              reply_markup=create_statistics_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
-        return ADMIN_STATISTICS
-
-    return ConversationHandler.END
+        msg = _('Enter username:')
+        bot.send_message(chat_id=chat_id, text=msg, reply_markup=create_back_button(_))
+        return enums.ADMIN_STATISTICS_USER
 
 
 def on_bot_settings_menu(bot, update):
@@ -813,7 +1087,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_admin_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_MENU
+        return enums.ADMIN_MENU
 
     elif data == 'bot_settings_couriers':
         bot.edit_message_text(chat_id=query.message.chat_id,
@@ -822,7 +1096,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
     elif data == 'bot_settings_channels':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -830,7 +1104,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_CHANNELS
+        return enums.ADMIN_CHANNELS
     elif data == 'bot_settings_order_options':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -838,7 +1112,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     elif data == 'bot_settings_edit_working_hours':
         msg = _('Now:\n\n`{}`\n\n').format(config.get_working_hours())
         msg += _('Type new working hours')
@@ -848,7 +1122,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_EDIT_WORKING_HOURS
+        return enums.ADMIN_EDIT_WORKING_HOURS
     elif data == 'bot_settings_ban_list':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -856,7 +1130,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_ban_list_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BAN_LIST
+        return enums.ADMIN_BAN_LIST
     elif data == 'bot_settings_edit_contact_info':
         msg = _('Now:\n\n`{}`\n\n').format(config.get_contact_info())
         msg += _('Type new contact info')
@@ -866,7 +1140,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_EDIT_CONTACT_INFO
+        return enums.ADMIN_EDIT_CONTACT_INFO
     elif data == 'bot_settings_bot_on_off':
         bot_status = config.get_bot_on_off()
         bot_status = _('ON') if bot_status else _('OFF')
@@ -877,7 +1151,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_on_off_buttons(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BOT_ON_OFF
+        return enums.ADMIN_BOT_ON_OFF
 
     elif data == 'bot_settings_reset_all_data':
         set_config_session({})
@@ -887,7 +1161,7 @@ def on_bot_settings_menu(bot, update):
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
 
     return ConversationHandler.END
 
@@ -906,7 +1180,7 @@ def on_admin_couriers(bot, update):
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
     elif data == 'bot_couriers_view':
         msg = ''
         #couriers = Courier.select()
@@ -929,18 +1203,18 @@ def on_admin_couriers(bot, update):
                                   reply_markup=create_bot_couriers_keyboard(_),
                                   parse_mode=ParseMode.MARKDOWN)
             query.answer()
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
     elif data == 'bot_couriers_add':
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
         if not couriers:
             msg = _('There\'s no couriers to add')
             query.answer(msg)
-            return ADMIN_COURIERS
+            return enums.ADMIN_COURIERS
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=_('Select a courier to add'),
                               reply_markup=general_select_one_keyboard(_, couriers),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_COURIER_ADD
+        return enums.ADMIN_COURIER_ADD
         # # bot.edit_message_text(chat_id=query.message.chat_id,
         # #                       message_id=query.message.message_id,
         # #                       text=_('Enter new courier nickname'),
@@ -954,7 +1228,7 @@ def on_admin_couriers(bot, update):
         if not couriers:
             msg = _('There\'s not couriers to delete')
             query.answer(msg)
-            return ADMIN_COURIERS
+            return enums.ADMIN_COURIERS
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=_('Select a courier to delete'),
@@ -962,7 +1236,7 @@ def on_admin_couriers(bot, update):
                               reply_markup=general_select_one_keyboard(_, couriers)
                               )
 
-        return ADMIN_COURIER_DELETE
+        return enums.ADMIN_COURIER_DELETE
 
     return ConversationHandler.END
 
@@ -979,7 +1253,7 @@ def on_admin_channels(bot, update):
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
     elif data == 'bot_channels_view':
         # msg = u'Reviews channel: {}'.format(config.get_reviews_channel())
         msg = _('Service channel ID:\n`{}`\n\n').format(config.get_service_channel())
@@ -994,7 +1268,7 @@ def on_admin_channels(bot, update):
                               reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_CHANNELS
+        return enums.ADMIN_CHANNELS
     elif data == 'bot_channels_add':
         types = [_('Service Channel'), _('Customer Channel'), _('Vip Customer Channel'), _('Courier Channel')]
         msg = ''
@@ -1008,7 +1282,7 @@ def on_admin_channels(bot, update):
                               reply_markup=create_back_button(_)
                               )
 
-        return ADMIN_CHANNELS_SELECT_TYPE
+        return enums.ADMIN_CHANNELS_SELECT_TYPE
     elif data == 'bot_channels_remove':
         types = [_('Service Channel'), _('Customer Channel'), _('Vip Customer Channel'), _('Couriers Channel')]
         msg = ''
@@ -1022,7 +1296,7 @@ def on_admin_channels(bot, update):
                               reply_markup=create_back_button(_)
                               )
 
-        return ADMIN_CHANNELS_REMOVE
+        return enums.ADMIN_CHANNELS_REMOVE
 
     return ConversationHandler.END
 
@@ -1039,7 +1313,7 @@ def on_admin_ban_list(bot, update):
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
     elif data == 'bot_ban_list_view':
         banned = config.get_banned_users()
         banned = ['@{}'.format(ban) for ban in banned]
@@ -1051,7 +1325,7 @@ def on_admin_ban_list(bot, update):
                               reply_markup=create_ban_list_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BAN_LIST
+        return enums.ADMIN_BAN_LIST
     elif data == 'bot_ban_list_remove':
         msg = 'Type username: @username or username'
         bot.edit_message_text(chat_id=query.message.chat_id,
@@ -1059,7 +1333,7 @@ def on_admin_ban_list(bot, update):
                               text=msg,
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_BAN_LIST_REMOVE
+        return enums.ADMIN_BAN_LIST_REMOVE
     elif data == 'bot_ban_list_add':
         msg = 'Type username: @username or username'
         bot.edit_message_text(chat_id=query.message.chat_id,
@@ -1067,7 +1341,7 @@ def on_admin_ban_list(bot, update):
                               text=msg,
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_BAN_LIST_ADD
+        return enums.ADMIN_BAN_LIST_ADD
 
     return ConversationHandler.END
 
@@ -1092,9 +1366,9 @@ def on_courier_action_to_confirm(bot, update):
         reply_markup=create_are_you_sure_keyboard(_, callback_mapping)
     )
     if action == 'confirm_courier_order_delivered':
-        return COURIER_STATE_CONFIRM_ORDER
+        return enums.COURIER_STATE_CONFIRM_ORDER
     elif action == 'confirm_courier_report_client':
-        return COURIER_STATE_CONFIRM_REPORT
+        return enums.COURIER_STATE_CONFIRM_REPORT
 
 
 def on_courier_ping_client(bot, update):
@@ -1107,7 +1381,7 @@ def on_courier_ping_client(bot, update):
         _ = get_trans(user_id)
         msg = _('Client was notified already')
         query.answer(text=msg, show_alert=True)
-        return COURIER_STATE_INIT
+        return enums.COURIER_STATE_INIT
     else:
         user_id = order.user.telegram_id
         _ = get_trans(user_id)
@@ -1116,7 +1390,7 @@ def on_courier_ping_client(bot, update):
                          text=msg)
         order.client_notified = True
         order.save()
-        return COURIER_STATE_INIT
+        return enums.COURIER_STATE_INIT
 
 def on_courier_confirm_order(bot, update):
     query = update.callback_query
@@ -1140,11 +1414,11 @@ def on_courier_confirm_order(bot, update):
         service_msg = _('Order №{} was delivered by courier {}\n'
                         'Order can be finished now.').format(order_id, courier.username)
         shortcuts.bot_send_order_msg(bot, service_channel, service_msg, _, order_id)
-        return COURIER_STATE_INIT
+        return enums.COURIER_STATE_INIT
     elif action == 'no':
         bot.delete_message(chat_id=chat_id,
                            message_id=message_id)
-        return COURIER_STATE_INIT
+        return enums.COURIER_STATE_INIT
 
 def on_courier_confirm_report(bot, update):
     query = update.callback_query
@@ -1162,11 +1436,11 @@ def on_courier_confirm_report(bot, update):
                          text=msg,
                          reply_markup=create_back_button(_)
                          )
-        return COURIER_STATE_REPORT_REASON
+        return enums.COURIER_STATE_REPORT_REASON
     elif action == 'no':
         bot.delete_message(chat_id=chat_id,
                            message_id=message_id)
-        return COURIER_STATE_INIT
+        return enums.COURIER_STATE_INIT
 
 
 def on_courier_enter_reason(bot, update):
@@ -1191,7 +1465,7 @@ def on_courier_enter_reason(bot, update):
                                'Reason: {}').format(order_id, courier_username, reported_username, data)
     service_channel = config.get_service_channel()
     shortcuts.bot_send_order_msg(bot, service_channel, report_msg, _, order_id)
-    return COURIER_STATE_INIT
+    return enums.COURIER_STATE_INIT
 
 def on_courier_cancel_reason(bot, update):
     query = update.callback_query
@@ -1204,4 +1478,44 @@ def on_courier_cancel_reason(bot, update):
                           text=order_data.order_text,
                           reply_markup=create_courier_order_status_keyboard(_, order_id),
                           parse_mode=ParseMode.HTML)
-    return COURIER_STATE_INIT
+    query.answer()
+    return enums.COURIER_STATE_INIT
+
+def on_calendar_change(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    try:
+        saved_date = user_data['calendar_date']
+        calendar_state = user_data['calendar_state']
+    except KeyError:
+        msg = _('Failed to get calendar date, please initialize calendar again.')
+        bot.send_message(msg, chat_id)
+    else:
+        data = query.data
+        year, month = saved_date
+        msg = _('Pick year, month or day')
+        if data == 'calendar_next_year':
+            year += 1
+        elif data == 'calendar_previous_year':
+            year -= 1
+        elif data == 'calendar_next_month':
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+        elif data == 'calendar_previous_month':
+            month -= 1
+            if month < 1:
+                month = 12
+                year -= 1
+        if year < 1:
+            year = 1
+        user_data['calendar_date'] = year, month
+        bot.edit_message_text(chat_id=chat_id, message_id=query.message.message_id,
+                              text=msg, reply_markup=create_calendar_keyboard(year, month, _))
+        query.answer()
+        return calendar_state
+
+

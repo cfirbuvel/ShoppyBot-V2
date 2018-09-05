@@ -1,12 +1,14 @@
 from telegram import ParseMode, TelegramError
 import io
+import datetime
 
-from .models import Order, OrderPhotos
+from .models import Order, OrderPhotos, OrderItem
 
 from .helpers import config, get_trans, logger, get_user_id, get_channel_trans, get_user_session, session_client
 # from .keyboards import create_service_notice_keyboard, create_courier_order_status_keyboard
 from . import keyboards
 from . import messages
+
 
 def make_confirm(bot, update, user_data):
     query = update.callback_query
@@ -91,6 +93,7 @@ def resend_responsibility_keyboard(bot, update):
     except Order.DoesNotExist:
         logger.info('Order № {} not found!'.format(order_id))
     else:
+        order.confirmed = False
         order.courier = None
         order.save()
     couriers_channel = config.get_couriers_channel()
@@ -137,6 +140,45 @@ def send_product_info(bot, product, chat_id, trans):
     bot.send_message(chat_id,
                      text=msg)
 
+def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query_id=None):
+    _ = trans
+    current_date = datetime.date.today()
+    year, month = current_date.year, current_date.month
+    if not 'calendar_date' in user_data:
+        user_data['calendar_date'] = year, month
+    user_data['calendar_state'] = state
+    msg = _('Pick year, month or day')
+    if query_id:
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
+                              reply_markup=keyboards.create_calendar_keyboard(year, month, _),
+                              parse_mode=ParseMode.MARKDOWN)
+        bot.answer_callback_query(chat_id=chat_id, callback_query_id=query_id)
+    else:
+        bot.send_message(text=msg, chat_id=chat_id, reply_markup=keyboards.create_calendar_keyboard(year, month, _),
+                         parse_mode=ParseMode.MARKDOWN)
+
+def get_order_subquery(action, val, month, year):
+    val = int(val)
+    # if action == 'year':
+    query = []
+    subquery = Order.date_created.year == year
+    query.append(subquery)
+    if action == 'year':
+        return query
+    #if action == 'month':
+    query.append(Order.date_created.month == month)
+    if action == 'day':
+        query.append(Order.date_created.day == val)
+    return query
+
+def get_order_count_and_price(*subqueries):
+    orders_count = Order.select().where(*subqueries).count()
+    total_price = 0
+    orders_items = OrderItem.select().join(Order).where(*subqueries)
+    for order_item in orders_items:
+        total_price += order_item.count * order_item.total_price
+    return orders_count, total_price
+
 def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
     _ = trans
     # first_iter = True
@@ -156,38 +198,3 @@ def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_me
         bot.send_message(chat_id, msg, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
         if not obj_list:
             break
-
-
-# def process_
-
-
-
-
-# def bot_hide_order(bot, chat_id, message, trans_func, order_id):
-#     order_data = OrderPhotos.get(order_id=order_id)
-#     print(order_data.order_text_msg_id)
-#     bot.delete_message(chat_id=chat_id, message_id=order_data.order_text_msg_id)
-#     try:
-#         if order_data.coordinates:
-#             msg_id = order_data.coordinates.split('|')[2]
-#             bot.delete_message(chat_id=chat_id,
-#                                 message_id=msg_id,)
-#         if order_data.photo_id:
-#             msg_id = order_data.photo_id.split('|')[1]
-#             bot.delete_message(chat_id=chat_id,
-#                                message_id=msg_id)
-#         if order_data.stage2_id:
-#             msg_id = order_data.stage2_id.split('|')[1]
-#             bot.delete_message(chat_id=chat_id,
-#                                message_id=msg_id)
-#     except TelegramError:
-#         pass
-#     _ = trans_func
-#     order_msg = bot.send_message(
-#         chat_id=chat_id,
-#         text=message,
-#         reply_markup=keyboards.create_show_order_keyboard(_, order_id))
-#     order_data.order_hidden_text = message
-#     order_data.order_text_msg_id = str(order_msg['message_id'])
-#     order_data.save()
-#     #@return order_data

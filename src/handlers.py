@@ -6,10 +6,11 @@ from telegram.ext import ConversationHandler
 from .helpers import cart, config, session_client, get_user_session, get_user_id, get_username, is_customer, \
     is_vip_customer, get_locale, get_trans
 from .keyboards import create_main_keyboard, create_admin_keyboard, create_product_keyboard, create_shipping_keyboard, \
-    create_bot_language_keyboard
+    create_bot_language_keyboard, create_my_orders_keyboard
 from .messages import create_product_description
 from .models import User, Product
-from .enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_INIT, logger, ADMIN_MENU, BOT_LANGUAGE_CHANGE
+# from .enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_INIT, logger, ADMIN_MENU, BOT_LANGUAGE_CHANGE
+from . import enums
 from .states import is_admin
 
 
@@ -18,7 +19,7 @@ def on_start(bot, update, user_data):
     username = get_username(update)
     locale = get_locale(update)
     try:
-        User.get(telegram_id=user_id)
+        user = User.get(telegram_id=user_id)
     except User.DoesNotExist:
         user = User(telegram_id=user_id, username=username, locale=locale)
         user.save()
@@ -27,19 +28,18 @@ def on_start(bot, update, user_data):
     if BOT_ON or is_admin(bot, user_id):
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
             total = cart.get_cart_total(get_user_session(user_id))
-            logger.info('Starting session for user %s, language: %s',
+            enums.logger.info('Starting session for user %s, language: %s',
                         update.message.from_user.id,
                         update.message.from_user.language_code)
             update.message.reply_text(
                 text=config.get_welcome_text().format(
                     update.message.from_user.first_name),
-                reply_markup=create_main_keyboard(_, config.get_reviews_channel(),
-                                                  is_admin(bot, user_id),
-                                                  total),
+                reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user,
+                                                  is_admin(bot, user_id), total),
             )
-            return BOT_STATE_INIT
+            return enums.BOT_STATE_INIT
         else:
-            logger.info('User %s rejected (not a customer)',
+            enums.logger.info('User %s rejected (not a customer)',
                         update.message.from_user.id)
             update.message.reply_text(
                 text=_('Sorry {}\nYou are not authorized to use '
@@ -65,6 +65,7 @@ def on_menu(bot, update, user_data=None):
     _ = get_trans(user_id)
     BOT_ON = config.get_bot_on_off()
     total = cart.get_cart_total(get_user_session(user_id))
+    user = User.get(telegram_id=user_id)
     if BOT_ON or is_admin(bot, user_id):
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
             if data == 'menu_products':
@@ -104,6 +105,7 @@ def on_menu(bot, update, user_data=None):
                                  text=config.get_order_text(),
                                  reply_markup=create_main_keyboard(_,
                                                                    config.get_reviews_channel(),
+                                                                   user,
                                                                    is_admin(bot, user_id), total),
                                  parse_mode=ParseMode.HTML, )
             elif data == 'menu_order':
@@ -115,14 +117,14 @@ def on_menu(bot, update, user_data=None):
                                      reply_markup=create_shipping_keyboard(_),
                                      parse_mode=ParseMode.MARKDOWN, )
                     query.answer()
-                    return BOT_STATE_CHECKOUT_SHIPPING
+                    return enums.BOT_STATE_CHECKOUT_SHIPPING
                 else:
                     bot.answer_callback_query(
                         query.id,
                         text=_('Your cart is empty. '
                                'Please add something to the cart.'),
                         parse_mode=ParseMode.MARKDOWN, )
-                    return BOT_STATE_INIT
+                    return enums.BOT_STATE_INIT
 
             elif data == 'menu_language':
                 bot.edit_message_text(chat_id=query.message.chat_id,
@@ -132,7 +134,7 @@ def on_menu(bot, update, user_data=None):
                                       parse_mode=ParseMode.MARKDOWN)
 
                 query.answer()
-                return BOT_LANGUAGE_CHANGE
+                return enums.BOT_LANGUAGE_CHANGE
 
             elif data == 'menu_hours':
                 bot.edit_message_text(chat_id=query.message.chat_id,
@@ -140,6 +142,7 @@ def on_menu(bot, update, user_data=None):
                                       text=config.get_working_hours(),
                                       reply_markup=create_main_keyboard(_,
                                                                         config.get_reviews_channel(),
+                                                                        user,
                                                                         is_admin(bot, user_id), total),
                                       parse_mode=ParseMode.MARKDOWN, )
             elif data == 'menu_contact':
@@ -148,6 +151,7 @@ def on_menu(bot, update, user_data=None):
                                       text=config.get_contact_info(),
                                       reply_markup=create_main_keyboard(_,
                                                                         config.get_reviews_channel(),
+                                                                        user,
                                                                         is_admin(bot, user_id), total),
                                       parse_mode=ParseMode.MARKDOWN, )
             elif data.startswith('product_add'):
@@ -201,11 +205,19 @@ def on_menu(bot, update, user_data=None):
                                       reply_markup=create_admin_keyboard(_),
                                       parse_mode=ParseMode.MARKDOWN, )
                 query.answer()
-                return ADMIN_MENU
+                return enums.ADMIN_MENU
+            elif data == 'menu_myorders':
+                bot.edit_message_text(chat_id=query.message.chat_id,
+                                      message_id=query.message.message_id,
+                                      text=_('📖 My Orders'),
+                                      reply_markup=create_my_orders_keyboard(_),
+                                      parse_mode=ParseMode.MARKDOWN)
+                query.answer()
+                return enums.BOT_STATE_MY_ORDERS
             else:
-                logger.warn('Unknown query: %s', query.data)
+                enums.logger.warn('Unknown query: %s', query.data)
         else:
-            logger.info('User %s rejected (not a customer)', user_id)
+            enums.logger.info('User %s rejected (not a customer)', user_id)
             bot.send_message(
                 query.message.chat_id,
                 text=_('Sorry {}\nYou are not authorized '
@@ -225,11 +237,11 @@ def on_menu(bot, update, user_data=None):
         return ConversationHandler.END
     query.answer()
     # we want to remain in init state here
-    return BOT_STATE_INIT
+    return enums.BOT_STATE_INIT
 
 
 def on_error(bot, update, error):
-    logger.error('Error: %s', error)
+    enums.logger.error('Error: %s', error)
 
 
 def on_chat_update_handler(bot, update):

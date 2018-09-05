@@ -395,7 +395,10 @@ def get_user_session(user_id):
     updated = False
 
     if not user_session:
-        user = User.get(telegram_id=user_id)
+        try:
+            user = User.get(telegram_id=user_id)
+        except User.DoesNotExist:
+            user = Courier.get(telegram_id=user_id)
         session_client.json_set(user_id, {'locale': user.locale})
         user_session = session_client.json_get(user_id)
 
@@ -469,6 +472,8 @@ def get_config_session():
 def set_config_session(session):
     session_client.json_set('git_config', session)
 
+# def get_user_model(update):
+#
 
 session_client = JsonRedis(host='localhost', port=6379, db=0)
 cat = gettext.GNUTranslations(open('he.mo', 'rb'))
