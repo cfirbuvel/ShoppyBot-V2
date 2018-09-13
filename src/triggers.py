@@ -23,62 +23,62 @@ from .states import enter_state_init_order_cancelled, enter_state_courier_locati
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
     enter_state_init_order_confirmed
 from . import enums
-from .handlers_classes import CallbackQueryGeneralHandler
+# from .handlers_classes import CallbackQueryGeneralHandler
 
 from . import shortcuts
 
 
-class OnMyOrders(CallbackQueryGeneralHandler):
-
-    def back(self):
-        user = User.get(telegram_id=self.user_id)
-        total = cart.get_cart_total(get_user_session(self.user_id))
-        keyboard = create_main_keyboard(self._, config.get_reviews_channel(), user, is_admin(self.bot, self.user_id), total)
-        self.bot.edit_message_text(config.get_welcome_text(), self.chat_id, self.message_id,
-                                   reply_markup=keyboard)
-        return enums.BOT_STATE_INIT
-
-    def by_date(self):
-        state = enums.BOT_STATE_MY_ORDER_DATE
-        shortcuts.initialize_calendar(self.bot, self.user_data, self.chat_id, self.message_id, state, self._, self.query.id)
-        return state
-
-    def last_order(self):
-        last_order = Order.select().order_by(Order.date_created.desc()).get()
-        msg = self._('📦 My last order')
-        keyboard = create_my_order_keyboard(last_order.id, not last_order.delivered, self._)
-        self.bot.edit_message_text(msg, self.chat_id, self.message_id, reply_markup=keyboard)
-        self.query.answer()
-        return enums.BOT_STATE_MY_LAST_ORDER
-
-
-
-# def on_my_orders(bot, update, user_data):
-#     query = update.callback_query
-#     user_id = get_user_id(update)
-#     _ = get_trans(user_id)
-#     data = query.data
-#     chat_id = query.message.chat_id
-#     message_id = query.message.message_id
-#     if data == 'back':
-#         user = User.get(telegram_id=user_id)
-#         total = cart.get_cart_total(get_user_session(user_id))
-#         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-#                               text=config.get_welcome_text().format(query.from_user.first_name),
-#                               reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user, is_admin(bot, user_id), total),
-#                               parse_mode=ParseMode.MARKDOWN)
+# class OnMyOrders(CallbackQueryGeneralHandler):
+#
+#     def back(self):
+#         user = User.get(telegram_id=self.user_id)
+#         total = cart.get_cart_total(get_user_session(self.user_id))
+#         keyboard = create_main_keyboard(self._, config.get_reviews_channel(), user, is_admin(self.bot, self.user_id), total)
+#         self.bot.edit_message_text(config.get_welcome_text(), self.chat_id, self.message_id,
+#                                    reply_markup=keyboard)
 #         return enums.BOT_STATE_INIT
-#     elif data == 'by_date':
+#
+#     def by_date(self):
 #         state = enums.BOT_STATE_MY_ORDER_DATE
-#         shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+#         shortcuts.initialize_calendar(self.bot, self.user_data, self.chat_id, self.message_id, state, self._, self.query.id)
 #         return state
-#     elif data == 'last_order':
+#
+#     def last_order(self):
 #         last_order = Order.select().order_by(Order.date_created.desc()).get()
-#         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📦 My last order'),
-#                               reply_markup=create_my_order_keyboard(last_order.id, not last_order.delivered, _),
-#                               parse_mode=ParseMode.MARKDOWN)
-#         query.answer()
+#         msg = self._('📦 My last order')
+#         keyboard = create_my_order_keyboard(last_order.id, not last_order.delivered, self._)
+#         self.bot.edit_message_text(msg, self.chat_id, self.message_id, reply_markup=keyboard)
+#         self.query.answer()
 #         return enums.BOT_STATE_MY_LAST_ORDER
+
+
+
+def on_my_orders(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    data = query.data
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    if data == 'back':
+        user = User.get(telegram_id=user_id)
+        total = cart.get_cart_total(get_user_session(user_id))
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=config.get_welcome_text().format(query.from_user.first_name),
+                              reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user, is_admin(bot, user_id), total),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.BOT_STATE_INIT
+    elif data == 'by_date':
+        state = enums.BOT_STATE_MY_ORDER_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+        return state
+    elif data == 'last_order':
+        last_order = Order.select().order_by(Order.date_created.desc()).get()
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📦 My last order'),
+                              reply_markup=create_my_order_keyboard(last_order.id, not last_order.delivered, _),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.BOT_STATE_MY_LAST_ORDER
 
 def on_my_order_date(bot, update, user_data):
     query = update.callback_query
