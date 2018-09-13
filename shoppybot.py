@@ -2,33 +2,6 @@
 
 from telegram.ext import CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, MessageHandler, Updater, \
     Handler
-
-# from src.admin import on_start_admin, on_admin_select_channel_type, on_admin_add_channel_address, on_admin_cancel, \
-#     on_admin_remove_channel, on_admin_remove_ban_list, on_admin_add_ban_list, on_admin_edit_working_hours, \
-#     on_admin_edit_contact_info, on_admin_bot_on_off, on_admin_order_options, on_admin_add_discount, \
-#     on_admin_edit_identification, on_admin_edit_restriction, on_admin_add_delivery, on_admin_edit_welcome_message, \
-#     on_admin_edit_order_message, on_admin_edit_final_message, on_admin_cmd_add_product, on_admin_cmd_delete_product, \
-#     on_admin_cmd_add_courier, on_admin_txt_courier_name, on_admin_cmd_bot_on, on_admin_cmd_bot_off, on_admin_fallback, \
-#     on_admin_txt_product_title, on_admin_txt_product_prices, on_admin_txt_product_photo, \
-#     on_admin_cmd_delete_courier, on_admin_txt_courier_id, on_admin_btn_courier_location, on_admin_txt_delete_courier, \
-#     on_admin_txt_delete_location, on_admin_txt_location, on_admin_locations, on_admin_products, on_admin_product_add, \
-#     on_admin_product_last_select, on_admin_delete_product, on_admin_add_courier, on_admin_delete_courier
-# from src.enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_PICKUP, \
-#     BOT_STATE_CHECKOUT_LOCATION_DELIVERY, BOT_STATE_CHECKOUT_TIME, BOT_STATE_CHECKOUT_TIME_TEXT, \
-#     BOT_STATE_CHECKOUT_IDENTIFY_STAGE1, BOT_STATE_CHECKOUT_IDENTIFY_STAGE2, \
-#     BOT_STATE_ORDER_CONFIRMATION, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ORDER_OPTIONS, \
-#     ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, ADMIN_CHANNELS, ADMIN_CHANNELS_SELECT_TYPE, \
-#     ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT, \
-#     BOT_LANGUAGE_CHANGE, ADMIN_MENU, ADMIN_STATISTICS, ADMIN_COURIERS, ADMIN_EDIT_WORKING_HOURS, \
-#     ADMIN_EDIT_CONTACT_INFO, ADMIN_BOT_ON_OFF, ADMIN_BAN_LIST_REMOVE, ADMIN_BAN_LIST_ADD, ADMIN_CHANNELS_ADDRESS, \
-#     ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, ADMIN_EDIT_RESTRICTION, ADMIN_ADD_DELIVERY_FEE, \
-#     ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_TXT_COURIER_ID, ADMIN_INIT, ADMIN_TXT_PRODUCT_TITLE, \
-#     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_EDIT_FINAL_MESSAGE, \
-#     ADMIN_TXT_COURIER_LOCATION, ADMIN_TXT_DELETE_LOCATION, ADMIN_TXT_ADD_LOCATION, ADMIN_LOCATIONS, \
-#     COURIER_STATE_INIT, COURIER_STATE_CONFIRM_ORDER, COURIER_STATE_CONFIRM_REPORT, COURIER_STATE_REPORT_REASON, \
-#     ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT, ADMIN_COURIER_ADD, \
-#     ADMIN_COURIER_DELETE, ADMIN_STATISTICS_GENERAL, ADMIN_STATISTICS_COURIERS, ADMIN_STATISTICS_LOCATIONS, \
-#     ADMIN_STATISTICS_USER, ADMIN_STATISTICS_LOCATIONS_DATE, ADMIN_STATISTICS_USER_DATE, ADMIN_STATISTICS_COURIERS_DATE
 from src import admin
 from src import enums
 from src.handlers import on_start, on_menu, on_error, on_chat_update_handler
@@ -38,16 +11,6 @@ from src.helpers import config, get_user_id, \
 from src.shortcuts import resend_responsibility_keyboard, make_confirm, make_unconfirm
 
 from src.models import create_tables, close_db
-
-# from src.triggers import checkout_fallback_command_handler, on_shipping_method, on_shipping_pickup_location, \
-#     on_shipping_delivery_address, on_checkout_time, on_shipping_time_text, on_phone_number_text, \
-#     on_shipping_identify_photo, on_statistics_menu, on_confirm_order, on_bot_language_change, on_settings_menu, \
-#     on_shipping_identify_stage2, on_bot_settings_menu, on_admin_couriers, on_admin_channels, on_admin_ban_list, \
-#     on_cancel, send_welcome_message, service_channel_courier_query_handler, on_service_send_order_to_courier, \
-#     service_channel_sendto_courier_handler, on_courier_action_to_confirm, on_courier_ping_client, \
-#     on_courier_confirm_order, on_courier_confirm_report, on_courier_enter_reason, courier_keyboard_handler, \
-#     on_courier_cancel_reason, on_calendar_change, on_statistics_general, on_statistics_courier_select, \
-#     on_statistics_couriers
 from src import triggers
 
 # will be called when conversation context is lost (e.g. bot is restarted)
@@ -71,6 +34,7 @@ def main():
                                  ),
             CallbackQueryHandler(triggers.on_courier_ping_client,
                                  pattern='^ping'),
+            CallbackQueryHandler(triggers.on_admin_drop_order, pattern='^admin_dropped'),
             CallbackQueryHandler(resend_responsibility_keyboard,
                                  pattern='^dropped',
                                  )
@@ -82,6 +46,7 @@ def main():
                                      ),
                 CallbackQueryHandler(triggers.on_courier_ping_client,
                                      pattern='^ping'),
+                CallbackQueryHandler(triggers.on_admin_drop_order, pattern='^admin_dropped'),
                 CallbackQueryHandler(resend_responsibility_keyboard,
                                      pattern='^dropped',
                                      )
@@ -179,7 +144,8 @@ def main():
                                      pass_user_data=True),
             ],
             enums.BOT_STATE_MY_ORDERS: [
-                CallbackQueryHandler(triggers.on_my_orders, pass_user_data=True)
+                # CallbackQueryHandler(triggers.on_my_orders, pass_user_data=True)
+                CallbackQueryHandler(triggers.OnMyOrders(), pass_user_data=True)
             ],
             enums.BOT_STATE_MY_ORDER_DATE: [
                 CallbackQueryHandler(triggers.on_calendar_change, pattern='^calendar', pass_user_data=True),
@@ -250,6 +216,23 @@ def main():
             enums.ADMIN_PRODUCT_LAST_ADD: [
                 CallbackQueryHandler(admin.on_admin_product_last_select, pass_user_data=True)
             ],
+            enums.ADMIN_WAREHOUSE_PRODUCT: [
+                CallbackQueryHandler(admin.on_admin_warehouse_products, pass_user_data=True)
+            ],
+            enums.ADMIN_WAREHOUSE: [
+                CallbackQueryHandler(admin.on_admin_warehouse, pass_user_data=True)
+            ],
+            enums.ADMIN_WAREHOUSE_COURIER: [
+                CallbackQueryHandler(admin.on_admin_warehouse_courier, pass_user_data=True)
+            ],
+            enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS: [
+                CallbackQueryHandler(admin.on_admin_warehouse_product_credits, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_warehouse_product_credits, pass_user_data=True)
+            ],
+            enums.ADMIN_WAREHOUSE_COURIER_CREDITS: [
+                CallbackQueryHandler(admin.on_admin_warehouse_courier_credits, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_warehouse_courier_credits, pass_user_data=True)
+            ],
             enums.ADMIN_CHANNELS: [
                 CallbackQueryHandler(triggers.on_admin_channels, pattern='^bot_channels')
             ],
@@ -310,7 +293,7 @@ def main():
             ],
             enums.ADMIN_ORDER_OPTIONS: [
                 CallbackQueryHandler(
-                    admin.on_admin_order_options, pattern='^bot_order_options')
+                    admin.on_admin_order_options, pattern='^bot_order_options', pass_user_data=True)
             ],
             enums.ADMIN_ADD_DISCOUNT: [
                 CallbackQueryHandler(
@@ -446,6 +429,9 @@ def main():
     # updater.dispatcher.add_handler(CallbackQueryHandler(on_chat_update_handler))
     updater.dispatcher.add_handler(MessageHandler(
         Filters.status_update.new_chat_members, triggers.send_welcome_message))
+    # updater.dispatcher.add_handler(MessageHandler(
+    #     Filters.text, triggers.get_channel_id
+    # ))
     # updater.dispatcher.add_handler(MessageHandler(
     #     Filters.status_update.left_chat_member, on_courier_left))
     updater.dispatcher.add_handler(user_conversation_handler)

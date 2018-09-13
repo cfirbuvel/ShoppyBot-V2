@@ -9,7 +9,6 @@ from .keyboards import create_main_keyboard, create_admin_keyboard, create_produ
     create_bot_language_keyboard, create_my_orders_keyboard
 from .messages import create_product_description
 from .models import User, Product
-# from .enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_INIT, logger, ADMIN_MENU, BOT_LANGUAGE_CHANGE
 from . import enums
 from .states import is_admin
 

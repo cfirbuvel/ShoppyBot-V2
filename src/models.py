@@ -48,12 +48,19 @@ class Product(BaseModel):
     title = CharField()
     image = BlobField(null=True)
     is_active = BooleanField(default=True)
+    credits = IntegerField(default=0)
 
 
 class ProductCount(BaseModel):
     product = ForeignKeyField(Product, related_name='product_counts')
     count = IntegerField()
     price = DecimalField()
+
+class ProductWarehouse(BaseModel):
+    # user = ForeignKeyField(User, related_name='user_warehouses', null=True)
+    courier = ForeignKeyField(Courier, related_name='courier_warehouses', null=True)
+    product = ForeignKeyField(Product, related_name='product_warehouses')
+    count = IntegerField(default=0)
 
 
 class Order(BaseModel):
@@ -97,7 +104,7 @@ def create_tables():
     db.create_tables(
         [
             Location, User, Courier, CourierLocation, Product, ProductCount,
-            Order, OrderItem, OrderPhotos
+            Order, OrderItem, OrderPhotos, ProductWarehouse
         ], safe=True
     )
 

@@ -5,21 +5,23 @@ from telegram import ReplyKeyboardRemove
 from telegram.error import TelegramError
 from telegram.ext import ConversationHandler
 
-from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ADD_DELIVERY_FEE, ADMIN_TXT_PRODUCT_TITLE, \
-    ADMIN_ORDER_OPTIONS, ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, \
-    ADMIN_EDIT_RESTRICTION, ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_EDIT_FINAL_MESSAGE, \
-    ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_INIT, ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, \
-    ADMIN_TXT_COURIER_ID, ADMIN_COURIERS, ADMIN_TXT_COURIER_LOCATION, ADMIN_CHANNELS, ADMIN_CHANNELS_ADDRESS, \
-    ADMIN_CHANNELS_SELECT_TYPE, ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, ADMIN_LOCATIONS, ADMIN_TXT_ADD_LOCATION, \
-    ADMIN_TXT_DELETE_LOCATION, ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT, \
-    ADMIN_COURIER_ADD, ADMIN_COURIER_DELETE
+# from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ADD_DELIVERY_FEE, ADMIN_TXT_PRODUCT_TITLE, \
+#     ADMIN_ORDER_OPTIONS, ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, \
+#     ADMIN_EDIT_RESTRICTION, ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_EDIT_FINAL_MESSAGE, \
+#     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_INIT, ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, \
+#     ADMIN_TXT_COURIER_ID, ADMIN_COURIERS, ADMIN_TXT_COURIER_LOCATION, ADMIN_CHANNELS, ADMIN_CHANNELS_ADDRESS, \
+#     ADMIN_CHANNELS_SELECT_TYPE, ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, ADMIN_LOCATIONS, ADMIN_TXT_ADD_LOCATION, \
+#     ADMIN_TXT_DELETE_LOCATION, ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT, \
+#     ADMIN_COURIER_ADD, ADMIN_COURIER_DELETE
+from . import enums
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans
-from .models import Product, ProductCount, Courier, Location, CourierLocation
+from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
     create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
     create_locations_keyboard, create_bot_products_keyboard, create_bot_product_add_keyboard, \
-    create_select_products_chunk_keyboard, general_select_keyboard, general_select_one_keyboard
+    create_select_products_chunk_keyboard, general_select_keyboard, general_select_one_keyboard, \
+    create_warehouse_keyboard
 
 from . import shortcuts
 
@@ -36,7 +38,7 @@ def is_admin(bot, user_id):
         else:
             return True
     except TelegramError as e:
-        logger.error("Failed to check admin id: %s", e)
+        enums.logger.error("Failed to check admin id: %s", e)
         return False
 
 
@@ -44,13 +46,13 @@ def on_start_admin(bot, update):
     user_id = get_user_id(update)
     if not is_admin(bot, user_id):
         _ = get_trans(user_id)
-        logger.info(_('User %s, @%s rejected (not admin)'),
+        enums.logger.info(_('User %s, @%s rejected (not admin)'),
                     update.message.from_user.id,
                     update.message.from_user.username)
         update.message.reply_text(text=_(
             'Sorry {}, you are not authorized to administrate this bot').format(
             update.message.from_user.first_name))
-        return BOT_STATE_INIT
+        return enums.BOT_STATE_INIT
 
 
 def on_admin_cmd_add_product(bot, update):
@@ -61,14 +63,16 @@ def on_admin_cmd_add_product(bot, update):
         reply_markup=ReplyKeyboardRemove(),
         parse_mode=ParseMode.MARKDOWN,
     )
-    return ADMIN_TXT_PRODUCT_TITLE
+    return enums.ADMIN_TXT_PRODUCT_TITLE
 
 
-def on_admin_order_options(bot, update):
+def on_admin_order_options(bot, update, user_data):
     query = update.callback_query
     data = query.data
     user_id = get_user_id(update)
     _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
     if data == 'bot_order_options_back':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -76,7 +80,7 @@ def on_admin_order_options(bot, update):
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
     if data == 'bot_order_options_product':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -84,7 +88,21 @@ def on_admin_order_options(bot, update):
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_PRODUCTS
+        return enums.ADMIN_PRODUCTS
+    elif data == 'bot_order_options_warehouse':
+        products = Product.filter(is_active=True)
+        if not products:
+            bot.send_message(chat_id, _('You don\'t have any products yet'))
+            bot.send_message(chat_id, _('⚙ Bot settings'), reply_markup=create_bot_settings_keyboard(_))
+            return enums.ADMIN_BOT_SETTINGS
+        # user_data['products_warehouse_ids'] = []
+        products = [(product.title, product.id) for product in products]
+        products_keyboard = general_select_one_keyboard(_, products)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('Select a product'),
+                              reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_WAREHOUSE_PRODUCT
     elif data == 'bot_order_options_discount':
         bot.edit_message_text(
             chat_id=query.message.chat_id,
@@ -97,7 +115,7 @@ def on_admin_order_options(bot, update):
             parse_mode=ParseMode.MARKDOWN,
         )
         query.answer()
-        return ADMIN_ADD_DISCOUNT
+        return enums.ADMIN_ADD_DISCOUNT
     elif data == 'bot_order_options_delivery_fee':
         bot.edit_message_text(
             chat_id=query.message.chat_id,
@@ -108,7 +126,7 @@ def on_admin_order_options(bot, update):
             parse_mode=ParseMode.MARKDOWN,
         )
         query.answer()
-        return ADMIN_ADD_DELIVERY_FEE
+        return enums.ADMIN_ADD_DELIVERY_FEE
     elif data == 'bot_order_options_add_locations':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -116,7 +134,7 @@ def on_admin_order_options(bot, update):
                               reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_LOCATIONS
+        return enums.ADMIN_LOCATIONS
     elif data == 'bot_order_options_identify':
         first = config.get_identification_required()
         second = config.get_identification_stage2_required()
@@ -133,7 +151,7 @@ def on_admin_order_options(bot, update):
                               text=msg,
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_EDIT_IDENTIFICATION
+        return enums.ADMIN_EDIT_IDENTIFICATION
     elif data == 'bot_order_options_restricted':
         only_for_customers = 'Enabled' if config.get_only_for_customers() \
             else 'Disabled'
@@ -147,7 +165,7 @@ def on_admin_order_options(bot, update):
                               text=msg,
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_EDIT_RESTRICTION
+        return enums.ADMIN_EDIT_RESTRICTION
     elif data == 'bot_order_options_welcome':
         msg = _('Type new welcome message.\n')
         msg += _('Current message:\n\n{}').format(config.get_welcome_text())
@@ -156,7 +174,7 @@ def on_admin_order_options(bot, update):
                               text=msg,
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_EDIT_WELCOME_MESSAGE
+        return enums.ADMIN_EDIT_WELCOME_MESSAGE
     elif data == 'bot_order_options_details':
         msg = _('Type new order details message.\n')
         msg += _('Current message:\n\n{}').format(config.get_order_text())
@@ -165,7 +183,7 @@ def on_admin_order_options(bot, update):
                               text=msg,
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_EDIT_ORDER_DETAILS
+        return enums.ADMIN_EDIT_ORDER_DETAILS
     elif data == 'bot_order_options_final':
         msg = _('Type new final message.\n')
         msg += _('Current message:\n\n{}').format(config.get_order_complete_text())
@@ -174,9 +192,216 @@ def on_admin_order_options(bot, update):
                               text=msg,
                               reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_EDIT_FINAL_MESSAGE
+        return enums.ADMIN_EDIT_FINAL_MESSAGE
 
     return ConversationHandler.END
+
+
+def on_admin_warehouse_products(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    action, val = query.data.split('|')
+    if action == 'page':
+        products = Product.filter(is_active=True)
+        products = [(product.title, product.id) for product in products]
+        products_keyboard = general_select_one_keyboard(_, products, int(val))
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('Select a product'),
+                              reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_WAREHOUSE_PRODUCT
+    elif action == 'back':
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
+                              text=_('💳 Order options'),
+                              reply_markup=create_bot_order_options_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_ORDER_OPTIONS
+    elif action == 'select':
+        user_data['product_warehouse'] = {'product_id': val}
+        product = Product.get(id=val)
+        # user = User.get(telegram_id=user_id)
+        # product = Product.get(id=int(val))
+        # try:
+        #     product_warehouse = ProductWarehouse.get(user=user, product=product)
+        # except ProductWarehouse.DoesNotExist:
+        #     product_warehouse = ProductWarehouse(user=user, product=product)
+        #     product_warehouse.save()
+        # user_data['product_warehouse']['warehouse_id'] = product_warehouse.id
+        msg = _('🏗 Product: `{}`\n'
+                'Credits: {}').format(product.title, product.credits)
+        bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_WAREHOUSE
+
+def on_admin_warehouse(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    data = query.data
+    if data == 'warehouse_back':
+        products = Product.filter(is_active=True)
+        products = [(product.title, product.id) for product in products]
+        products_keyboard = general_select_one_keyboard(_, products)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                              text=_('Select a product'),
+                              reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_WAREHOUSE_PRODUCT
+    elif data == 'warehouse_credits':
+        product_id = user_data['product_warehouse']['product_id']
+        product = Product.get(id=product_id)
+        # warehouse_id = user_data['product_warehouse']['warehouse_id']
+        # product_warehouse = ProductWarehouse.get(id=warehouse_id)
+        msg = _('🏗 Product: `{}`\n'
+                'Credits: {}\n'
+                'Please enter new number of credits:').format(product.title, product.credits)
+        bot.edit_message_text(msg, chat_id, message_id=message_id, reply_markup=create_back_button(_), parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS
+    elif data == 'warehouse_courier':
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
+        couriers_keyboard = general_select_one_keyboard(_, couriers)
+        bot.edit_message_text(_('Select a courier'), chat_id, message_id=message_id, reply_markup=couriers_keyboard)
+        query.answer()
+        return enums.ADMIN_WAREHOUSE_COURIER
+
+
+def on_admin_warehouse_courier(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    action, val = query.data.split('|')
+    if action == 'page':
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
+        couriers_keyboard = general_select_one_keyboard(_, couriers, int(val))
+        bot.edit_message_text(_('Select a courier'), chat_id, message_id=message_id, reply_markup=couriers_keyboard)
+        query.answer()
+        return enums.ADMIN_WAREHOUSE_COURIER
+    elif action == 'back':
+        # warehouse_id = user_data['product_warehouse']['warehouse_id']
+        # product_warehouse = ProductWarehouse.get(id=warehouse_id)
+        product_id = user_data['product_warehouse']['product_id']
+        product = Product.get(id=product_id)
+        msg = _('🏗 Product: `{}`\n'
+                'Credits: {}').format(product.title, product.credits)
+        bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_WAREHOUSE
+    elif action == 'select':
+        product_id = user_data['product_warehouse']['product_id']
+        product = Product.get(id=int(product_id))
+        courier = Courier.get(id=int(val))
+        try:
+            product_warehouse = ProductWarehouse.get(courier=courier, product=product)
+        except ProductWarehouse.DoesNotExist:
+            product_warehouse = ProductWarehouse(courier=courier, product=product)
+            product_warehouse.save()
+        user_data['product_warehouse']['courier_warehouse_id'] = product_warehouse.id
+        #warehouse_id = user_data['product_warehouse']['warehouse_id']
+        msg = _('🏗 Product: `{}`\n'
+                'Courier: `{}`\n'
+                'Courier credits: {}\n'
+                'Please enter new number of credits:').format(product.title, courier.username, product_warehouse.count)
+        bot.edit_message_text(msg, chat_id, message_id=message_id, reply_markup=create_back_button(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_WAREHOUSE_COURIER_CREDITS
+
+
+def on_admin_warehouse_product_credits(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    product_id = user_data['product_warehouse']['product_id']
+    product = Product.get(id=product_id)
+    # warehouse_id = user_data['product_warehouse']['warehouse_id']
+    # product_warehouse = ProductWarehouse.get(id=warehouse_id)
+    if update.callback_query and update.callback_query.data == 'back':
+        msg = _('🏗 Product: `{}`\n'
+                'Credits: {}').format(product.title, product.credits)
+        bot.edit_message_text(msg, update.callback_query.message.chat_id, update.callback_query.message.message_id, reply_markup=create_warehouse_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_WAREHOUSE
+    text = update.message.text
+    chat_id = update.message.chat_id
+    try:
+        credits = int(text)
+    except ValueError:
+        msg = _('Please enter a number:')
+        bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
+        return enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS
+    credits = abs(credits)
+    if credits > 2**63-1:
+        msg = _('Entered amount is too big\n'
+                'Please enter new number of credits:')
+        bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
+        return enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS
+    # product_warehouse.count = credits
+    # product_warehouse.save()
+    product.credits = credits
+    product.save()
+    msg = _('✅ Product\'s credits were changed to {}').format(credits)
+    bot.send_message(chat_id, msg)
+    msg = _('🏗 Product: `{}`\n'
+            'Credits: {}').format(product.title, product.credits)
+    bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
+    return enums.ADMIN_WAREHOUSE
+
+
+
+
+def on_admin_warehouse_courier_credits(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    if update.callback_query and update.callback_query.data == 'back':
+        q_msg = update.callback_query.message
+        couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
+        couriers_keyboard = general_select_one_keyboard(_, couriers)
+        bot.edit_message_text(_('Select a courier'), q_msg.chat_id, message_id=q_msg.message_id,
+                              reply_markup=couriers_keyboard)
+        update.callback_query.answer()
+        return enums.ADMIN_WAREHOUSE_COURIER
+    text = update.message.text
+    chat_id = update.message.chat_id
+    try:
+        credits = int(text)
+    except ValueError:
+        msg = _('Please enter a number:')
+        bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
+        return enums.ADMIN_WAREHOUSE_COURIER_CREDITS
+    product_id = user_data['product_warehouse']['product_id']
+    product = Product.get(id=product_id)
+    # admin_warehouse_id = user_data['product_warehouse']['warehouse_id']
+    warehouse_id = user_data['product_warehouse']['courier_warehouse_id']
+    # admin_warehouse = ProductWarehouse.get(id=admin_warehouse_id)
+    courier_warehouse = ProductWarehouse.get(id=warehouse_id)
+    total_credits = product.credits + courier_warehouse.count
+    if credits > total_credits:
+        msg = _('Cannot give to courier more credits than you have in warehouse: {}\n'
+                'Please enter new number of credits:').format(total_credits)
+        bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
+        return enums.ADMIN_WAREHOUSE_COURIER_CREDITS
+    # courier_warehouse = ProductWarehouse.get(id=warehouse_id)
+    admin_credits = product.credits - (credits - courier_warehouse.count)
+    product.credits = admin_credits
+    courier_warehouse.count = credits
+    courier_warehouse.save()
+    product.save()
+    #admin_warehouse.save()
+    msg = _('✅ You have given {} credits to courier `{}`').format(credits, courier_warehouse.courier.username)
+    bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
+    msg = _('🏗 Product: `{}`\n'
+            'Credits: {}').format(product.title, product.credits)
+    bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
+    return enums.ADMIN_WAREHOUSE
 
 def on_admin_products(bot, update, user_data):
     query = update.callback_query
@@ -192,7 +417,7 @@ def on_admin_products(bot, update, user_data):
                               reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     elif data == 'bot_products_view':
         bot.delete_message(chat_id=chat_id,
                            message_id=message_id)
@@ -204,7 +429,7 @@ def on_admin_products(bot, update, user_data):
                               text=_('🏪 Products'),
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_PRODUCTS
+        return enums.ADMIN_PRODUCTS
     elif data == 'bot_products_add':
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
@@ -212,13 +437,13 @@ def on_admin_products(bot, update, user_data):
                               reply_markup=create_bot_product_add_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_PRODUCT_ADD
+        return enums.ADMIN_PRODUCT_ADD
     elif data == 'bot_products_remove':
         products = Product.filter(is_active=True)
         if not products:
             msg = _('No products to delete')
             query.answer(text=msg)
-            return ADMIN_PRODUCTS
+            return enums.ADMIN_PRODUCTS
         user_data['products_remove'] = {'ids': [], 'page': 1}
         products = [(product.title, product.id, False) for product in products]
         products_keyboard = general_select_keyboard(_, products)
@@ -226,7 +451,7 @@ def on_admin_products(bot, update, user_data):
                               text=_('Select a product which you want to remove'),
                               reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_DELETE_PRODUCT
+        return enums.ADMIN_DELETE_PRODUCT
 
 
 def on_admin_delete_product(bot, update, user_data):
@@ -253,7 +478,7 @@ def on_admin_delete_product(bot, update, user_data):
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_PRODUCTS
+        return enums.ADMIN_PRODUCTS
     products = []
     current_page = user_data['products_remove']['page']
     if action == 'page':
@@ -275,7 +500,7 @@ def on_admin_delete_product(bot, update, user_data):
                           text=_('Select a product which you want to remove'),
                           reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
     query.answer()
-    return ADMIN_DELETE_PRODUCT
+    return enums.ADMIN_DELETE_PRODUCT
 
 
 def on_admin_product_add(bot, update, user_data):
@@ -292,7 +517,7 @@ def on_admin_product_add(bot, update, user_data):
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_PRODUCTS
+        return enums.ADMIN_PRODUCTS
     elif data == 'bot_product_new':
         bot.edit_message_text(
                 chat_id=chat_id,
@@ -302,13 +527,13 @@ def on_admin_product_add(bot, update, user_data):
                 reply_markup=create_back_button(_),
             )
         query.answer()
-        return ADMIN_TXT_PRODUCT_TITLE
+        return enums.ADMIN_TXT_PRODUCT_TITLE
     elif data == 'bot_product_last':
         inactive_products = Product.filter(is_active=False)
         if not inactive_products:
             msg = _('You don\'t have last products')
             query.answer(text=msg)
-            return ADMIN_PRODUCT_ADD
+            return enums.ADMIN_PRODUCT_ADD
         inactive_products = [(product.title, product.id, False) for product in inactive_products]
         user_data['last_products_add'] = {'ids': [], 'page': 1}
         products_keyboard = general_select_keyboard(_, inactive_products)
@@ -316,7 +541,7 @@ def on_admin_product_add(bot, update, user_data):
                               text=_('Select a product which you want to activate again'),
                               reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_PRODUCT_LAST_ADD
+        return enums.ADMIN_PRODUCT_LAST_ADD
 
 
 def on_admin_product_last_select(bot, update, user_data):
@@ -341,7 +566,7 @@ def on_admin_product_last_select(bot, update, user_data):
                               reply_markup=create_bot_product_add_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_PRODUCT_ADD
+        return enums.ADMIN_PRODUCT_ADD
     inactive_products = []
     current_page = user_data['last_products_add']['page']
     if action == 'page':
@@ -363,7 +588,7 @@ def on_admin_product_last_select(bot, update, user_data):
                           text=_('Select a product which you want to activate again'),
                           reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
     query.answer()
-    return ADMIN_PRODUCT_LAST_ADD
+    return enums.ADMIN_PRODUCT_LAST_ADD
 
 
 def on_admin_txt_product_title(bot, update, user_data):
@@ -376,7 +601,7 @@ def on_admin_txt_product_title(bot, update, user_data):
                               text=_('➕ Add product'),
                               reply_markup=create_bot_product_add_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_PRODUCT_ADD
+        return enums.ADMIN_PRODUCT_ADD
 
     title = update.message.text
     # initialize new product data
@@ -386,7 +611,7 @@ def on_admin_txt_product_title(bot, update, user_data):
         text=_('Enter new product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*'),
         reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.MARKDOWN,
     )
-    return ADMIN_TXT_PRODUCT_PRICES
+    return enums.ADMIN_TXT_PRODUCT_PRICES
 
 
 def on_admin_txt_product_prices(bot, update, user_data):
@@ -404,14 +629,14 @@ def on_admin_txt_product_prices(bot, update, user_data):
         except ValueError as e:
             update.message.reply_text(
                 text=_('Could not read prices, please try again'))
-            return ADMIN_TXT_PRODUCT_PRICES
+            return enums.ADMIN_TXT_PRODUCT_PRICES
 
     user_data['add_product']['prices'] = prices_list
     update.message.reply_text(
         text=_('Send the new product photo'),
         reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.MARKDOWN,
     )
-    return ADMIN_TXT_PRODUCT_PHOTO
+    return enums.ADMIN_TXT_PRODUCT_PHOTO
 
 
 def on_admin_txt_product_photo(bot, update, user_data):
@@ -438,7 +663,7 @@ def on_admin_txt_product_photo(bot, update, user_data):
                      text=_('🏪 Products'),
                      reply_markup=create_bot_products_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_PRODUCTS
+    return enums.ADMIN_PRODUCTS
 
 
 def on_admin_cmd_delete_product(bot, update, user_data):
@@ -449,14 +674,14 @@ def on_admin_cmd_delete_product(bot, update, user_data):
     if not products:
         msg = _('No products to delete')
         bot.send_message(text=msg, chat_id=chat_id)
-        return ADMIN_INIT
+        return enums.ADMIN_INIT
     user_data['products_remove'] = {'ids': [], 'page': 1}
     products = [(product.title, product.id, False) for product in products]
     products_keyboard = general_select_keyboard(_, products)
     bot.send_message(chat_id=chat_id,
                           text=_('Select a product which you want to remove'),
                           reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_DELETE_PRODUCT
+    return enums.ADMIN_DELETE_PRODUCT
 
 
 def on_admin_cmd_bot_on(bot, update):
@@ -465,7 +690,7 @@ def on_admin_cmd_bot_on(bot, update):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(text=_('Bot switched on'))
-    return ADMIN_INIT
+    return enums.ADMIN_INIT
 
 
 def on_admin_cmd_bot_off(bot, update):
@@ -474,7 +699,7 @@ def on_admin_cmd_bot_off(bot, update):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     update.message.reply_text(text=_('Bot switched off'))
-    return ADMIN_INIT
+    return enums.ADMIN_INIT
 
 
 def on_admin_cmd_add_courier(bot, update):
@@ -485,11 +710,11 @@ def on_admin_cmd_add_courier(bot, update):
     if not couriers:
         msg = _('There\'s no couriers to add')
         bot.send_message(msg, chat_id)
-        return ADMIN_INIT
+        return enums.ADMIN_INIT
     bot.send_message(chat_id=chat_id, text=_('Select a courier to add'),
                      reply_markup=general_select_one_keyboard(_, couriers),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_COURIER_ADD
+    return enums.ADMIN_COURIER_ADD
 
 
 def on_admin_cmd_delete_courier(bot, update):
@@ -500,13 +725,13 @@ def on_admin_cmd_delete_courier(bot, update):
     if not couriers:
         msg = _('There\'s not couriers to delete')
         bot.send_message(msg, chat_id)
-        return ADMIN_INIT
+        return enums.ADMIN_INIT
     bot.send_message(chat_id=chat_id,
                         text=_('Select a courier to delete'),
                         parse_mode=ParseMode.MARKDOWN,
                         reply_markup=general_select_one_keyboard(_, couriers)
                         )
-    return ADMIN_COURIER_DELETE
+    return enums.ADMIN_COURIER_DELETE
 
 def on_admin_add_courier(bot, update, user_data):
     query = update.callback_query
@@ -521,7 +746,7 @@ def on_admin_add_courier(bot, update, user_data):
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
     if action == 'page':
         current_page = int(param)
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
@@ -530,7 +755,7 @@ def on_admin_add_courier(bot, update, user_data):
                               reply_markup=general_select_one_keyboard(_, couriers, current_page),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIER_ADD
+        return enums.ADMIN_COURIER_ADD
     elif action == 'select':
         user_data['add_courier'] = {'location_ids': [], 'courier_id': param}
         text = _('Choose locations for new courier')
@@ -541,7 +766,7 @@ def on_admin_add_courier(bot, update, user_data):
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
                               reply_markup=create_courier_locations_keyboard(_, locations))
         query.answer()
-        return ADMIN_TXT_COURIER_LOCATION
+        return enums.ADMIN_TXT_COURIER_LOCATION
 
 
 def on_admin_delete_courier(bot, update):
@@ -557,7 +782,7 @@ def on_admin_delete_courier(bot, update):
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
     if action == 'page':
         current_page = int(param)
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
@@ -566,7 +791,7 @@ def on_admin_delete_courier(bot, update):
                               reply_markup=general_select_one_keyboard(_, couriers, current_page),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIER_DELETE
+        return enums.ADMIN_COURIER_DELETE
     elif action == 'select':
         courier = Courier.get(id=param)
         courier.is_active = False
@@ -576,7 +801,7 @@ def on_admin_delete_courier(bot, update):
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
 
 
 def on_admin_txt_courier_name(bot, update, user_data):
@@ -589,7 +814,7 @@ def on_admin_txt_courier_name(bot, update, user_data):
                               text=_('🛵 Couriers'),
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
 
     name = update.message.text
     # initialize new courier data
@@ -597,7 +822,7 @@ def on_admin_txt_courier_name(bot, update, user_data):
     user_data['add_courier']['name'] = name
     text = _('Enter courier telegram_id')
     update.message.reply_text(text=text)
-    return ADMIN_TXT_COURIER_ID
+    return enums.ADMIN_TXT_COURIER_ID
 
 
 def on_admin_txt_courier_id(bot, update, user_data):
@@ -622,7 +847,7 @@ def on_admin_txt_courier_id(bot, update, user_data):
         reply_markup=create_courier_locations_keyboard(_, locations)
     )
 
-    return ADMIN_TXT_COURIER_LOCATION
+    return enums.ADMIN_TXT_COURIER_LOCATION
 
 
 def on_admin_btn_courier_location(bot, update, user_data):
@@ -659,7 +884,7 @@ def on_admin_btn_courier_location(bot, update, user_data):
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
         #
         # bot.send_message(chat_id=query.message.chat_id,
         #                  text=_('🛵 Couriers'),
@@ -691,7 +916,7 @@ def on_admin_btn_courier_location(bot, update, user_data):
                           reply_markup=create_courier_locations_keyboard(_, locations),
                           parse_mode=ParseMode.MARKDOWN)
     query.answer()
-    return ADMIN_TXT_COURIER_LOCATION
+    return enums.ADMIN_TXT_COURIER_LOCATION
 
 
 def on_admin_txt_delete_courier(bot, update, user_data):
@@ -705,7 +930,7 @@ def on_admin_txt_delete_courier(bot, update, user_data):
                               reply_markup=create_bot_couriers_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_COURIERS
+        return enums.ADMIN_COURIERS
 
     courier_id = update.message.text
 
@@ -715,14 +940,14 @@ def on_admin_txt_delete_courier(bot, update, user_data):
     except Courier.DoesNotExist:
         update.message.reply_text(
             text='Invalid courier id, please enter correct id')
-        return ADMIN_TXT_DELETE_COURIER
+        return enums.ADMIN_TXT_DELETE_COURIER
 
     courier.delete_instance()
     bot.send_message(chat_id=update.message.chat_id,
                      text=_('Courier deleted'),
                      reply_markup=create_bot_couriers_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_COURIERS
+    return enums.ADMIN_COURIERS
 
 
 def on_admin_txt_location(bot, update, user_data):
@@ -736,7 +961,7 @@ def on_admin_txt_location(bot, update, user_data):
                               reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_LOCATIONS
+        return enums.ADMIN_LOCATIONS
 
     location_user_txt = update.message.text
     # initialize new Location data
@@ -750,7 +975,7 @@ def on_admin_txt_location(bot, update, user_data):
                                   reply_markup=create_bot_locations_keyboard(_),
                                   parse_mode=ParseMode.MARKDOWN
                                   )
-        return ADMIN_LOCATIONS
+        return enums.ADMIN_LOCATIONS
 
     except Location.DoesNotExist:
         Location.create(title=location_user_txt)
@@ -761,7 +986,7 @@ def on_admin_txt_location(bot, update, user_data):
                          text=_('new location added'),
                          reply_markup=create_bot_locations_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_LOCATIONS
+        return enums.ADMIN_LOCATIONS
 
 
 def on_admin_txt_delete_location(bot, update, user_data):
@@ -774,7 +999,7 @@ def on_admin_txt_delete_location(bot, update, user_data):
                               text=_('🎯 Locations'),
                               reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_LOCATIONS
+        return enums.ADMIN_LOCATIONS
     lct = update.callback_query.data
     try:
         location = Location.get(title=lct)
@@ -782,14 +1007,14 @@ def on_admin_txt_delete_location(bot, update, user_data):
     except Location.DoesNotExist:
         update.message.reply_text(
             text='Invalid Location title, please enter correct title')
-        return ADMIN_TXT_DELETE_LOCATION
+        return enums.ADMIN_TXT_DELETE_LOCATION
 
     query = update.callback_query
     bot.send_message(chat_id=query.message.chat_id,
                      text='Location deleted',
                      reply_markup=create_bot_locations_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_LOCATIONS
+    return enums.ADMIN_LOCATIONS
 
 
 def on_admin_locations(bot, update):
@@ -804,7 +1029,7 @@ def on_admin_locations(bot, update):
                               reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     elif data == 'bot_locations_view':
         user_id = get_user_id(update)
         _ = get_trans(user_id)
@@ -816,7 +1041,7 @@ def on_admin_locations(bot, update):
                               reply_markup=create_bot_locations_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
-        return ADMIN_LOCATIONS
+        return enums.ADMIN_LOCATIONS
     elif data == 'bot_locations_add':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -825,7 +1050,7 @@ def on_admin_locations(bot, update):
                               reply_markup=create_back_button(_)
                               ),
         query.answer()
-        return ADMIN_TXT_ADD_LOCATION
+        return enums.ADMIN_TXT_ADD_LOCATION
     elif data == 'bot_locations_delete':
         locations = Location.select()
         location_names = [x.title for x in locations]
@@ -837,7 +1062,7 @@ def on_admin_locations(bot, update):
                               reply_markup=create_locations_keyboard(location_names, _)
                               )
         query.answer()
-        return ADMIN_TXT_DELETE_LOCATION
+        return enums.ADMIN_TXT_DELETE_LOCATION
 
     return ConversationHandler.END
 
@@ -847,7 +1072,7 @@ def on_admin_cancel(bot, update):
         text='Admin command cancelled, to enter admin mode again type /admin',
         reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.MARKDOWN,
     )
-    return BOT_STATE_INIT
+    return enums.BOT_STATE_INIT
 
 
 def on_admin_fallback(bot, update):
@@ -855,7 +1080,7 @@ def on_admin_fallback(bot, update):
         text='Unknown input, type /cancel to exit admin mode',
         reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.MARKDOWN,
     )
-    return ADMIN_INIT
+    return enums.ADMIN_INIT
 
 
 def set_welcome_message(bot, update):
@@ -883,7 +1108,7 @@ def on_admin_select_channel_type(bot, update, user_data):
                               text=_('✉️ Channels'),
                               reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_CHANNELS
+        return enums.ADMIN_CHANNELS
 
     channel_type = int(update.message.text)
     if channel_type in range(1, 5):
@@ -894,7 +1119,7 @@ def on_admin_select_channel_type(bot, update, user_data):
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.MARKDOWN,
         )
-        return ADMIN_CHANNELS_ADDRESS
+        return enums.ADMIN_CHANNELS_ADDRESS
 
     types = ['Reviews', 'Service', 'Customer', 'Vip customer', 'Courier']
     msg = ''
@@ -906,7 +1131,7 @@ def on_admin_select_channel_type(bot, update, user_data):
         reply_markup=ReplyKeyboardRemove(),
         parse_mode=ParseMode.MARKDOWN,
     )
-    return ADMIN_CHANNELS_SELECT_TYPE
+    return enums.ADMIN_CHANNELS_SELECT_TYPE
 
 
 def on_admin_add_channel_address(bot, update, user_data):
@@ -924,7 +1149,7 @@ def on_admin_add_channel_address(bot, update, user_data):
                      text=_('✉️ Channels'),
                      reply_markup=create_bot_channels_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_CHANNELS
+    return enums.ADMIN_CHANNELS
 
 
 def on_admin_remove_channel(bot, update, user_data):
@@ -937,7 +1162,7 @@ def on_admin_remove_channel(bot, update, user_data):
                               text=_('✉️ Channels'),
                               reply_markup=create_bot_channels_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_CHANNELS
+        return enums.ADMIN_CHANNELS
 
     types = ['reviews_channel', 'service_channel', 'customers_channel',
              'vip_customers_channel', 'couriers_channel']
@@ -950,7 +1175,7 @@ def on_admin_remove_channel(bot, update, user_data):
                          text='Channel was removed',
                          reply_markup=create_bot_channels_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
-        return ADMIN_CHANNELS
+        return enums.ADMIN_CHANNELS
 
     types = ['Reviews', 'Service', 'Customer', 'Vip customer', 'Courier']
     msg = ''
@@ -962,7 +1187,7 @@ def on_admin_remove_channel(bot, update, user_data):
         reply_markup=ReplyKeyboardRemove(),
         parse_mode=ParseMode.MARKDOWN,
     )
-    return ADMIN_CHANNELS_REMOVE
+    return enums.ADMIN_CHANNELS_REMOVE
 
 
 def on_admin_edit_working_hours(bot, update, user_data):
@@ -972,7 +1197,7 @@ def on_admin_edit_working_hours(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
     user_id = get_user_id(update)
     new_working_hours = update.message.text
     config_session = get_config_session()
@@ -982,7 +1207,7 @@ def on_admin_edit_working_hours(bot, update, user_data):
                      text='Working hours was changed',
                      reply_markup=create_bot_settings_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_BOT_SETTINGS
+    return enums.ADMIN_BOT_SETTINGS
 
 
 def on_admin_edit_contact_info(bot, update, user_data):
@@ -992,7 +1217,7 @@ def on_admin_edit_contact_info(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
     user_id = get_user_id(update)
     contact_info = update.message.text
     config_session = get_config_session()
@@ -1002,7 +1227,7 @@ def on_admin_edit_contact_info(bot, update, user_data):
                      text='Contact info was changed',
                      reply_markup=create_bot_settings_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_BOT_SETTINGS
+    return enums.ADMIN_BOT_SETTINGS
 
 
 def on_admin_add_discount(bot, update, user_data):
@@ -1012,7 +1237,7 @@ def on_admin_add_discount(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_order_options_keyboard(_),
             'Order options')
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     # user_id = get_user_id(update)
     discount = update.message.text
     config_session = get_config_session()
@@ -1022,7 +1247,7 @@ def on_admin_add_discount(bot, update, user_data):
                      text='Discount was changed',
                      reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_add_delivery(bot, update, user_data):
@@ -1032,7 +1257,7 @@ def on_admin_add_delivery(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_order_options_keyboard(_),
             'Order options')
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     # user_id = get_user_id(update)
     delivery = update.message.text
     cleaned_data = [int(i.strip()) for i in delivery.split('>')]
@@ -1048,7 +1273,7 @@ def on_admin_add_delivery(bot, update, user_data):
                      text='Delivery fee was changed',
                      reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_bot_on_off(bot, update, user_data):
@@ -1059,7 +1284,7 @@ def on_admin_bot_on_off(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
-        return ADMIN_BOT_SETTINGS
+        return enums.ADMIN_BOT_SETTINGS
     status = query.data == 'on'
     config_session = get_config_session()
     config_session['bot_on_off'] = status
@@ -1069,7 +1294,7 @@ def on_admin_bot_on_off(bot, update, user_data):
                      text='Bot status was changed',
                      reply_markup=create_bot_settings_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_BOT_SETTINGS
+    return enums.ADMIN_BOT_SETTINGS
 
 
 def option_back_function(bot, update, return_fnc, return_title):
@@ -1088,7 +1313,7 @@ def on_admin_edit_welcome_message(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_order_options_keyboard(_),
             'Order options')
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     # user_id = get_user_id(update)
     welcome_message = update.message.text
     config_session = get_config_session()
@@ -1098,7 +1323,7 @@ def on_admin_edit_welcome_message(bot, update, user_data):
                      text='Welcome message was changed',
                      reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_edit_order_message(bot, update, user_data):
@@ -1108,7 +1333,7 @@ def on_admin_edit_order_message(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_order_options_keyboard(_),
             'Order options')
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     # user_id = get_user_id(update)
     order_message = update.message.text
     config_session = get_config_session()
@@ -1118,7 +1343,7 @@ def on_admin_edit_order_message(bot, update, user_data):
                      text='Order message was changed',
                      reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_edit_final_message(bot, update, user_data):
@@ -1128,7 +1353,7 @@ def on_admin_edit_final_message(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_order_options_keyboard(_),
             'Order options')
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
     final_message = update.message.text
     config_session = get_config_session()
     config_session['order_complete_text'] = final_message
@@ -1137,7 +1362,7 @@ def on_admin_edit_final_message(bot, update, user_data):
                      text='Final message was changed',
                      reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_edit_identification(bot, update, user_data):
@@ -1147,7 +1372,7 @@ def on_admin_edit_identification(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_order_options_keyboard(_),
             'Order options')
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
 
     message = update.message.text.split(maxsplit=2)
     first, second, question = message
@@ -1160,7 +1385,7 @@ def on_admin_edit_identification(bot, update, user_data):
                      text='Identification was changed',
                      reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_edit_restriction(bot, update, user_data):
@@ -1170,7 +1395,7 @@ def on_admin_edit_restriction(bot, update, user_data):
         option_back_function(
             bot, update, create_bot_order_options_keyboard(_),
             'Order options')
-        return ADMIN_ORDER_OPTIONS
+        return enums.ADMIN_ORDER_OPTIONS
 
     message = update.message.text.split(maxsplit=1)
     first, second = message
@@ -1182,7 +1407,7 @@ def on_admin_edit_restriction(bot, update, user_data):
                      text='Restriction options are changed',
                      reply_markup=create_bot_order_options_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_add_ban_list(bot, update, user_data):
@@ -1192,7 +1417,7 @@ def on_admin_add_ban_list(bot, update, user_data):
         option_back_function(
             bot, update, create_ban_list_keyboard(_),
             'Ban list')
-        return ADMIN_BAN_LIST
+        return enums.ADMIN_BAN_LIST
 
     username = update.message.text.replace('@', '').replace(' ', '')
     banned = config.get_banned_users()
@@ -1206,7 +1431,7 @@ def on_admin_add_ban_list(bot, update, user_data):
                      text='@{} was banned'.format(username),
                      reply_markup=create_ban_list_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_BAN_LIST
+    return enums.ADMIN_BAN_LIST
 
 
 def on_admin_remove_ban_list(bot, update, user_data):
@@ -1216,7 +1441,7 @@ def on_admin_remove_ban_list(bot, update, user_data):
         option_back_function(
             bot, update, create_ban_list_keyboard(_),
             'Ban list')
-        return ADMIN_BAN_LIST
+        return enums.ADMIN_BAN_LIST
 
     username = update.message.text.replace('@', '').replace(' ', '')
     banned = config.get_banned_users()
@@ -1229,4 +1454,4 @@ def on_admin_remove_ban_list(bot, update, user_data):
                      text='@{} was unbanned'.format(username),
                      reply_markup=create_ban_list_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return ADMIN_BAN_LIST
+    return enums.ADMIN_BAN_LIST

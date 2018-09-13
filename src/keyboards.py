@@ -106,6 +106,15 @@ def create_shipping_keyboard(trans):
     return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
+def create_warehouse_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('📊 Change product\'s credits'), callback_data='warehouse_credits')],
+        [InlineKeyboardButton(_('🚴‍♀️ Add credits to courier'), callback_data='warehouse_courier')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='warehouse_back')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
 def create_locations_keyboard(location_names, trans):
     _ = trans
     button_row = []
@@ -263,29 +272,10 @@ def create_statistics_keyboard(trans):
         [InlineKeyboardButton(_('🌝 Get statistics by user'), callback_data='statistics_user')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='statistics_back')]
     ]
-    # main_button_list = [
-    #     [InlineKeyboardButton(_('💵 Get statistics by all sells'),
-    #                           callback_data='statistics_all_sells')],
-    #     [InlineKeyboardButton(_('🛵 Get statistics by different couriers'),
-    #                           callback_data='statistics_couriers')],
-    #     [InlineKeyboardButton(_('🏠 Get statistics by locations'),
-    #                           callback_data='statistics_locations')],
-    #     [InlineKeyboardButton(_('🌕 Get statistics yearly'),
-    #                           callback_data='statistics_yearly')],
-    #     [InlineKeyboardButton(_('🌛 Get statistics monthly'),
-    #                           callback_data='statistics_monthly')],
-    #     [InlineKeyboardButton(_('🌝 Get statistics by user'),
-    #                           callback_data='statistics_user')],
-    #     [InlineKeyboardButton(_('↩ Back'),
-    #                           callback_data='statistics_back')],
-    # ]
-
     return InlineKeyboardMarkup(main_button_list)
 
 def create_calendar_keyboard(year, month, trans):
     _ = trans
-    # markup = types.InlineKeyboardMarkup()
-    # First row - Month and Year
     markup = []
     row = []
     current_date = datetime.date.today()
@@ -294,11 +284,6 @@ def create_calendar_keyboard(year, month, trans):
     row.append(InlineKeyboardButton(year, callback_data='year|{}'.format(year)))
     if not year >= current_date.year:
         row.append(InlineKeyboardButton('>', callback_data='calendar_next_year'))
-    # row = [
-    #     InlineKeyboardButton('<', callback_data='calendar_previous_year'),
-    #     InlineKeyboardButton(year, callback_data='year|{}'.format(year)),
-    #     InlineKeyboardButton('>', callback_data='calendar_next_year')
-    # ]
     markup.append(row)
     row = [
         InlineKeyboardButton('<', callback_data='calendar_previous_month'),
@@ -410,20 +395,6 @@ def create_select_products_chunk_keyboard(trans, chunk, selected_command, back_c
 
 
 
-# def create_bot_last_products_keyboard(trans, products):
-#     _ = trans
-#     buttons = []
-#     for i in range(50):
-#         btn = [InlineKeyboardButton(str(i), callback_data='bot_last_product_select|{}'.format(i))]
-#         buttons.append(btn)
-#     # for product in products:
-#     #     product_btn = [InlineKeyboardButton(product.title, callback_data='bot_last_product_select|{}'.format(product.id))]
-#     #     buttons.append(product_btn)
-#     buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data='bot_last_product_back')])
-#     return InlineKeyboardMarkup(buttons)
-
-
-
 def create_bot_locations_keyboard(trans):
     _ = trans
     main_button_list = [
@@ -444,10 +415,7 @@ def create_bot_order_options_keyboard(trans):
     _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('🏪 Products'), callback_data='bot_order_options_product')],
-        # [InlineKeyboardButton(_('➕️ Add new product'),
-        #                       callback_data='bot_order_options_product')],
-        # [InlineKeyboardButton(_('➖️ Delete product'),
-        #                       callback_data='bot_order_options_delete_product')],
+        [InlineKeyboardButton(_('🏗 Warehouse'), callback_data='bot_order_options_warehouse')],
         [InlineKeyboardButton(_('➕ Add discount'),
                               callback_data='bot_order_options_discount')],
         [InlineKeyboardButton(_('➕ Add delivery fee'),
@@ -639,14 +607,15 @@ def create_courier_order_status_keyboard(trans, order_id):
         [InlineKeyboardButton(_('✅ Order Done'), callback_data='confirm_courier_order_delivered|{}'.format(order_id))],
         [InlineKeyboardButton(_('🔥 Report client to admin'), callback_data='confirm_courier_report_client|{}'.format(order_id))],
         [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))],
-        [InlineKeyboardButton(_('Drop responsibility'), callback_data='dropped|{}'.format(order_id))]
+        [InlineKeyboardButton(_('❌ Drop responsibility'), callback_data='dropped|{}'.format(order_id))]
     ]
     return InlineKeyboardMarkup(buttons)
 
 def create_admin_order_status_keyboard(trans, order_id):
     _ = trans
     buttons = [
-        [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))]
+        [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))],
+        [InlineKeyboardButton(_('❌ Drop responsibility'), callback_data='admin_dropped|{}'.format(order_id))]
     ]
     return InlineKeyboardMarkup(buttons)
 

@@ -1,8 +1,9 @@
 from telegram import ParseMode, TelegramError
 import io
 import datetime
+import operator
 
-from .models import Order, OrderPhotos, OrderItem
+from .models import Order, OrderPhotos, OrderItem, ProductWarehouse
 
 from .helpers import config, get_trans, logger, get_user_id, get_channel_trans, get_user_session, session_client
 # from .keyboards import create_service_notice_keyboard, create_courier_order_status_keyboard
@@ -61,6 +62,9 @@ def make_unconfirm(bot, update, user_data):
         logger.info('Order № {} not found!'.format(order_id))
     else:
         # user_id = order.user.telegram_id
+        change_order_products_credits(order, True, order.courier)
+        order.courier = None
+        order.save()
         _ = get_channel_trans()
         order_data = OrderPhotos.get(order=order)
         bot.send_message(couriers_channel,
@@ -93,6 +97,7 @@ def resend_responsibility_keyboard(bot, update):
     except Order.DoesNotExist:
         logger.info('Order № {} not found!'.format(order_id))
     else:
+        change_order_products_credits(order, True, order.courier)
         order.confirmed = False
         order.courier = None
         order.save()
@@ -119,8 +124,9 @@ def resend_responsibility_keyboard(bot, update):
 
     query.answer(text='Order sent to couriers channel', show_alert=True)
 
-def bot_send_order_msg(bot, chat_id, message, trans_func, order_id):
-    order_data = OrderPhotos.get(order_id=order_id)
+def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=None):
+    if not order_data:
+        order_data = OrderPhotos.get(order_id=order_id)
     _ = trans_func
     order_msg = bot.send_message(chat_id,
                          text=message,
@@ -179,22 +185,62 @@ def get_order_count_and_price(*subqueries):
         total_price += order_item.count * order_item.total_price
     return orders_count, total_price
 
-def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
-    _ = trans
-    # first_iter = True
-    while True:
-        chunk = obj_list[:chunk_size]
-        obj_list = obj_list[chunk_size:]
-        # if first_iter:
-        #     msg = _(first_message)
-        #     first_iter = False
-        # else:
-        #     msg = '~' * len(first_message)
-        msg = _(first_message)
-        if obj_list:
-            markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command)
+def check_order_products_credits(order, trans, courier=None):
+    msg = ''
+    first_msg = True
+    for order_item in order.order_items:
+        product = order_item.product
+        if courier:
+            warehouse = ProductWarehouse.get(product=product, courier=courier)
+            warehouse_count = warehouse.count
         else:
-            markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command, back_command)
-        bot.send_message(chat_id, msg, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
-        if not obj_list:
-            break
+            warehouse_count = product.credits
+        if order_item.count > warehouse_count:
+            _ = trans
+            if courier:
+                if first_msg:
+                    msg += _('You don\'t have enough credits to deliver products:\n')
+                    first_msg = False
+                msg += _('Product: `{}`, Count: {}, Courier credits: {}\n').format(product.title, order_item.count, warehouse_count)
+            else:
+                if first_msg:
+                    msg += 'There are not enough credits in warehouse to deliver products:\n'
+                    first_msg = False
+                msg += _('Product: `{}`, Count: {}, Warehouse credits: {}\n').format(product.title, order_item.count, warehouse_count)
+    return msg
+
+
+def change_order_products_credits(order, add=False, courier=None):
+    if add:
+        op = operator.add
+    else:
+        op = operator.sub
+    for order_item in order.order_items:
+        product = order_item.product
+        if courier:
+            warehouse = ProductWarehouse.get(product=product, courier=courier)
+            warehouse.count = op(warehouse.count, order_item.count)
+            warehouse.save()
+        else:
+            product.credits = op(product.credits, order_item.count)
+            product.save()
+
+# def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
+#     _ = trans
+#     # first_iter = True
+#     while True:
+#         chunk = obj_list[:chunk_size]
+#         obj_list = obj_list[chunk_size:]
+#         # if first_iter:
+#         #     msg = _(first_message)
+#         #     first_iter = False
+#         # else:
+#         #     msg = '~' * len(first_message)
+#         msg = _(first_message)
+#         if obj_list:
+#             markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command)
+#         else:
+#             markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command, back_command)
+#         bot.send_message(chat_id, msg, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
+#         if not obj_list:
+#             break

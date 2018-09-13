@@ -434,7 +434,8 @@ def get_locale(update):
         language = update.callback_query.from_user.language_code
     else:
         language = update.message.from_user.language_code
-    print(language)
+    if language is None:
+        language = 'en-US'
 
     return language[:2]
 
