@@ -211,9 +211,9 @@ def create_bot_language_keyboard(trans):
     _ = trans
     keyboard = [
         [InlineKeyboardButton(
-            _('Hebrew'), callback_data='iw')],
+            _('עברית 🇮🇱'), callback_data='iw')],
         [InlineKeyboardButton(
-            _('English'), callback_data='en')]
+            _('🇺🇸 English'), callback_data='en')]
     ]
     return InlineKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -305,20 +305,22 @@ def create_calendar_keyboard(year, month, trans):
 
 def create_bot_settings_keyboard(trans):
     _ = trans
+    bot_status = config.get_bot_on_off()
+    bot_status = _('ON') if bot_status else _('OFF')
     main_button_list = [
+        [InlineKeyboardButton(_('💳 Order options'),
+                              callback_data='bot_settings_order_options')],
         [InlineKeyboardButton(_('🛵 Couriers'),
                               callback_data='bot_settings_couriers')],
         [InlineKeyboardButton(_('✉️ Channels'),
                               callback_data='bot_settings_channels')],
         [InlineKeyboardButton(_('⏰ Edit working hours'),
                               callback_data='bot_settings_edit_working_hours')],
-        [InlineKeyboardButton(_('💳 Order options'),
-                              callback_data='bot_settings_order_options')],
         [InlineKeyboardButton(_('🔥 Client ban-list'),
                               callback_data='bot_settings_ban_list')],
         [InlineKeyboardButton(_('☎️ Edit contact info'),
                               callback_data='bot_settings_edit_contact_info')],
-        [InlineKeyboardButton(_('⚡️ Bot ON/OFF'),
+        [InlineKeyboardButton(_('⚡️ Bot Status {}').format(bot_status),
                               callback_data='bot_settings_bot_on_off')],
         [InlineKeyboardButton(_('💫 Reset all data'),
                               callback_data='bot_settings_reset_all_data')],
@@ -414,11 +416,13 @@ def create_bot_locations_keyboard(trans):
 def create_bot_order_options_keyboard(trans):
     _ = trans
     main_button_list = [
-        [InlineKeyboardButton(_('🏪 Products'), callback_data='bot_order_options_product')],
-        [InlineKeyboardButton(_('🏗 Warehouse'), callback_data='bot_order_options_warehouse')],
-        [InlineKeyboardButton(_('➕ Add discount'),
+        [InlineKeyboardButton(_('🏪 My Products'),
+                              callback_data='bot_order_options_product')],
+        [InlineKeyboardButton(_('🏗 Warehouse'),
+                              callback_data='bot_order_options_warehouse')],
+        [InlineKeyboardButton(_('💲 Add discount'),
                               callback_data='bot_order_options_discount')],
-        [InlineKeyboardButton(_('➕ Add delivery fee'),
+        [InlineKeyboardButton(_('🚕 Add delivery fee'),
                               callback_data='bot_order_options_delivery_fee')],
         [InlineKeyboardButton(_('🎯 locations'),
                               callback_data='bot_order_options_add_locations')],
@@ -449,8 +453,8 @@ def create_back_button(trans):
 def create_on_off_buttons(trans):
     _ = trans
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton('ON', callback_data='on')],
-        [InlineKeyboardButton('OFF', callback_data='off')],
+        [InlineKeyboardButton(_('BOT ON'), callback_data='on')],
+        [InlineKeyboardButton(_('BOT OFF'), callback_data='off')],
         [InlineKeyboardButton(_('❌ Cancel'), callback_data='back')],
     ])
 

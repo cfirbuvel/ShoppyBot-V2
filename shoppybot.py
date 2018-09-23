@@ -144,8 +144,7 @@ def main():
                                      pass_user_data=True),
             ],
             enums.BOT_STATE_MY_ORDERS: [
-                # CallbackQueryHandler(triggers.on_my_orders, pass_user_data=True)
-                CallbackQueryHandler(triggers.OnMyOrders(), pass_user_data=True)
+                CallbackQueryHandler(triggers.on_my_orders, pass_user_data=True)
             ],
             enums.BOT_STATE_MY_ORDER_DATE: [
                 CallbackQueryHandler(triggers.on_calendar_change, pattern='^calendar', pass_user_data=True),

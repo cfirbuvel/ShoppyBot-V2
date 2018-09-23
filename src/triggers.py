@@ -465,10 +465,8 @@ def on_confirm_order(bot, update, user_data):
         txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
-        if 'location' in shipping_data:
-            if 'latitude' in shipping_data['location']:
-
-                order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
+        if 'latitude' in shipping_data['location']:
+            order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
         else:
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
@@ -1176,7 +1174,7 @@ def on_bot_settings_menu(bot, update):
         return enums.ADMIN_EDIT_CONTACT_INFO
     elif data == 'bot_settings_bot_on_off':
         bot_status = config.get_bot_on_off()
-        bot_status = _('ON') if bot_status else _('OFF')
+        bot_status = _('BOT ON') if bot_status else _('BOT OFF')
         msg = _('Bot status: {}').format(bot_status)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,

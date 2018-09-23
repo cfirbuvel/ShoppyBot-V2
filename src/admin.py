@@ -84,7 +84,7 @@ def on_admin_order_options(bot, update, user_data):
     if data == 'bot_order_options_product':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
-                              text=_('🏪 Products'),
+                              text=_('🏪 My Products'),
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -232,7 +232,7 @@ def on_admin_warehouse_products(bot, update, user_data):
         #     product_warehouse = ProductWarehouse(user=user, product=product)
         #     product_warehouse.save()
         # user_data['product_warehouse']['warehouse_id'] = product_warehouse.id
-        msg = _('🏗 Product: `{}`\n'
+        msg = _('🏗\nProduct: `{}`\n'
                 'Credits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -259,7 +259,7 @@ def on_admin_warehouse(bot, update, user_data):
         product = Product.get(id=product_id)
         # warehouse_id = user_data['product_warehouse']['warehouse_id']
         # product_warehouse = ProductWarehouse.get(id=warehouse_id)
-        msg = _('🏗 Product: `{}`\n'
+        msg = _('🏗\nProduct: `{}`\n'
                 'Credits: {}\n'
                 'Please enter new number of credits:').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id=message_id, reply_markup=create_back_button(_), parse_mode=ParseMode.MARKDOWN)
@@ -291,7 +291,7 @@ def on_admin_warehouse_courier(bot, update, user_data):
         # product_warehouse = ProductWarehouse.get(id=warehouse_id)
         product_id = user_data['product_warehouse']['product_id']
         product = Product.get(id=product_id)
-        msg = _('🏗 Product: `{}`\n'
+        msg = _('🏗\nProduct: `{}`\n'
                 'Credits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -307,7 +307,7 @@ def on_admin_warehouse_courier(bot, update, user_data):
             product_warehouse.save()
         user_data['product_warehouse']['courier_warehouse_id'] = product_warehouse.id
         #warehouse_id = user_data['product_warehouse']['warehouse_id']
-        msg = _('🏗 Product: `{}`\n'
+        msg = _('🏗\nProduct: `{}`\n'
                 'Courier: `{}`\n'
                 'Courier credits: {}\n'
                 'Please enter new number of credits:').format(product.title, courier.username, product_warehouse.count)
@@ -325,7 +325,7 @@ def on_admin_warehouse_product_credits(bot, update, user_data):
     # warehouse_id = user_data['product_warehouse']['warehouse_id']
     # product_warehouse = ProductWarehouse.get(id=warehouse_id)
     if update.callback_query and update.callback_query.data == 'back':
-        msg = _('🏗 Product: `{}`\n'
+        msg = _('🏗\nProduct: `{}`\n'
                 'Credits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, update.callback_query.message.chat_id, update.callback_query.message.message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -350,7 +350,7 @@ def on_admin_warehouse_product_credits(bot, update, user_data):
     product.save()
     msg = _('✅ Product\'s credits were changed to {}').format(credits)
     bot.send_message(chat_id, msg)
-    msg = _('🏗 Product: `{}`\n'
+    msg = _('🏗\nProduct: `{}`\n'
             'Credits: {}').format(product.title, product.credits)
     bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_WAREHOUSE
@@ -398,7 +398,7 @@ def on_admin_warehouse_courier_credits(bot, update, user_data):
     #admin_warehouse.save()
     msg = _('✅ You have given {} credits to courier `{}`').format(credits, courier_warehouse.courier.username)
     bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
-    msg = _('🏗 Product: `{}`\n'
+    msg = _('🏗\nProduct: `{}`\n'
             'Credits: {}').format(product.title, product.credits)
     bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_WAREHOUSE
@@ -426,7 +426,7 @@ def on_admin_products(bot, update, user_data):
         for product in Product.filter(is_active=True):
             shortcuts.send_product_info(bot, product, chat_id, _)
         bot.send_message(chat_id=query.message.chat_id,
-                              text=_('🏪 Products'),
+                              text=_('🏪 My Products'),
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCTS
@@ -474,7 +474,7 @@ def on_admin_delete_product(bot, update, user_data):
         del user_data['products_remove']
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
-                              text=_('🏪 Products'),
+                              text=_('🏪 My Products'),
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -513,7 +513,7 @@ def on_admin_product_add(bot, update, user_data):
     if data == 'bot_product_back':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
-                              text=_('🏪 Products'),
+                              text=_('🏪 My Products'),
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -660,7 +660,7 @@ def on_admin_txt_product_photo(bot, update, user_data):
     bot.send_message(chat_id=chat_id,
                      text=_('New Product Created\n✅'))
     bot.send_message(chat_id=chat_id,
-                     text=_('🏪 Products'),
+                     text=_('🏪 My Products'),
                      reply_markup=create_bot_products_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_PRODUCTS
