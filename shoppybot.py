@@ -197,6 +197,9 @@ def main():
             enums.ADMIN_COURIERS: [
                 CallbackQueryHandler(
                     triggers.on_admin_couriers, pattern='^bot_couriers')],
+            enums.ADMIN_COURIERS_SHOW: [
+                CallbackQueryHandler(admin.on_admin_show_courier, pass_user_data=True)
+            ],
             enums.ADMIN_COURIER_ADD: [
                 CallbackQueryHandler(admin.on_admin_add_courier, pass_user_data=True)
             ],
@@ -208,6 +211,9 @@ def main():
                     admin.on_admin_locations, pattern='^bot_locations')],
             enums.ADMIN_PRODUCTS: [
                 CallbackQueryHandler(admin.on_admin_products, pattern='^bot_products', pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCTS_SHOW: [
+                CallbackQueryHandler(admin.on_admin_show_product, pass_user_data=True)
             ],
             enums.ADMIN_PRODUCT_ADD: [
                 CallbackQueryHandler(admin.on_admin_product_add, pattern='^bot_product', pass_user_data=True)
@@ -234,6 +240,9 @@ def main():
             ],
             enums.ADMIN_CHANNELS: [
                 CallbackQueryHandler(triggers.on_admin_channels, pattern='^bot_channels')
+            ],
+            enums.ADMIN_CHANNELS_LANGUAGE: [
+                CallbackQueryHandler(triggers.on_admin_channels_language)
             ],
             enums.ADMIN_CHANNELS_SELECT_TYPE: [
                 CallbackQueryHandler(
@@ -301,18 +310,25 @@ def main():
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
-            enums.ADMIN_EDIT_IDENTIFICATION: [
-                CallbackQueryHandler(
-                    admin.on_admin_edit_identification, pass_user_data=True),
-                MessageHandler(Filters.text, admin.on_admin_edit_identification,
-                               pass_user_data=True),
-                CommandHandler('cancel', admin.on_admin_cancel),
+            enums.ADMIN_EDIT_IDENTIFICATION_STAGES: [
+                CallbackQueryHandler(admin.on_admin_edit_identification_stages, pass_user_data=True)
             ],
+            enums.ADMIN_EDIT_IDENTIFICATION_QUESTION: [
+                CallbackQueryHandler(admin.on_admin_edit_identification_question),
+                MessageHandler(Filters.text, admin.on_admin_edit_identification_question)
+            ],
+            # enums.ADMIN_EDIT_IDENTIFICATION: [
+            #     CallbackQueryHandler(
+            #         admin.on_admin_edit_identification, pass_user_data=True),
+            #     MessageHandler(Filters.text, admin.on_admin_edit_identification,
+            #                    pass_user_data=True),
+            #     CommandHandler('cancel', admin.on_admin_cancel),
+            # ],
             enums.ADMIN_EDIT_RESTRICTION: [
                 CallbackQueryHandler(
                     admin.on_admin_edit_restriction, pass_user_data=True),
-                MessageHandler(Filters.text, admin.on_admin_edit_restriction,
-                               pass_user_data=True),
+                # MessageHandler(Filters.text, admin.on_admin_edit_restriction,
+                #                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
             enums.ADMIN_ADD_DELIVERY_FEE: [

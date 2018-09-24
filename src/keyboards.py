@@ -274,6 +274,7 @@ def create_statistics_keyboard(trans):
     ]
     return InlineKeyboardMarkup(main_button_list)
 
+
 def create_calendar_keyboard(year, month, trans):
     _ = trans
     markup = []
@@ -302,6 +303,7 @@ def create_calendar_keyboard(year, month, trans):
         markup.append(row)
     markup.append([InlineKeyboardButton(_('↩ Back'), callback_data='back|')])
     return InlineKeyboardMarkup(markup)
+
 
 def create_bot_settings_keyboard(trans):
     _ = trans
@@ -374,6 +376,7 @@ def create_bot_products_keyboard(trans):
     ]
     return InlineKeyboardMarkup(buttons)
 
+
 def create_bot_product_add_keyboard(trans):
     _ = trans
     buttons = [
@@ -382,6 +385,7 @@ def create_bot_product_add_keyboard(trans):
         [InlineKeyboardButton(_('↩ Back'), callback_data='bot_product_back')]
     ]
     return InlineKeyboardMarkup(buttons)
+
 
 def create_select_products_chunk_keyboard(trans, chunk, selected_command, back_command=None):
     _ = trans
@@ -506,6 +510,7 @@ def general_select_keyboard(trans, objects, cmd_prefix= '', page_num=1, page_len
     buttons.append(back_btn)
     return InlineKeyboardMarkup(buttons)
 
+
 def general_select_one_keyboard(trans, objects, page_num=1, page_len=50):
     _ = trans
     buttons = []
@@ -615,6 +620,7 @@ def create_courier_order_status_keyboard(trans, order_id):
     ]
     return InlineKeyboardMarkup(buttons)
 
+
 def create_admin_order_status_keyboard(trans, order_id):
     _ = trans
     buttons = [
@@ -631,3 +637,29 @@ def create_are_you_sure_keyboard(trans, callback_mapping):
         InlineKeyboardButton(_('❌ No'), callback_data=callback_mapping['no'])
     ]
     return InlineKeyboardMarkup([buttons])
+
+
+def create_edit_identification_keyboard(trans, values):
+    _ = trans
+    stage_one_text, stage_two_text = (_('Enabled') if val else _('Disabled') for val in values)
+    stage_one_text = _('First stage: {}').format(stage_one_text)
+    stage_two_text = _('Second stage: {}').format(stage_two_text)
+    buttons = [
+        [InlineKeyboardButton(stage_one_text, callback_data='stage_one')],
+        [InlineKeyboardButton(stage_two_text, callback_data='stage_two')],
+        [InlineKeyboardButton(_('Save'), callback_data='save')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+def create_edit_restriction_keyboard(trans, values):
+    _ = trans
+    first, second = (_('Enabled') if val else _('Disabled') for val in values)
+    first_text = _('Only for customers option: {}').format(first)
+    second_text = _('Vip customers option: {}').format(second)
+    buttons = [
+        [InlineKeyboardButton(first_text, callback_data='first')],
+        [InlineKeyboardButton(second_text, callback_data='second')],
+        [InlineKeyboardButton(_('Save'), callback_data='save')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+

@@ -30,7 +30,7 @@ class ConfigHelper:
             defaults={'api_token': None, 'reviews_channel': None,
                       'service_channel': None, 'customers_channel': None,
                       'vip_customers_channel': None, 'couriers_channel': None,
-                      'channels_language': 'en',
+                      'channels_language': 'iw',
                       'welcome_text': 'Welcome text not configured yet',
                       'order_text': 'Order text not configured yet',
                       'order_complete_text': 'Order text not configured yet',
@@ -130,8 +130,8 @@ class ConfigHelper:
         if value is None:
             value = self.config.getboolean(self.section,
                                            'identification_required')
-        else:
-            value = value == '1' or value == 'yes'
+        # else:
+        #     value = value == '1' or value == 'yes'
         return value
 
     def get_identification_stage2_required(self):
@@ -139,8 +139,8 @@ class ConfigHelper:
         if value is None:
             value = self.config.getboolean(self.section,
                                            'identification_stage2_required')
-        else:
-            value = value == '1' or value == 'yes'
+        # else:
+        #     value = value == '1' or value == 'yes'
         return value
 
     def get_identification_stage2_question(self):
@@ -154,8 +154,8 @@ class ConfigHelper:
         value = get_config_session().get('only_for_customers')
         if value is None:
             value = self.config.getboolean(self.section, 'only_for_customers')
-        else:
-            value = value == '1' or value == 'yes'
+        # else:
+        #     value = value == '1' or value == 'yes'
         return value
 
     def get_has_courier_option(self):
@@ -170,8 +170,8 @@ class ConfigHelper:
         value = get_config_session().get('vip_customers')
         if value is None:
             value = self.config.getboolean(self.section, 'vip_customers')
-        else:
-            value = value == '1' or value == 'yes' or value is True
+        # else:
+        #     value = value == '1' or value == 'yes' or value is True
         return value
 
     def get_delivery_fee(self):

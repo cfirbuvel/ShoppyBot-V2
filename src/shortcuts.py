@@ -146,6 +146,8 @@ def send_product_info(bot, product, chat_id, trans):
     bot.send_message(chat_id,
                      text=msg)
 
+
+
 def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query_id=None):
     _ = trans
     current_date = datetime.date.today()
