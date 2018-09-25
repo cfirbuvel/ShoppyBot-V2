@@ -564,6 +564,10 @@ msgstr "ההזמנה בוטלה"
 msgid "Order confirmed from\n@{}\n"
 msgstr "התקבלה הזמנה חדשה מ\n@{}\n"
 
+#: shoppybot.py:768
+msgid "From {}\n\n"
+msgstr "מאיזור {}\n\n"
+
 #: shoppybot.py:788
 msgid "Stage 1 Identification - Selfie"
 msgstr "תמונת סלפי"
