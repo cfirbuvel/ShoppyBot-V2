@@ -165,6 +165,7 @@ def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query
         bot.send_message(text=msg, chat_id=chat_id, reply_markup=keyboards.create_calendar_keyboard(year, month, _),
                          parse_mode=ParseMode.MARKDOWN)
 
+
 def get_order_subquery(action, val, month, year):
     val = int(val)
     # if action == 'year':
@@ -179,6 +180,7 @@ def get_order_subquery(action, val, month, year):
         query.append(Order.date_created.day == val)
     return query
 
+
 def get_order_count_and_price(*subqueries):
     orders_count = Order.select().where(*subqueries).count()
     total_price = 0
@@ -186,6 +188,7 @@ def get_order_count_and_price(*subqueries):
     for order_item in orders_items:
         total_price += order_item.count * order_item.total_price
     return orders_count, total_price
+
 
 def check_order_products_credits(order, trans, courier=None):
     msg = ''

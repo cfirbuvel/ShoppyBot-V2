@@ -1322,11 +1322,10 @@ def on_admin_bot_on_off(bot, update, user_data):
     config_session = get_config_session()
     config_session['bot_on_off'] = status
     set_config_session(config_session)
-    bot.send_message(chat_id=query.message.chat_id,
-                     message_id=query.message.chat_id,
-                     text='Bot status was changed',
-                     reply_markup=create_bot_settings_keyboard(_),
-                     parse_mode=ParseMode.MARKDOWN)
+    msg = _('Bot status was changed')
+    bot.edit_message_text(msg, query.message.chat_id, query.message.message_id,
+                          reply_markup=create_bot_settings_keyboard(_),
+                          parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_BOT_SETTINGS
 
 

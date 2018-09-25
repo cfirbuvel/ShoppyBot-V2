@@ -49,7 +49,8 @@ def on_my_orders(bot, update, user_data):
         return state
     elif data == 'last_order':
         last_order = Order.select().order_by(Order.date_created.desc()).get()
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📦 My last order'),
+        msg = _('Order №{}').format(last_order.id)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
                               reply_markup=create_my_order_keyboard(last_order.id, not last_order.delivered, _),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -64,9 +65,9 @@ def on_my_order_date(bot, update, user_data):
     message_id = query.message.message_id
     if action == 'ignore':
         return enums.BOT_STATE_MY_ORDER_DATE
-    elif action in ('year', 'month'):
-        query.answer(_('Please select a day'))
-        return enums.BOT_STATE_MY_ORDER_DATE
+    # elif action in ('year', 'month'):
+    #     query.answer(_('Please select a day'))
+    #     return enums.BOT_STATE_MY_ORDER_DATE
     elif action == 'back':
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
@@ -75,15 +76,16 @@ def on_my_order_date(bot, update, user_data):
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.BOT_STATE_MY_ORDERS
-    elif action == 'day':
-        #order = Order.select().order_by(Order.date_created).get()
-        # user_data['my_order_date'] = user_data['calendar_date'], val
+    # elif action == 'year':
+    #
+    elif action in ('day', 'month', 'year'):
         year, month = user_data['calendar_date']
         queries = shortcuts.get_order_subquery(action, val, month, year)
         orders = Order.select().where(*queries)
         if len(orders) == 1:
             order = orders[0]
-            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📆 Order by date'),
+            msg = _('Order №{}').format(order.id)
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
                                   reply_markup=create_my_order_keyboard(order, not order.delivered, _),
                                   parse_mode=ParseMode.MARKDOWN)
             query.answer()
@@ -120,7 +122,8 @@ def on_my_order_select(bot, update, user_data):
         return enums.BOT_STATE_MY_ORDER_SELECT
     else:
         order = Order.get(id=val)
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('📆 Order by date'),
+        msg = _('Order №{}').format(order.id)
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
                               reply_markup=create_my_order_keyboard(order.id, not order.delivered, _),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -147,17 +150,16 @@ def on_my_last_order(bot, update, user_data):
     order = Order.get(id=order_id)
     if action == 'cancel':
         if not order.delivered:
-            service_chat = config.get_service_channel()
-            channel_trans = get_channel_trans()
-            msg = channel_trans('Order was cancelled by user')
-            shortcuts.bot_send_order_msg(bot, service_chat, msg, channel_trans, order_id)
-            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Order was cancelled!'),
-                                  reply_markup=create_my_order_keyboard(order.id, False, _),
-                                  parse_mode=ParseMode.MARKDOWN)
+            msg = _('Are you sure?')
+            mapping = {'yes': 'yes|{}'.format(order_id), 'no': 'no|{}'.format(order_id)}
+            bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                                  reply_markup=create_are_you_sure_keyboard(_, mapping))
             query.answer()
+            return enums.BOT_STATE_MY_LAST_ORDER_CANCEL
+        # elif order.fini
         else:
             query.answer('Cannot cancel - order was delivered')
-        return enums.BOT_STATE_MY_LAST_ORDER
+            return enums.BOT_STATE_MY_LAST_ORDER
         #     query.answer()
         # return enums.BOT_STATE_MY_LAST_ORDER
     elif action == 'show':
@@ -169,6 +171,29 @@ def on_my_last_order(bot, update, user_data):
         query.answer()
         return enums.BOT_STATE_MY_LAST_ORDER
 
+
+def on_my_last_order_cancel(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    order = Order.get(id=val)
+    if action == 'yes':
+        order.delivered = True
+        order.save()
+        service_chat = config.get_service_channel()
+        channel_trans = get_channel_trans()
+        msg = channel_trans('Order was cancelled by user')
+        shortcuts.bot_send_order_msg(bot, service_chat, msg, channel_trans, order.id)
+        msg = _('Order №{} was cancelled').format(order.id)
+    elif action == 'no':
+        msg = _('Order №{}').format(order.id)
+    bot.edit_message_text(chat_id=chat_id, message_id=msg_id, text=msg,
+                          reply_markup=create_my_order_keyboard(order.id, not order.delivered, _),
+                          parse_mode=ParseMode.MARKDOWN)
+    query.answer()
+    return enums.BOT_STATE_MY_LAST_ORDER
 # def on_my_order_by_date(bot, update, user_data):
 
 
@@ -432,7 +457,9 @@ def on_confirm_order(bot, update, user_data):
 
         _ = get_channel_trans()
 
-        text = create_service_notice(_, is_pickup, order_id, product_info, shipping_data,
+        customer_username = user.username
+
+        text = create_service_notice(_, is_pickup, order_id, customer_username, product_info, shipping_data,
                                      total, delivery_min, delivery_cost)
         order_data.order_text = text
 
@@ -445,9 +472,6 @@ def on_confirm_order(bot, update, user_data):
 
         txt += _('From {}\n\n').format(shipping_data['pickup_location'])
 
-        # order_data.save()
-        # order_data.order_hidden_text = txt
-        # order_data.save()
         shortcuts.bot_send_order_msg(bot, service_channel, txt, _, order_id, order_data)
         user_data['cart'] = {}
         user_data['shipping'] = {}
@@ -636,19 +660,19 @@ def on_service_send_order_to_courier(bot, update, user_data):
         usr_id = get_user_id(update)
         order = Order.get(id=order_id)
         _ = get_trans(usr_id)
-        credits_msg = shortcuts.check_order_products_credits(order, _)
-        if credits_msg:
-            bot.send_message(chat_id=usr_id, text=credits_msg, parse_mode=ParseMode.MARKDOWN)
-        else:
-            order_data = OrderPhotos.get(order=order)
-            order.courier = User.get(telegram_id=usr_id)
-            order.confirmed = True
-            order.save()
-            shortcuts.change_order_products_credits(order)
-            bot.send_message(chat_id=usr_id,
-                             text=order_data.order_text,
-                             reply_markup=create_admin_order_status_keyboard(_, order_id),
-                             parse_mode=ParseMode.HTML)
+        # credits_msg = shortcuts.check_order_products_credits(order, _)
+        # if credits_msg:
+        #     bot.send_message(chat_id=usr_id, text=credits_msg, parse_mode=ParseMode.MARKDOWN)
+        # else:
+        order_data = OrderPhotos.get(order=order)
+        order.courier = User.get(telegram_id=usr_id)
+        order.confirmed = True
+        order.save()
+        #shortcuts.change_order_products_credits(order)
+        bot.send_message(chat_id=usr_id,
+                         text=order_data.order_text,
+                         reply_markup=create_admin_order_status_keyboard(_, order_id),
+                         parse_mode=ParseMode.HTML)
         query.answer(text='Message sent', show_alert=True)
     elif label == 'order_ban_client':
         order = Order.get(id=order_id)
@@ -981,7 +1005,12 @@ def on_statistics_username(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     if query and query.data == 'back':
-        bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        msg = _('📈 Statistics')
+        bot.edit_message_text(msg, query.message.chat_id, query.message.message_id,
+                              reply_markup=create_statistics_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        # bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         return enums.ADMIN_STATISTICS
     username = update.message.text
     users_ids = list(User.select(User.id).where(User.username == username))
@@ -1068,6 +1097,7 @@ def on_statistics_menu(bot, update, user_data):
         return enums.ADMIN_STATISTICS_LOCATIONS
     elif data == 'statistics_user':
         msg = _('Enter username:')
+        bot.delete_message(chat_id, message_id)
         bot.send_message(chat_id=chat_id, text=msg, reply_markup=create_back_button(_))
         query.answer()
         return enums.ADMIN_STATISTICS_USER
@@ -1406,15 +1436,22 @@ def on_courier_confirm_order(bot, update):
         order.delivered = True
         order.save()
         courier_msg = _('Order №{} is completed!'.format(order_id))
-        courier = Courier.get(telegram_id=user_id)
+        _ = get_channel_trans()
+        try:
+            courier = Courier.get(telegram_id=user_id)
+            msg = _('Order №{} was delivered by courier {}\n').format(order.id, courier.username)
+        except Courier.DoesNotExist:
+            user = User.get(telegram_id=user_id)
+            msg = _('Order №{} was delivered by admin {}\n').format(order.id, user.username)
+        msg += _('Order can be finished now.')
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
                               text=courier_msg)
         service_channel = config.get_service_channel()
-        _ = get_channel_trans()
-        service_msg = _('Order №{} was delivered by courier {}\n'
-                        'Order can be finished now.').format(order_id, courier.username)
-        shortcuts.bot_send_order_msg(bot, service_channel, service_msg, _, order_id)
+        # _ = get_channel_trans()
+        # service_msg = _('Order №{} was delivered by courier {}\n'
+        #                 'Order can be finished now.').format(order_id, courier.username)
+        shortcuts.bot_send_order_msg(bot, service_channel, msg, _, order_id)
         return enums.COURIER_STATE_INIT
     elif action == 'no':
         bot.delete_message(chat_id=chat_id,

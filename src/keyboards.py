@@ -286,9 +286,11 @@ def create_calendar_keyboard(year, month, trans):
     if not year >= current_date.year:
         row.append(InlineKeyboardButton('>', callback_data='calendar_next_year'))
     markup.append(row)
+    month_name = calendar.month_name[month]
+    month_name = _(month_name)
     row = [
         InlineKeyboardButton('<', callback_data='calendar_previous_month'),
-        InlineKeyboardButton(calendar.month_name[month], callback_data='month|{}'.format(month)),
+        InlineKeyboardButton(month_name, callback_data='month|{}'.format(month)),
         InlineKeyboardButton('>', callback_data='calendar_next_month')
     ]
     markup.append(row)
@@ -624,6 +626,7 @@ def create_courier_order_status_keyboard(trans, order_id):
 def create_admin_order_status_keyboard(trans, order_id):
     _ = trans
     buttons = [
+        [InlineKeyboardButton(_('✅ Order Done'), callback_data='confirm_courier_order_delivered|{}'.format(order_id))],
         [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))],
         [InlineKeyboardButton(_('❌ Drop responsibility'), callback_data='admin_dropped|{}'.format(order_id))]
     ]

@@ -82,7 +82,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
     return text
 
 
-def create_service_notice(trans, is_pickup, order_id, product_info, shipping_data,
+def create_service_notice(trans, is_pickup, order_id, username, product_info, shipping_data,
                           total, delivery_min, delivery_cost):
     _ = trans
     text = _('Order №{} notice:').format(order_id)
@@ -114,6 +114,8 @@ def create_service_notice(trans, is_pickup, order_id, product_info, shipping_dat
 
     text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
+    text += '\n'
+    text += _('Customer: {}').format(username)
     text += '\n'
     text += _('Vip Customer') + '\n' if is_vip else ''
     text += '\n\n'
