@@ -437,13 +437,13 @@ def on_confirm_order(bot, update, user_data):
         order_data.order_text = text
 
         # ORDER CONFIRMED, send the details to service channel
-        txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
+        txt = _('Order confirmed from\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
+        if 'location' in shipping_data:
+            if 'latitude' in shipping_data['location']:
+                order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
 
-        if 'latitude' in shipping_data['location']:
-            order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
-        else:
-            txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
+        txt += _('From {}\n\n').format(shipping_data['pickup_location'])
 
         # order_data.save()
         # order_data.order_hidden_text = txt
