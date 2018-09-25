@@ -296,6 +296,14 @@ msgstr "הכנס יוזר של לקוח"
 msgid "❌Reset all data❌"
 msgstr "❌מחק נתונים❌"
 
+#: keyboards.py:290
+msgid "September"
+msgstr "סעפטעמבער"
+
+#: keyboards.py:290
+msgid "August"
+msgstr "אויגוסט"
+
 #: shoppybot.py:315
 msgid "🛵 View couriers"
 msgstr "🚕 השליחים שלי"

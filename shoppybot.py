@@ -153,6 +153,9 @@ def main():
             enums.BOT_STATE_MY_LAST_ORDER: [
                 CallbackQueryHandler(triggers.on_my_last_order, pass_user_data=True)
             ],
+            enums.BOT_STATE_MY_LAST_ORDER_CANCEL: [
+                CallbackQueryHandler(triggers.on_my_last_order_cancel, pass_user_data=True)
+            ],
             enums.BOT_STATE_MY_ORDER_SELECT:[
                 CallbackQueryHandler(triggers.on_my_order_select, pass_user_data=True)
             ],
