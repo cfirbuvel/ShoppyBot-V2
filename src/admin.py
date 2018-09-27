@@ -106,7 +106,7 @@ def on_admin_order_options(bot, update, user_data):
         bot.edit_message_text(
             chat_id=query.message.chat_id,
             message_id=query.message.message_id,
-            text=('Enter discount like:\n'
+            text=_('Enter discount like:\n'
                   '50 > 500: all deals above 500$ will be -100$\n'
                   '10% > 500: all deals above 500% will be -10%\n'
                   'Current discount: {}'.format(config.get_discount())),
@@ -214,8 +214,7 @@ def on_admin_warehouse_products(bot, update, user_data):
     elif action == 'select':
         user_data['product_warehouse'] = {'product_id': val}
         product = Product.get(id=val)
-        msg = _('🏗\nProduct: `{}`\n'
-                'Credits: {}').format(product.title, product.credits)
+        msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_WAREHOUSE
@@ -241,7 +240,7 @@ def on_admin_warehouse(bot, update, user_data):
         product_id = user_data['product_warehouse']['product_id']
         product = Product.get(id=product_id)
         msg = _('🏗\nProduct: `{}`\n'
-                'Credits: {}\n'
+                'Credits: {}\n\n'
                 'Please enter new number of credits:').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id=message_id, reply_markup=create_back_button(_), parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -270,8 +269,7 @@ def on_admin_warehouse_courier(bot, update, user_data):
     elif action == 'back':
         product_id = user_data['product_warehouse']['product_id']
         product = Product.get(id=product_id)
-        msg = _('🏗\nProduct: `{}`\n'
-                'Credits: {}').format(product.title, product.credits)
+        msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_WAREHOUSE
@@ -287,7 +285,7 @@ def on_admin_warehouse_courier(bot, update, user_data):
         user_data['product_warehouse']['courier_warehouse_id'] = product_warehouse.id
         msg = _('🏗\nProduct: `{}`\n'
                 'Courier: `{}`\n'
-                'Courier credits: {}\n'
+                'Courier credits: {}\n\n'
                 'Please enter new number of credits:').format(product.title, courier.username, product_warehouse.count)
         bot.edit_message_text(msg, chat_id, message_id=message_id, reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -301,8 +299,7 @@ def on_admin_warehouse_product_credits(bot, update, user_data):
     product_id = user_data['product_warehouse']['product_id']
     product = Product.get(id=product_id)
     if update.callback_query and update.callback_query.data == 'back':
-        msg = _('🏗\nProduct: `{}`\n'
-                'Credits: {}').format(product.title, product.credits)
+        msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, update.callback_query.message.chat_id, update.callback_query.message.message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_WAREHOUSE
@@ -316,16 +313,15 @@ def on_admin_warehouse_product_credits(bot, update, user_data):
         return enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS
     credits = abs(credits)
     if credits > 2**63-1:
-        msg = _('Entered amount is too big\n'
+        msg = _('Entered amount is too big\n\n'
                 'Please enter new number of credits:')
         bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
         return enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS
     product.credits = credits
     product.save()
-    msg = _('✅ Product\'s credits were changed to {}').format(credits)
+    msg = _('✅\nProduct: {}\ncredits were changed to {}').format(product.title, credits)
     bot.send_message(chat_id, msg)
-    msg = _('🏗\nProduct: `{}`\n'
-            'Credits: {}').format(product.title, product.credits)
+    msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
     bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_WAREHOUSE
 
@@ -355,7 +351,7 @@ def on_admin_warehouse_courier_credits(bot, update, user_data):
     courier_warehouse = ProductWarehouse.get(id=warehouse_id)
     total_credits = product.credits + courier_warehouse.count
     if credits > total_credits:
-        msg = _('Cannot give to courier more credits than you have in warehouse: {}\n'
+        msg = _('Cannot give to courier more credits than you have in warehouse: {}\n\n'
                 'Please enter new number of credits:').format(total_credits)
         bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
         return enums.ADMIN_WAREHOUSE_COURIER_CREDITS
@@ -364,10 +360,9 @@ def on_admin_warehouse_courier_credits(bot, update, user_data):
     courier_warehouse.count = credits
     courier_warehouse.save()
     product.save()
-    msg = _('✅ You have given {} credits to courier `{}`').format(credits, courier_warehouse.courier.username)
+    msg = _('✅\nCourier `{}` received `{}` credits').format(credits, courier_warehouse.courier.username)
     bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
-    msg = _('🏗\nProduct: `{}`\n'
-            'Credits: {}').format(product.title, product.credits)
+    msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
     bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_WAREHOUSE
 
@@ -451,7 +446,7 @@ def on_admin_show_product(bot, update, user_data):
                        photo=image_stream)
         msg = messages.create_admin_product_description(_, product.title, product_prices)
         bot.send_message(chat_id, msg)
-        msg = _('Select a product:')
+        msg = _('product {} viewed:').format(product.title)
         bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
                          reply_markup=general_select_one_keyboard(_, products))
         query.answer()
@@ -763,7 +758,7 @@ def on_admin_show_courier(bot, update, user_data):
         locations = CourierLocation.filter(courier=courier)
         locations = [item.location.title for item in locations]
         msg = ''
-        msg += _('Name:\n`@{}`\n').format(courier.username)
+        msg += _('name:\n`@{}`\n').format(courier.username)
         msg += _('courier ID:\n`{}`\n').format(courier.id)
         msg += _('telegram ID:\n`{}`\n').format(courier.telegram_id)
         msg += _('locations:\n{}\n').format(locations)
@@ -930,10 +925,10 @@ def on_admin_btn_courier_location(bot, update, user_data):
     location_ids = user_data['add_courier']['location_ids']
     if location_id in location_ids:
         location_ids = [l_id for l_id in location_ids if location_id != l_id]
-        text = 'Location removed'
+        text = _('Courier location removed')
     else:
         location_ids.append(location_id)
-        text = 'Location added'
+        text = _('Courier location added')
     user_data['add_courier']['location_ids'] = location_ids
 
     locations = []
@@ -1481,7 +1476,7 @@ def on_admin_add_ban_list(bot, update, user_data):
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
             bot, update, create_ban_list_keyboard(_),
-            'Ban list')
+            _('🔥 Client ban-list'))
         return enums.ADMIN_BAN_LIST
 
     username = update.message.text.replace('@', '').replace(' ', '')
@@ -1505,7 +1500,7 @@ def on_admin_remove_ban_list(bot, update, user_data):
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
             bot, update, create_ban_list_keyboard(_),
-            'Ban list')
+            _('🔥 Client ban-list'))
         return enums.ADMIN_BAN_LIST
 
     username = update.message.text.replace('@', '').replace(' ', '')

@@ -93,7 +93,7 @@ def on_my_order_date(bot, update, user_data):
             return enums.BOT_STATE_MY_LAST_ORDER
         else:
             orders_ids = [order.id for order in orders]
-            orders = [('Order №{}'.format(val), val) for val in orders_ids]
+            orders = [(_('Order №{}').format(val), val) for val in orders_ids]
             user_data['my_orders_by_date_ids'] = orders_ids
             bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
                                   reply_markup=general_select_one_keyboard(_, orders),
@@ -113,7 +113,7 @@ def on_my_order_select(bot, update, user_data):
         return state
     elif action == 'page':
         current_page = int(val)
-        orders = [('Order №{}'.format(val), val) for val in user_data['my_orders_by_date_ids']]
+        orders = [(_('Order №{}').format(val), val) for val in user_data['my_orders_by_date_ids']]
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=_('Select order:'),
                               reply_markup=general_select_one_keyboard(_, orders, current_page),
@@ -529,7 +529,7 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
                      text=order_data.order_text,
                      reply_markup=create_courier_order_status_keyboard(_, order_id),
                      parse_mode=ParseMode.HTML)
-    query.answer(text='Message sent', show_alert=True)
+    query.answer(text=_('Order sent to couriers channel'), show_alert=True)
 
 
 def on_service_send_order_to_courier(bot, update, user_data):
@@ -632,7 +632,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
                              parse_mode=ParseMode.HTML,
                              )
 
-            query.answer(text='Order sent to couriers channel', show_alert=True)
+            query.answer(text=_('Order sent to couriers channel'), show_alert=True)
         query.answer(text='You have disabled courier\'s option', show_alert=True)
     elif label == 'order_finished':
         order = Order.get(id=order_id)
@@ -673,7 +673,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
                          text=order_data.order_text,
                          reply_markup=create_admin_order_status_keyboard(_, order_id),
                          parse_mode=ParseMode.HTML)
-        query.answer(text='Message sent', show_alert=True)
+        query.answer(text=_('Order send by admin'), show_alert=True)
     elif label == 'order_ban_client':
         order = Order.get(id=order_id)
         # usr = User.get(order_id=order_id)
@@ -742,8 +742,7 @@ def service_channel_courier_query_handler(bot, update, user_data):
             except CourierLocation.DoesNotExist:
                 bot.send_message(
                     config.get_couriers_channel(),
-                    text='{} your location and customer locations are '
-                         'different'.format(courier_nickname),
+                    text=_('@{} your location and customer locations are different').format(courier_nickname),
                     parse_mode=ParseMode.HTML
                 )
             else:
@@ -992,7 +991,7 @@ def on_statistics_locations(bot, update, user_data):
         count, price = shortcuts.get_order_count_and_price((Order.confirmed == True),
                                                            Order.location == location, *subquery)
 
-        message = _('Location: `@{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
+        message = _('Location: `{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -1152,9 +1151,10 @@ def on_bot_settings_menu(bot, update):
         query.answer()
         return enums.ADMIN_EDIT_WORKING_HOURS
     elif data == 'bot_settings_ban_list':
+        msg = _('🔥 Client ban-list')
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
-                              text='Ban list',
+                              text=msg,
                               reply_markup=create_ban_list_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -1172,7 +1172,7 @@ def on_bot_settings_menu(bot, update):
     elif data == 'bot_settings_bot_on_off':
         bot_status = config.get_bot_on_off()
         bot_status = _('BOT ON') if bot_status else _('BOT OFF')
-        msg = _('Bot status: {}').format(bot_status)
+        msg = _('Bot status:\n{}').format(bot_status)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
@@ -1349,7 +1349,7 @@ def on_admin_ban_list(bot, update):
         banned = config.get_banned_users()
         banned = ['@{}'.format(ban) for ban in banned]
         msg = ', '.join(banned)
-        msg = 'Banned users: {}'.format(msg)
+        msg = _('Banned users: {}').format(msg)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
@@ -1358,7 +1358,7 @@ def on_admin_ban_list(bot, update):
         query.answer()
         return enums.ADMIN_BAN_LIST
     elif data == 'bot_ban_list_remove':
-        msg = 'Type username: @username or username'
+        msg = _('Type username: @username or username')
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
@@ -1366,7 +1366,7 @@ def on_admin_ban_list(bot, update):
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_BAN_LIST_REMOVE
     elif data == 'bot_ban_list_add':
-        msg = 'Type username: @username or username'
+        msg = _('Type username: @username or username')
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
@@ -1435,14 +1435,15 @@ def on_courier_confirm_order(bot, update):
         order = Order.get(id=order_id)
         order.delivered = True
         order.save()
-        courier_msg = _('Order №{} is completed!'.format(order_id))
+        courier_msg = _('Order №{} completed!').format(order_id)
         _ = get_channel_trans()
         try:
             courier = Courier.get(telegram_id=user_id)
-            msg = _('Order №{} was delivered by courier {}\n').format(order.id, courier.username)
+            msg = _('Order №{}\nwas delivered by courier {}\n').format(order.id, courier.username)
         except Courier.DoesNotExist:
             user = User.get(telegram_id=user_id)
-            msg = _('Order №{} was delivered by admin {}\n').format(order.id, user.username)
+            msg = _('Order №{}\nwas delivered by admin {}\n').format(order.id, user.username)
+        msg += '\n'
         msg += _('Order can be finished now.')
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
