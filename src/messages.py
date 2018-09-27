@@ -159,7 +159,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
     text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
     text += '\n'
-    text += _('Customer: {}').format(username)
+    text += _('Customer: @{}').format(username)
     text += '\n'
     text += _('Vip Customer') + '\n' if is_vip else ''
     text += '\n\n'
