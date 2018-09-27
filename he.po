@@ -36,6 +36,10 @@ msgid "↩ Back"
 msgstr "↩ אחורה"
 
 #: shoppybot.py:65
+msgid "Save"
+msgstr "שמור"
+
+#: shoppybot.py:65
 msgid "✅ Confirm"
 msgstr "✅ אשר"
 
@@ -66,22 +70,6 @@ msgstr "❌ בטל שליחות"
 #: shoppybot.py:66
 msgid "Courier: @{}, apply for order №{}.\nConfirm this?"
 msgstr "שליח @{} קיבל את הזמנה מס׳{}.\nהאם אתה רוצה לאשר?"
-
-#: shoppybot.py:66
-msgid "Order №{} was delivered by courier @{}\n"
-msgstr "הזמנה מס׳ {} נשלחה ע״י השליח @{}\n"
-
-#: shoppybot.py:66
-msgid "Order №{} was delivered by admin {}\n"
-msgstr "הזמנה מס׳{} נשלחה ע״י המנהל {}\n"
-
-#: shoppybot.py:66
-msgid "Order can be finished now."
-msgstr "ניתן לסיים את ההזמנה כעת"
-
-#: shoppybot.py:66
-msgid "Order №{} is completed!"
-msgstr "הזמנה מס׳ {}\nהסתיימה בהצלחה ✅"
 
 #: shoppybot.py:112
 msgid "👍"
@@ -139,8 +127,7 @@ msgstr "אשר/י את ההזמנה"
 msgid "Items in cart:"
 msgstr "מוצרים בסל:"
 
-#: shoppybot.py:178 shoppybot.py:183 shoppybot.py:186 shoppybot.py:214
-#: shoppybot.py:219 shoppybot.py:222
+#: shoppybot.py:178
 msgid "Total: ${}"
 msgstr "סה״כ: {}₪"
 
@@ -149,8 +136,40 @@ msgid "Order №{} notice:"
 msgstr "פרטי הזמנה מס׳{}:"
 
 #: shoppybot.py:196
+msgid "Order №{}"
+msgstr "הזמנה מס׳{}:"
+
+#: shoppybot.py:196
+msgid "Order №{} completed!"
+msgstr "הזמנה מס׳{}\nהושלמה✅:"
+
+#: shoppybot.py:196
+msgid "Order №{} was cancelled"
+msgstr "הזמנה מס׳{}\nבוטלה❌:"
+
+#: shoppybot.py:196
+msgid "Order №{}\nwas delivered by courier {}\n"
+msgstr "הזמנה מס׳{}\nנשלחה ע״י השליח @{}\n"
+
+#: shoppybot.py:196
+msgid "Order №{}\nwas delivered by admin {}\n"
+msgstr "הזמנה מס׳{}\nנשלחה ע״י המנהל {}\n"
+
+#: shoppybot.py:196
+msgid "Order can be finished now."
+msgstr "ניתן לסיים הזמנה כעת"
+
+#: shoppybot.py:196
+msgid "Order №{} was dropped!"
+msgstr "הזמנה מס׳{} בוטלה:"
+
+#: shoppybot.py:196
 msgid "Vip Costumer"
 msgstr "לקוח VIP"
+
+#: shoppybot.py:196
+msgid "Customer: @{}"
+msgstr "יוזר לקוח: @{}"
 
 #: shoppybot.py:227
 msgid "Shipping details:"
@@ -238,7 +257,7 @@ msgstr "📦 הזמנה אחרונה"
 
 #: shoppybot.py:305
 msgid "⚙ Bot settings"
-msgstr "⚙️ הגדרות בוט️"
+msgstr "⚙  הגדרות בוט️"
 
 #: shoppybot.py:306
 msgid "📈 Statistics"
@@ -276,17 +295,17 @@ msgstr "⚡️ מצב הבוט {}"
 msgid "💫 Reset all data"
 msgstr "💫️ אפס נתונים"
 
-#: shoppybot.py:920
-msgid "Total confirmed orders\n\ncount: {}\ntotal cost: {}"
+#: keyboards.py:192
+msgid "Total confirmed orders\n\nCount: {}\nTotal cost: {}"
 msgstr "סה״כ מכירות כלליות:\n\nכמות: {}\nסה״כ מחיר: {}"
 
-#: shoppybot.py:920
-msgid "Courier: `@{}`\nOrders: {}, orders cost {}"
-msgstr "שליח: `@{}`\nהזמנות: {}, סה״כ מחיר {}"
+#: keyboards.py:192
+msgid "Location: `{}`\n\nOrders count: {}\nTotal cost: {}"
+msgstr "מכירות עפ״י איזור `{}`\n\nכמות: {}\nסה״כ מחיר: {}"
 
 #: shoppybot.py:920
-msgid "Location: {}\nOrders: {}, orders cost {}"
-msgstr "אזור: {}\nהזמנות: {}, סה״כ מחיר {}"
+msgid "Courier: `@{}`\n\nOrders count: {}\nTotal cost: {}"
+msgstr "שליח: `@{}`\n\nסה״כ כמות הזמנות: {}\nסה״כ מחיר: {}"
 
 #: keyboards.py:192
 msgid "Orders: {}, orders cost {}"
@@ -296,9 +315,9 @@ msgstr "הזמנות: {}\nסה״כ מחיר: {}"
 msgid "💵 General statistics"
 msgstr "💵 סטטיסטיקה כללית"
 
-#: keyboards.py:188
-msgid "🚕 Get statistics by different couriers"
-msgstr "🚕 סטטיסטיקה עפ״י שליחים"
+#: keyboards.py:186
+msgid "🛵 Get statistics by different couriers"
+msgstr "🚕 סטטיסטיקה עפ״י שליח"
 
 #: keyboards.py:190
 msgid "🏠 Get statistics by locations"
@@ -309,6 +328,14 @@ msgid "🌝 Get statistics by user"
 msgstr "🌕 סטטיסטיקה עפ״י לקוח"
 
 #: keyboards.py:192
+msgid "Select a courier:"
+msgstr "לחץ על שליח לבחירה"
+
+#: keyboards.py:192
+msgid "Select location:"
+msgstr "לחץ על איזור לבחירה"
+
+#: keyboards.py:192
 msgid "Enter username:"
 msgstr "הכנס יוזר של לקוח"
 
@@ -317,7 +344,7 @@ msgid "❌Reset all data❌"
 msgstr "❌מחק נתונים❌"
 
 #: shoppybot.py:315
-msgid "🚕 View couriers"
+msgid "🛵 View couriers"
 msgstr "🚕 השליחים שלי"
 
 #: shoppybot.py:316
@@ -377,64 +404,12 @@ msgid "No products to delete"
 msgstr "אין מוצרים למחיקה"
 
 #: shoppybot.py:320
-msgid "🛍 Categories"
-msgstr "🛍 קטגוריות"
-
-#: shoppybot.py:320
-msgid "Please enter the name of category"
-msgstr "הכנס שם קטגוריה"
-
-#: shoppybot.py:320
-msgid "Category `{}` has been created"
-msgstr "קטגוריה בשם `{}` נוצרה בהצלחה"
-
-#: shoppybot.py:320
-msgid "Category `{}` has been deleted"
-msgstr "קטגוריה בשם `{}` נמחקה"
-
-#: shoppybot.py:320
-msgid "Cannot delete default category"
-msgstr "לא ניתן למחוק קטגוריה ראשית"
-
-#: shoppybot.py:320
-msgid "Category `{}` was updated"
-msgstr "קטגוריה בשם `{}` עודכנה"
-
-#: shoppybot.py:320
-msgid "Please select a category:"
-msgstr "בחר קטגוריה"
-
-#: shoppybot.py:320
-msgid "Default"
-msgstr "קטגוריה ראשית"
-
-#: shoppybot.py:320
-msgid "Please select products to add"
-msgstr "בחר מוצר להוספה"
-
-#: shoppybot.py:320
 msgid "💲 Add discount"
 msgstr "💲 הוסף הנחה"
 
 #: shoppybot.py:320
-msgid "🚕 Delivery fee"
-msgstr "🚕 דמי משלוח"
-
-#: shoppybot.py:320
-msgid "➕ Add delivery fee"
-msgstr "➕ הוסף דמי משלוח"
-
-#: shoppybot.py:320
-msgid "🎖 Vip customers delivery fee"
-msgstr "🎖 דמי משלוח ללקוחות VIP"
-
-#: shoppybot.py:320
-msgid "Delivery fee for vip customers was activated"
-msgstr "דמי משלוח ללקוחות VIP הופעלו"
-
-#: shoppybot.py:320
-msgid "Delivery fee for vip customers was deactivated"
-msgstr "דמי משלוח ללקוחות VIP בוטלו"
+msgid "🚕 Add delivery fee"
+msgstr "🚕 הוסף דמי משלוח"
 
 #: shoppybot.py:318
 msgid "🎯 Locations"
@@ -445,8 +420,8 @@ msgid "🎯️ View locations"
 msgstr "🎯 האיזורים שלי"
 
 #: shoppybot.py:318
-msgid "My locations:\n\n{}"
-msgstr "איזורי פעילות מוגדרים:\n\n{}"
+msgid "Your locations:\n\n{}"
+msgstr "האיזורים שלי:\n\n{}"
 
 #: shoppybot.py:318
 msgid "➕ Add location"
@@ -454,7 +429,7 @@ msgstr "➕ הוסף איזור"
 
 #: shoppybot.py:318
 msgid "Enter new location"
-msgstr "הכנס איזור פעילות חדש"
+msgstr "הוסף איזור חדש"
 
 #: shoppybot.py:318
 msgid "➖ Remove location"
@@ -465,32 +440,32 @@ msgid "Choose location to delete"
 msgstr "בחר איזור למחיקה"
 
 #: shoppybot.py:318
-msgid "👨 Edit identification process"
+msgid "Courier `{}` has been deleted"
+msgstr "השליח `{}` נמחק"
+
+#: shoppybot.py:318
+msgid "Courier added"
+msgstr "שליח נוסף בהצלחה"
+
+#: shoppybot.py:318
+msgid "Courier location removed"
+msgstr "נמחק איזור לשליח"
+
+#: shoppybot.py:318
+msgid "Courier location added"
+msgstr "איזור חדש לשליח נוסף"
+
+#: shoppybot.py:318
+msgid "Identification question: {}\nEnter new identification question:"
+msgstr "שאלה שניה (בד״כ קיר פייסבוק):\n`{}`\n\nהכנס שאלה חדשה:"
+
+#: shoppybot.py:318
+msgid "👨‍ Edit identify process"
 msgstr "👨‍ ערוך תהליך אימות"
 
 #: shoppybot.py:318
-msgid "👨 Edit identification stages"
-msgstr "👨‍ ערוך שלבי אימות"
-
-#: shoppybot.py:318
-msgid "First stage: {}"
-msgstr "שלב אימות ראשון: {}"
-
-#: shoppybot.py:318
-msgid "Second stage: {}"
-msgstr "שלב אימות שני: {}"
-
-#: shoppybot.py:318
-msgid "🔥 Edit restricted area"
+msgid "🔥 Edit Restricted area"
 msgstr "🔥 ערוך מגבלות בוט"
-
-#: shoppybot.py:318
-msgid "Only for customers option: {}"
-msgstr "בוט פעיל רק למי שבקבוצת לקוחות: {}"
-
-#: shoppybot.py:318
-msgid "Vip customers option: {}"
-msgstr "הגדרת לקוחות VIP: {}"
 
 #: shoppybot.py:318
 msgid "✉ Edit Welcome message"
@@ -517,6 +492,10 @@ msgid "➕ Add to ban list"
 msgstr "➕ הוסף לרשימה השחורה"
 
 #: shoppybot.py:318
+msgid "Type username: @username or username"
+msgstr "רשום שם יוזר עם או בלי שטרודל @"
+
+#: shoppybot.py:318
 msgid "BOT ON"
 msgstr "✅ בוט פעיל"
 
@@ -526,7 +505,7 @@ msgstr "⛔️ בוט סגור"
 
 #: shoppybot.py:318
 msgid "🛵 Send order to courier channel"
-msgstr "🛵 העברת ההזמנה לערוץ שליחים"
+msgstr "🚕 העברת ההזמנה לערוץ שליחים"
 
 #: shoppybot.py:318
 msgid "🚀 Send order to specific courier"
@@ -534,7 +513,7 @@ msgstr "🚀 העברת המשלוח לשליח ספציפי"
 
 #: shoppybot.py:318
 msgid "🚕 Send order yourself"
-msgstr "🚕 שלח הזמנה בעצמך"
+msgstr "🚁 שלח הזמנה בעצמך"
 
 #: shoppybot.py:318
 msgid "⭐ Add user to VIP"
@@ -546,7 +525,7 @@ msgstr "🔥 הוסף לרשימה השחורה"
 
 #: shoppybot.py:318
 msgid "✅ Order Finished"
-msgstr "✅ סיים הזמנה"
+msgstr "✅ ההזמנה הסתיימה"
 
 #: shoppybot.py:318
 msgid "❌ Cancel order"
@@ -577,34 +556,6 @@ msgid "❌ Drop responsibility"
 msgstr "❌ בטל אחריות"
 
 #: shoppybot.py:318
-msgid "🔔 Now"
-msgstr "🔔 עכשיו"
-
-#: shoppybot.py:318
-msgid "🕐 Soon"
-msgstr "🕐 בקרוב"
-
-#: shoppybot.py:318
-msgid "Are you sure?"
-msgstr "האם אתה בטוח?"
-
-#: shoppybot.py:318
-msgid "Enter number of minutes left"
-msgstr "הכנס מספר דקות להגעה ליעד"
-
-#: shoppybot.py:318
-msgid "Client has been notified"
-msgstr "הלקוח קיבל התראה"
-
-#: shoppybot.py:318
-msgid "Courier will arrive in {} minutes."
-msgstr "השליח יגיע בעוד כ-{} דקות.\nאנא המתן לשליח במקום שנקבע"
-
-#: shoppybot.py:318
-msgid "Courier has arrived to deliver your order."
-msgstr "השליח הגיע עם המשלוח"
-
-#: shoppybot.py:318
 msgid "✅ Yes"
 msgstr "✅ כן"
 
@@ -613,28 +564,12 @@ msgid "❌ No"
 msgstr "❌ לא"
 
 #: shoppybot.py:318
-msgid "Enabled ✅"
-msgstr "✅ פעיל"
-
-#: shoppybot.py:318
-msgid "Disabled ❌"
-msgstr "לא פעיל ❌"
-
-#: shoppybot.py:318
-msgid "Cancelled"
-msgstr "בוטל"
-
-#: shoppybot.py:318
-msgid "Save Changes"
-msgstr "שמור שינויים"
+msgid "Are you sure?"
+msgstr "האם אתה בטוח?"
 
 #: shoppybot.py:313
 msgid "Assign @{}"
 msgstr "העבר משלוח ל@{}"
-
-#: shoppybot.py:313
-msgid "Please choose who to send"
-msgstr "בחר למי להעביר את המשלוח"
 
 #: shoppybot.py:376
 msgid "Sorry {}\nYou are not authorized to use this bot"
@@ -662,7 +597,7 @@ msgstr "בחר/י משלוח או איסוף עצמי:"
 
 #: shoppybot.py:516
 msgid "Please choose where do you want to pickup your order:"
-msgstr "מאיזו עיר?"
+msgstr "מאיזו עיר תרצה את האיסוף:"
 
 #: shoppybot.py:525
 msgid "Please enter delivery address as text or send a location."
@@ -776,8 +711,12 @@ msgid "Type new contact info"
 msgstr "רשום פרטי צור קשר חדשים"
 
 #: shoppybot.py:1120
-msgid "Bot status: {}"
-msgstr "מצב הבוט: {}"
+msgid "Bot status:\n{}"
+msgstr "מצב הבוט:\n{}"
+
+#: shoppybot.py:1120
+msgid "Bot status was changed"
+msgstr "מצב הבוט שונה בהצלחה"
 
 #: shoppybot.py:1196
 msgid "Type new working hours"
@@ -856,7 +795,7 @@ msgid "Enter new product prices\none per line in the format\n*COUNT PRICE*, e.g.
 msgstr "הכנס מחיר מוצר\nכמות ומחיר אחד כל שורה\n`כמות מחיר` לדוגמא:\n*1 100*\n*5 500*"
 
 #: admin.py:242
-msgid "Send photos for new product"
+msgid "Send the new product photo"
 msgstr "שלח תמונה של המוצר"
 
 #: admin.py:266
@@ -870,22 +809,6 @@ msgstr "🏪 המוצרים שלי"
 #: admin.py:330
 msgid "🏪 View Products"
 msgstr "🏪 הצג מוצרים"
-
-#: admin.py:330
-msgid "✏️ Edit product"
-msgstr "✏️ ערוך מוצר"
-
-#: admin.py:330
-msgid "🖼 Edit media"
-msgstr "🖼 ערוך תמונות מוצר"
-
-#: admin.py:330
-msgid "💰 Edit price"
-msgstr "💰 ערוך מחיר מוצר"
-
-#: admin.py:330
-msgid "📝 Edit title"
-msgstr "📝 ערוך שם מוצר"
 
 #: admin.py:330
 msgid "Active products:"
@@ -924,16 +847,8 @@ msgid "🏗 Warehouse"
 msgstr "🏗 מחסן"
 
 #: admin.py:101
-msgid "Select a product to add credit"
+msgid "Select a product"
 msgstr "בחר מוצר להוספת קרדיט"
-
-#: admin.py:101
-msgid "Select a courier"
-msgstr "בחר שליח"
-
-#: admin.py:101
-msgid "✅ Product's credits were changed to {}"
-msgstr "✅ הקרדיט למוצר שונה ל: {}"
 
 #: admin.py:565
 msgid "Service"
@@ -983,217 +898,170 @@ msgstr "🚴‍♀️ הוספת קרדיט לשליח"
 msgid "You don't have any products yet"
 msgstr "הוסף מוצרים לפני הוספת קרדיט"
 
-#: admin.py:306
-msgid "➕ Add Category"
-msgstr "➕ הוסף קטגוריה"
-
-#: admin.py:306
-msgid "🏪 Add products to category"
-msgstr "🏪 הוסף מוצר לקטגוריה"
-
-#: admin.py:306
-msgid "❌ Remove Category"
-msgstr "❌ מחק קטגוריה"
-
-#: admin.py:306
-msgid "Activate delivery fee for vip customers"
-msgstr "הפעלת דמי משלוח ללקוחות VIP"
-
-#: admin.py:306
-msgid "ON"
-msgstr "בוט פעיל ✅"
-
-#: admin.py:306
-msgid "OFF"
-msgstr "בוט סגור ⛔️"
-
-#: admin.py:306
-msgid "Identification question was changed"
-msgstr "שאלת אימות שונתה בהצלחה"
-
-#: admin.py:306
-msgid "Restriction options changed"
-msgstr "מגבלות בוט שונו בהצלחה"
-
-#: admin.py:196
-msgid ""
-"Identification question: {}\n"
-"Enter new identification question:"
-msgstr ""
-"שאלת אימות: {}\n"
-"הכנס שאלת אימות חדשה:"
-
-#: admin.py:196
-msgid ""
-"Enter delivery fee like:\n"
-"50 > 500: Deals below 500 will have delivery fee of 50\n"
-"or\n"
-"50: All deals will have delivery fee of 50\n"
-"Only works on delivery\n"
-"\n"
-"Current fee: {}"
-msgstr ""
-"הכנס דמי משלוח בסדר הנ״ל:\n"
-"50 < 500: דמי המשלוח יהיו 50 ש״ח על כל משלוח מתחת ל500 ש״ח\n"
-"או\n"
-"50: כל משלוח יעלה 50 ש״ח\n"
-"\n"
-"דמי משלוח המוגדרים כעת: {}"
-
-#: admin.py:196
-msgid ""
-"Enter discount like:\n"
-"50 > 500: all deals above 500$ will be -50$\n"
-"10% > 500: all deals above 500$ will be -10%\n"
-"Current discount: {} > {}"
-msgstr ""
-"הכנס הנחה בסדר הנ״ל:\n"
-"50 < 500: תהיה הנחה של 50 ש״ח על כל עסקה מתחת ל500 ש״ח\n"
-"10% > 500: על כל עסקה מעלה 500 ש״ח יהיה 10% הנחה\n"
-"הנחה המוגדרת כעת: {} > {}"
-
-#: admin.py:196
-msgid ""
-"🏗\nProduct: `{}`\n"
-"Credits: {}"
-msgstr ""
-"🏗\nמוצר: `{}`\n"
-"קרדיט: {}"
-
-#: admin.py:196
-msgid ""
-"🏗\nProduct: `{}`\n"
-"Credits: {}\n"
-"Please enter new number of credits:"
-msgstr ""
-"🏗\nמוצר: `{}`\n"
-"קרדיט: {}\n"
-"הכנס כמות קרדיט חדשה"
-
-#: admin.py:196
-msgid ""
-"🏗\nProduct: `{}`\n"
-"Courier: `{}`\n"
-"Courier credits: {}\n"
-"Please enter new number of credits:"
-msgstr ""
-"🏗\nמוצר: `{}`\n"
-"שליח: `{}`\n"
-"קרדיט נוכחי לשליח: {}\n"
-"הכנס כמות קרדיט חדשה לשליח"
-
-#: admin.py:306
-msgid "You don't have enough credits to deliver products:\n"
-msgstr "אין לך מספיק קרדיט לשלוח את המוצר\n"
-
-#: admin.py:306
-msgid "✅ You have given {} credits to courier `{}`"
-msgstr "✅נוספו {} קרדיט, לשליח `{}`"
-
-#: admin.py:306
-msgid "Product: `{}`, Count: {}, Courier credits: {}\n"
-msgstr "מוצר: `{}`, כמות: {}, כמות קרדיט לשליח: {}\n"
-
-#: admin.py:306
-msgid "Product: `{}`, Count: {}, Warehouse credits: {}\n"
-msgstr "מוצר: `{}`, כמות: {}, כמות קרדיט במחסן: {}\n"
-
-#: admin.py:306
-msgid "There are not enough credits in warehouse to deliver products:\n"
-msgstr "אין מספיק קרדיט במחסן לשלוח את המוצר\n"
-
-#: admin.py:306
+#: keyboards.py:290
 msgid "January"
 msgstr "ינואר"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "February"
 msgstr "פברואר"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "March"
 msgstr "מרץ"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "April"
 msgstr "אפריל"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "May"
 msgstr "מאי"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "June"
 msgstr "יוני"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "July"
 msgstr "יולי"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "August"
 msgstr "אוגוסט"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "September"
 msgstr "ספטמבר"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "October"
 msgstr "אוקטובר"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "November"
 msgstr "נובמבר"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "December"
 msgstr "דצמבר"
 
-#: admin.py:306
+#: keyboards.py:290
 msgid "Pick year, month or day"
-msgstr "בחר יום, חודש או שנה"
+msgstr "בחר שנה, חודש או יום"
 
-#: admin.py:306
-msgid "Select a courier:"
-msgstr "בחר שליח"
+#: keyboards.py:290
+msgid "🏗\nProduct: `{}`\nCredits: {}"
+msgstr "🏗\nמוצר: `{}`\nקרדיט למוצר: `{}`"
 
-#: admin.py:306
-msgid "Select location:"
-msgstr "בחר איזור"
+#: keyboards.py:290
+msgid "🏗\nProduct: `{}`\nCredits: {}\n\nPlease enter new number of credits:"
+msgstr "🏗\nמוצר: `{}`\nקרדיט למוצר: `{}`\n\nרשום כמות קרדיט למוצר:"
 
-#: admin.py:306
-msgid "Select a product to view"
-msgstr "בחר מוצר"
+#: keyboards.py:290
+msgid "🏗\nProduct: `{}`\nCourier: `{}`\nCourier credits: {}\n\nPlease enter new number of credits:"
+msgstr "🏗\nמוצר: `{}`\nשליח: `{}`\nקרדיט לשליח: `{}`\n\nרשום כמות קרדיט לשליח:"
 
-#: admin.py:306
-msgid "Select a product to edit"
-msgstr "בחר מוצר לעריכה"
+#: keyboards.py:290
+msgid "There are not enough credits in warehouse to deliver products:\n"
+msgstr "אין מספיק קרדיט במחסן למשלוח הזמנה זו\n\nאנא הוסף קרדיט למוצר במחסן\n"
 
-#: admin.py:306
-msgid "Edit product {}"
-msgstr "עריכת מוצר: {}"
+#: keyboards.py:290
+msgid "Product: `{}`, Count: {}, Warehouse credits: {}\n"
+msgstr "מוצר: `{}`\nכמות: {}\nקרדיט במחסן: {}\n"
 
-#: admin.py:306
-msgid "Current title: {}\n\nEnter new title for product"
-msgstr "שם מוצר המוגדר כעת: {}\n\nהכנס שם מוצר חדש"
+#: keyboards.py:290
+msgid "Product: `{}`, Count: {}, Courier credits: {}\n"
+msgstr "מוצר: `{}`\nכמות: {}\nקרדיט לשליח: {}\n"
 
-#: admin.py:306
-msgid "Current prices:\n\n"
-msgstr "מחיר המוגדר כעת:\n\n"
+#: keyboards.py:290
+msgid "You don't have enough credits to deliver products:\n"
+msgstr "אין לך מספיק קרדיט לשלוח את המשלוח הזה\n\nאנא דבר עם המנהל כדי להוסיף קרדיט\n"
 
-#: admin.py:306
-msgid "Upload new photos for product"
-msgstr "שלח תמונות חדשות עבור המוצר"
+#: keyboards.py:290
+msgid "Select a courier"
+msgstr "בחר שליח להוספה ושינוי קרדיט"
 
-#: admin.py:306
-msgid "Create Product"
-msgstr "אשר מוצר"
+#: keyboards.py:290
+msgid "Select a product:"
+msgstr "בחר מוצר:"
 
-#: admin.py:306
-msgid "Customer: @{}"
-msgstr "לקוח: @{}"
+#: keyboards.py:290
+msgid "product {} viewed:"
+msgstr "תצוגת מוצר `{}`"
 
-#: admin.py:306
-msgid "Discount: {}"
-msgstr "הנחת VIP: {}"
+#: keyboards.py:290
+msgid "✅\nCourier `{}` received `{}` credits"
+msgstr "✅\nהוספת `{}` קרדיט, לשליח `{}`"
+
+#: keyboards.py:290
+msgid "✅\nProduct: {}\ncredits were changed to {}"
+msgstr "✅\nמוצר: {}\nהקרדיט שונה ל{}"
+
+#: keyboards.py:290
+msgid "Cannot give to courier more credits than you have in warehouse: {}\n\nPlease enter new number of credits:"
+msgstr "לא ניתן להוסיף לשליח קרדיט יותר מהכמות שמוגדרת למוצר במחסן\n\nהוסף כמות לשליח"
+
+#: keyboards.py:290
+msgid "👨 Edit identification stages:"
+msgstr "👨 עריכת תהליך אימות"
+
+#: keyboards.py:290
+msgid "First stage ID image: {}"
+msgstr "1. תמונת סלפי: {}"
+
+#: keyboards.py:290
+msgid "Second stage FB image: {}"
+msgstr "2. קיר פייסבוק: {}"
+
+#: keyboards.py:290
+msgid "✅ Enabled"
+msgstr "✅ פעיל"
+
+#: keyboards.py:290
+msgid "❌ Disabled"
+msgstr "❌ כבוי"
+
+#: keyboards.py:290
+msgid "🔥 Edit restricted area:"
+msgstr "🔥 עריכת מגבלות בוט"
+
+#: keyboards.py:290
+msgid "Only for customers option: {}"
+msgstr "ערוץ לקוחות: {}"
+
+#: keyboards.py:290
+msgid "Vip customers option: {}"
+msgstr "לקוחות VIP: {}"
+
+#: keyboards.py:290
+msgid "Banned users: {}"
+msgstr "רשימה שחורה: {}"
+
+#: keyboards.py:290
+msgid "Courier has arrived to deliver your order."
+msgstr "השליח הגיע עם המשלוח"
+
+#: keyboards.py:290
+msgid "Courier will arrive in {} minutes"
+msgstr "השליח יגיע עוד {} דקות"
+
+#: keyboards.py:290
+msgid "Order send by admin"
+msgstr "ההזמנה נשלחה ע״י מנהל"
+
+#: keyboards.py:290
+msgid "Order sent to couriers channel"
+msgstr "ההזמנה נשלחה לערוץ שליחים"
+
+#: keyboards.py:290
+msgid "Please choose who to send"
+msgstr "בחר למי להעביר את המשלוח"
+
+#: keyboards.py:290
+msgid "@{} your location and customer locations are different"
+msgstr "@{} השליחות לא באיזורך\n\nאנא פנה למהל כדי להוסיף איזורי פעילות"
+
+#: keyboards.py:290
+msgid "Can't take responsibility for order"
+msgstr "אין אפשרות לקבל משלוח"
