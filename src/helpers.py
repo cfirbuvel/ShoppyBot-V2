@@ -2,6 +2,7 @@ import configparser
 import redis
 import json
 import gettext
+import os
 
 from telegram import ParseMode, TelegramError
 
@@ -30,7 +31,7 @@ class ConfigHelper:
             defaults={'api_token': None, 'reviews_channel': None,
                       'service_channel': None, 'customers_channel': None,
                       'vip_customers_channel': None, 'couriers_channel': None,
-                      'channels_language': 'iw',
+                      'channels_language': 'iw', 'media_path': './media',
                       'welcome_text': 'Welcome text not configured yet',
                       'order_text': 'Order text not configured yet',
                       'order_complete_text': 'Order text not configured yet',
@@ -85,6 +86,13 @@ class ConfigHelper:
             value = self.config.get(self.section, 'channels_language')
         return value.strip()
 
+    def get_media_path(self):
+        value = self.config.get(self.section, 'media_path')
+        value = value.strip()
+        value = os.path.abspath(value)
+        if not os.path.isdir(value):
+            os.mkdir(value)
+        return value
 
     def get_welcome_text(self):
         value = get_config_session().get('welcome_text')

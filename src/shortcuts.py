@@ -138,13 +138,12 @@ def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=N
 
 def send_product_info(bot, product, chat_id, trans):
     product_prices = ((obj.count, obj.price) for obj in product.product_counts)
-    image_data = product.image
-    image_stream = io.BytesIO(image_data)
-    bot.send_photo(chat_id,
-                   photo=image_stream)
+    send_product_media(bot, product, chat_id)
     msg = messages.create_admin_product_description(trans, product.title, product_prices)
     bot.send_message(chat_id,
                      text=msg)
+
+
 
 
 
@@ -230,6 +229,13 @@ def change_order_products_credits(order, add=False, courier=None):
             product.credits = op(product.credits, order_item.count)
             product.save()
 
+
+def send_product_media(bot, product, chat_id):
+    for media in product.product_media:
+        with open(media.file_path, 'rb') as file:
+            func = getattr(bot, 'send_{}'.format(media.type))
+            stream = io.BytesIO(file.read())
+            func(chat_id, stream)
 # def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
 #     _ = trans
 #     # first_iter = True

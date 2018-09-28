@@ -424,6 +424,8 @@ def create_bot_order_options_keyboard(trans):
     main_button_list = [
         [InlineKeyboardButton(_('🏪 My Products'),
                               callback_data='bot_order_options_product')],
+        [InlineKeyboardButton(_('🛍 Categories'),
+                              callback_data='bot_order_options_categories')],
         [InlineKeyboardButton(_('🏗 Warehouse'),
                               callback_data='bot_order_options_warehouse')],
         [InlineKeyboardButton(_('💲 Add discount'),
@@ -627,8 +629,18 @@ def create_admin_order_status_keyboard(trans, order_id):
     _ = trans
     buttons = [
         [InlineKeyboardButton(_('✅ Order Done'), callback_data='confirm_courier_order_delivered|{}'.format(order_id))],
-        [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))],
+        [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client_admin|{}'.format(order_id))],
         [InlineKeyboardButton(_('❌ Drop responsibility'), callback_data='admin_dropped|{}'.format(order_id))]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_ping_client_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('🔔 Now'), callback_data='now')],
+        [InlineKeyboardButton(_('🕐 Soon'), callback_data='soon')],
+        [InlineKeyboardButton(_('❌ Cancel'), callback_data='back')]
     ]
     return InlineKeyboardMarkup(buttons)
 
@@ -666,3 +678,20 @@ def create_edit_restriction_keyboard(trans, values):
     ]
     return InlineKeyboardMarkup(buttons)
 
+def create_product_media_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('Create Product'), callback_data='create_product')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_categories_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('➕ Add Category'), callback_data='add')],
+        [InlineKeyboardButton(_('🏪 Add products to category'), callback_data='products')],
+        [InlineKeyboardButton(_('❌ Remove Category'), callback_data='remove')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
+    ]
+    return InlineKeyboardMarkup(buttons)

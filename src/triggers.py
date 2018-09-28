@@ -4,7 +4,7 @@ from telegram import ParseMode, InputMediaPhoto, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
 
 from .admin import is_admin
-from .messages import create_service_notice
+from .messages import create_service_notice, create_product_description
 from .helpers import cart, config, session_client, get_user_session, \
     get_user_id, get_username, is_vip_customer, set_config_session, get_locale, get_trans, get_config_session, \
     get_channel_trans
@@ -16,8 +16,10 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_back_button, create_on_off_buttons, create_ban_list_keyboard, create_show_order_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
     create_courier_order_status_keyboard, create_admin_order_status_keyboard, general_select_one_keyboard, \
-    create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard, create_bot_language_keyboard
-from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos
+    create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard, create_bot_language_keyboard, \
+    create_product_keyboard, create_ping_client_keyboard
+from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos, \
+    ProductCategory, Product
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
@@ -1399,19 +1401,46 @@ def on_courier_action_to_confirm(bot, update):
     elif action == 'confirm_courier_report_client':
         return enums.COURIER_STATE_CONFIRM_REPORT
 
-
-def on_courier_ping_client(bot, update):
+def on_courier_ping_choice(bot, update, user_data):
     query = update.callback_query
     data = query.data
-    order_id = data.split('|')[1]
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, order_id = data.split('|')
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    msg = _('📞 Ping Client')
+    user_data['courier_ping_admin'] = action == 'ping_client_admin'
+    user_data['courier_ping_order_id'] = order_id
+    bot.send_message(chat_id, msg, reply_markup=create_ping_client_keyboard(_))
+    query.answer()
+    return enums.COURIER_STATE_PING
+
+
+def on_courier_ping_client(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action = query.data
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    if action == 'back':
+        bot.delete_message(chat_id, msg_id)
+        query.answer()
+        return enums.COURIER_STATE_INIT
+    order_id = user_data['courier_ping_order_id']
     order = Order.get(id=order_id)
     if order.client_notified:
-        user_id = get_user_id(update)
-        _ = get_trans(user_id)
+        # user_id = get_user_id(update)
+        # _ = get_trans(user_id)
         msg = _('Client was notified already')
-        query.answer(text=msg, show_alert=True)
+        # if user_data['courier_ping_admin']:
+        #     keyboard = create_admin_order_status_keyboard(_, order_id)
+        # else:
+        #     keyboard = create_courier_order_status_keyboard(_, order_id)
+        # bot.edit_message_text(msg, chat_id, msg_id, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer(msg)
+        bot.delete_message(chat_id, msg_id)
         return enums.COURIER_STATE_INIT
-    else:
+    if action == 'now':
         user_id = order.user.telegram_id
         _ = get_trans(user_id)
         msg = _('Courier has arrived to deliver your order.')
@@ -1420,7 +1449,54 @@ def on_courier_ping_client(bot, update):
         query.answer()
         order.client_notified = True
         order.save()
+        bot.delete_message(chat_id, msg_id)
+        del user_data['courier_ping_order_id']
+        del user_data['courier_ping_admin']
         return enums.COURIER_STATE_INIT
+    elif action == 'soon':
+        msg = _('Enter number of minutes left')
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_back_button(_))
+        query.answer()
+        return enums.COURIER_STATE_PING_SOON
+
+def on_courier_ping_client_soon(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    if update.callback_query and update.callback_query.data == 'back':
+        upd_msg = update.callback_query.message
+        msg = _('📞 Ping Client')
+        bot.edit_message_text(msg, upd_msg.chat_id, upd_msg.message_id, reply_markup=create_ping_client_keyboard(_))
+        update.callback_query.answer()
+        return enums.COURIER_STATE_PING
+    chat_id = update.message.chat_id
+    try:
+        time = int(update.message.text)
+    except ValueError:
+        msg = _('Enter number of minutes left (number is accepted)')
+        bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
+        return enums.COURIER_STATE_PING_SOON
+    else:
+        order_id = user_data['courier_ping_order_id']
+        order = Order.get(id=order_id)
+        courier_msg = _('Client has been notified')
+        if user_data['courier_ping_admin']:
+            keyboard = create_admin_order_status_keyboard(_, order_id)
+        else:
+            keyboard = create_courier_order_status_keyboard(_, order_id)
+        user_id = order.user.telegram_id
+        _ = get_trans(user_id)
+        msg = _('Courier will arrive in {} minutes.').format(time)
+        bot.send_message(chat_id=user_id,
+                         text=msg)
+        order.client_notified = True
+        order.save()
+        bot.send_message(chat_id, courier_msg, reply_markup=keyboard)
+        del user_data['courier_ping_order_id']
+        del user_data['courier_ping_admin']
+        return enums.COURIER_STATE_INIT
+
+
+
 
 
 def on_courier_confirm_order(bot, update):
@@ -1529,6 +1605,68 @@ def on_admin_drop_order(bot, update):
     msg = _('Order №{} was dropped!').format(order.id)
     bot.send_message(chat_id, msg)
 
+
+def on_product_categories(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id, message_id = query.message.chat_id, query.message.message_id
+    action, val = query.data.split('|')
+    if action == 'page':
+        categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
+        keyboard = general_select_one_keyboard(_, categories, int(val))
+        bot.edit_message_text(_('Please select a category'), chat_id, message_id,
+                              reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.PRODUCT_CATEGORIES
+    user = User.get(telegram_id=user_id)
+    total = cart.get_cart_total(get_user_session(user_id))
+    if action == 'select':
+        cat = ProductCategory.get(id=val)
+        msg = _('{} products:').format(cat.title)
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN)
+        # send_products to current chat
+        for product in Product.filter(category=cat):
+            product_count = cart.get_product_count(
+                user_data, product.id)
+            subtotal = cart.get_product_subtotal(
+                user_data, product.id)
+            delivery_fee = config.get_delivery_fee()
+            delivery_min = config.get_delivery_min()
+            product_title, prices = cart.product_full_info(
+                user_data, product.id)
+            shortcuts.send_product_media(bot, product, chat_id)
+            bot.send_message(chat_id,
+                             text=create_product_description(
+                                 user_id,
+                                 product_title, prices,
+                                 product_count, subtotal,
+                                 delivery_min, delivery_fee),
+                             reply_markup=create_product_keyboard(_,
+                                                                  product.id, user_data, cart),
+                             parse_mode=ParseMode.HTML,
+                             timeout=20, )
+        user = User.get(telegram_id=user_id)
+        total = cart.get_cart_total(get_user_session(user_id))
+        bot.send_message(chat_id,
+                         text=config.get_order_text(),
+                         reply_markup=create_main_keyboard(_,
+                                                           config.get_reviews_channel(),
+                                                           user,
+                                                           is_admin(bot, user_id), total),
+                         parse_mode=ParseMode.HTML)
+    elif action == 'back':
+        bot.edit_message_text(config.get_order_text(), chat_id, message_id,
+                              reply_markup=create_main_keyboard(_,
+                                                                config.get_reviews_channel(),
+                                                                user,
+                                                                is_admin(bot, user_id), total),
+                              parse_mode=ParseMode.HTML
+                              )
+    query.answer()
+    return enums.BOT_STATE_INIT
+
+
 def on_calendar_change(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
@@ -1567,10 +1705,3 @@ def on_calendar_change(bot, update, user_data):
         return calendar_state
 
 
-
-
-# def get_channel_id(bot, update):
-#     print(update)
-#     print(dir(update))
-#     print(update.message.text)
-#     print(update.message.chat_id)
