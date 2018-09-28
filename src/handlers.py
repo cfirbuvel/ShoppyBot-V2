@@ -6,11 +6,12 @@ from telegram.ext import ConversationHandler
 from .helpers import cart, config, session_client, get_user_session, get_user_id, get_username, is_customer, \
     is_vip_customer, get_locale, get_trans
 from .keyboards import create_main_keyboard, create_admin_keyboard, create_product_keyboard, create_shipping_keyboard, \
-    create_bot_language_keyboard, create_my_orders_keyboard
+    create_bot_language_keyboard, create_my_orders_keyboard, general_select_one_keyboard
 from .messages import create_product_description
-from .models import User, Product
+from .models import User, Product, ProductCategory
 from . import enums
 from .states import is_admin
+from . import shortcuts
 
 
 def on_start(bot, update, user_data):
@@ -69,44 +70,13 @@ def on_menu(bot, update, user_data=None):
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
             if data == 'menu_products':
                 # the menu disappears
-                bot.edit_message_text(chat_id=query.message.chat_id,
-                                      message_id=query.message.message_id,
-                                      text=_('Our products:'),
-                                      parse_mode=ParseMode.MARKDOWN, )
-
-                # send_products to current chat
-                for product in Product.filter(is_active=True):
-                    product_count = cart.get_product_count(
-                        user_data, product.id)
-                    subtotal = cart.get_product_subtotal(
-                        user_data, product.id)
-                    delivery_fee = config.get_delivery_fee()
-                    delivery_min = config.get_delivery_min()
-                    product_title, prices = cart.product_full_info(
-                        user_data, product.id)
-                    image_data = product.image
-                    image_stream = io.BytesIO(image_data)
-                    bot.send_photo(query.message.chat_id,
-                                   photo=image_stream)
-                    bot.send_message(query.message.chat_id,
-                                     text=create_product_description(
-                                         user_id,
-                                         product_title, prices,
-                                         product_count, subtotal,
-                                         delivery_min, delivery_fee),
-                                     reply_markup=create_product_keyboard(_,
-                                                                          product.id, user_data, cart),
-                                     parse_mode=ParseMode.HTML,
-                                     timeout=20, )
-
-                # send menu again as a new message
-                bot.send_message(query.message.chat_id,
-                                 text=config.get_order_text(),
-                                 reply_markup=create_main_keyboard(_,
-                                                                   config.get_reviews_channel(),
-                                                                   user,
-                                                                   is_admin(bot, user_id), total),
-                                 parse_mode=ParseMode.HTML, )
+                categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
+                keyboard = general_select_one_keyboard(_, categories)
+                msg = _('Please select a category:')
+                bot.edit_message_text(msg, query.message.chat_id, query.message.message_id,
+                                      parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
+                query.answer()
+                return enums.PRODUCT_CATEGORIES
             elif data == 'menu_order':
                 if cart.is_full(user_data):
                     # we are not using enter_state_... here because it relies

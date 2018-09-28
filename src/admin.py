@@ -1,27 +1,22 @@
 import io
+import os
 
 from telegram import ParseMode
 from telegram import ReplyKeyboardRemove
 from telegram.error import TelegramError
 from telegram.ext import ConversationHandler
 
-# from .enums import logger, BOT_STATE_INIT, ADMIN_BOT_SETTINGS, ADMIN_ADD_DELIVERY_FEE, ADMIN_TXT_PRODUCT_TITLE, \
-#     ADMIN_ORDER_OPTIONS, ADMIN_ADD_DISCOUNT, ADMIN_EDIT_IDENTIFICATION, \
-#     ADMIN_EDIT_RESTRICTION, ADMIN_EDIT_WELCOME_MESSAGE, ADMIN_EDIT_ORDER_DETAILS, ADMIN_EDIT_FINAL_MESSAGE, \
-#     ADMIN_TXT_PRODUCT_PRICES, ADMIN_TXT_PRODUCT_PHOTO, ADMIN_INIT, ADMIN_TXT_COURIER_NAME, ADMIN_TXT_DELETE_COURIER, \
-#     ADMIN_TXT_COURIER_ID, ADMIN_COURIERS, ADMIN_TXT_COURIER_LOCATION, ADMIN_CHANNELS, ADMIN_CHANNELS_ADDRESS, \
-#     ADMIN_CHANNELS_SELECT_TYPE, ADMIN_CHANNELS_REMOVE, ADMIN_BAN_LIST, ADMIN_LOCATIONS, ADMIN_TXT_ADD_LOCATION, \
-#     ADMIN_TXT_DELETE_LOCATION, ADMIN_PRODUCTS, ADMIN_PRODUCT_ADD, ADMIN_PRODUCT_LAST_ADD, ADMIN_DELETE_PRODUCT, \
-#     ADMIN_COURIER_ADD, ADMIN_COURIER_DELETE
 from . import enums
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans
-from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User
+from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User, \
+    ProductMedia, ProductCategory
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
     create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
     create_locations_keyboard, create_bot_products_keyboard, create_bot_product_add_keyboard, \
     general_select_keyboard, general_select_one_keyboard, create_warehouse_keyboard, \
-    create_edit_identification_keyboard, create_edit_restriction_keyboard
+    create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
+    create_categories_keyboard
 
 from . import shortcuts
 
@@ -74,21 +69,27 @@ def on_admin_order_options(bot, update, user_data):
     chat_id = query.message.chat_id
     message_id = query.message.message_id
     if data == 'bot_order_options_back':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=_('⚙ Bot settings'),
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_BOT_SETTINGS
     if data == 'bot_order_options_product':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=_('🏪 My Products'),
                               reply_markup=create_bot_products_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_PRODUCTS
+    if data == 'bot_order_options_categories':
+        bot.edit_message_text(_('🛍 Categories'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_categories_keyboard(_)
+        )
+        query.answer()
+        return enums.ADMIN_CATEGORIES
     elif data == 'bot_order_options_warehouse':
         products = Product.filter(is_active=True)
         if not products:
@@ -185,6 +186,161 @@ def on_admin_order_options(bot, update, user_data):
         return enums.ADMIN_EDIT_FINAL_MESSAGE
 
     return ConversationHandler.END
+
+def on_admin_categories(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    action = query.data
+    if action == 'add':
+        msg = _('Please enter the name of category')
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_back_button(_))
+        query.answer()
+        return enums.ADMIN_CATEGORY_ADD
+    elif action == 'back':
+        bot.edit_message_text(_('💳 Order options'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_bot_order_options_keyboard(_))
+        query.answer()
+        return enums.ADMIN_ORDER_OPTIONS
+    categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
+    keyboard = general_select_one_keyboard(_, categories)
+    msg = _('Please select a category:')
+    bot.edit_message_text(msg, chat_id, message_id,
+                          parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
+    query.answer()
+    if action == 'products':
+        return enums.ADMIN_CATEGORY_PRODUCTS_SELECT
+    elif action == 'remove':
+        return enums.ADMIN_CATEGORY_REMOVE_SELECT
+
+
+def on_admin_category_add(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    if update.callback_query and update.callback_query == 'back':
+        upd_msg = update.callback_query.message
+        bot.edit_message_text(_('🛍 Categories'), upd_msg.chat_id, upd_msg.message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_categories_keyboard(_))
+        query.answer()
+        return enums.ADMIN_CATEGORIES
+    answer = update.message.text
+    try:
+        cat = ProductCategory.get(title=answer)
+        msg = _('Category with name `{}` exists already').format(cat.title)
+    except ProductCategory.DoesNotExist:
+        cat = ProductCategory.create(title=answer)
+        msg = _('Category `{}` has been created').format(cat.title)
+    bot.send_message(update.message.chat_id, msg, parse_mode=ParseMode.HTML, reply_markup=create_categories_keyboard(_))
+    return enums.ADMIN_CATEGORIES
+
+
+def on_admin_category_products_select(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    action, val = query.data.split('|')
+    if action == 'page':
+        categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
+        keyboard = general_select_one_keyboard(_, categories, int(val))
+        bot.edit_message_text(_('Please select a category'), chat_id, message_id,
+                              reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_CATEGORY_PRODUCTS_SELECT
+    elif action == 'back':
+        bot.edit_message_text(_('🛍 Categories'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_categories_keyboard(_))
+        query.answer()
+        return enums.ADMIN_CATEGORIES
+    elif action == 'select':
+        user_data['category_products_add'] = {'category_id': val, 'page': 1, 'products_ids': []}
+        products = []
+        for product in Product.filter(is_active=True):
+            products.append((product.title, product.id, False))
+        msg = _('Please select products to add')
+        bot.edit_message_text(msg, chat_id, message_id, reply_markup=general_select_keyboard(_, products),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_CATEGORY_PRODUCTS_ADD
+
+def on_admin_category_remove(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    action, val = query.data.split('|')
+    if action == 'page':
+        categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
+        keyboard = general_select_one_keyboard(_, categories, int(val))
+        bot.edit_message_text(_('Please select a category'), chat_id, message_id,
+                              reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_CATEGORY_REMOVE_SELECT
+    if action == 'back':
+        bot.edit_message_text(_('🛍 Categories'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_categories_keyboard(_))
+    elif action == 'select':
+        cat = ProductCategory.get(id=val)
+        if cat.title == 'Default':
+            msg = _('Cannot delete default category')
+        else:
+            msg = _('Category "{}" has been deleted').format(cat.title)
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_categories_keyboard(_))
+    query.answer()
+    return enums.ADMIN_CATEGORIES
+
+
+def on_admin_category_products_add(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    action, val = query.data.split('|')
+    selected_ids = user_data['category_products_add']['products_ids']
+    if action == 'done':
+        if selected_ids:
+            cat_id = user_data['category_products_add']['category_id']
+            cat = ProductCategory(id=cat_id)
+            products = Product.filter(Product.id << selected_ids)
+            for product in products:
+                product.category = cat
+                product.save()
+        msg = _('Category "{}" was updated').format(cat.title)
+        del user_data['category_products_add']
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_categories_keyboard(_))
+        query.answer()
+        return enums.ADMIN_CATEGORIES
+    products = []
+    current_page = user_data['category_products_add']['page']
+    if action == 'page':
+        current_page = int(val)
+        user_data['category_products_add']['page'] = current_page
+    elif action == 'select':
+        if val in selected_ids:
+            selected_ids.remove(val)
+        else:
+            selected_ids.append(val)
+    for product in Product.filter(is_active=True):
+        if str(product.id) in selected_ids:
+            selected = True
+        else:
+            selected = False
+        products.append((product.title, product.id, selected))
+    products_keyboard = general_select_keyboard(_, products, current_page)
+    msg = _('Please select products to add')
+    bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                          reply_markup=products_keyboard)
+    query.answer()
+    return enums.ADMIN_CATEGORY_PRODUCTS_ADD
+
 
 
 def on_admin_warehouse_products(bot, update, user_data):
@@ -440,10 +596,7 @@ def on_admin_show_product(bot, update, user_data):
         product = Product.get(id=param)
         bot.delete_message(chat_id, msg_id)
         product_prices = ((obj.count, obj.price) for obj in product.product_counts)
-        image_data = product.image
-        image_stream = io.BytesIO(image_data)
-        bot.send_photo(chat_id,
-                       photo=image_stream)
+        shortcuts.send_product_media(bot, product, chat_id)
         msg = messages.create_admin_product_description(_, product.title, product_prices)
         bot.send_message(chat_id, msg)
         msg = _('product {} viewed:').format(product.title)
@@ -631,39 +784,81 @@ def on_admin_txt_product_prices(bot, update, user_data):
             return enums.ADMIN_TXT_PRODUCT_PRICES
 
     user_data['add_product']['prices'] = prices_list
+    msg = _('Send a photo, gif, video, audio or document')
     update.message.reply_text(
-        text=_('Send the new product photo'),
+        text=msg,
+        #text=_('Send the new product photo'),
         reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.MARKDOWN,
     )
     return enums.ADMIN_TXT_PRODUCT_PHOTO
 
 
 def on_admin_txt_product_photo(bot, update, user_data):
-    photo_file = bot.get_file(update.message.photo[-1].file_id)
-    stream = io.BytesIO()
-    photo_file.download(out=stream)
-
-    title = user_data['add_product']['title']
-    prices = user_data['add_product']['prices']
-    image_data = stream.getvalue()
-
-    product = Product.create(title=title, image=image_data)
-    for count, price in prices:
-        ProductCount.create(product=product, price=price, count=count)
-    for courier in Courier:
-        ProductWarehouse.create(product=product, courier=courier)
-    # clear new product data
-    del user_data['add_product']
     user_id = get_user_id(update)
     _ = get_trans(user_id)
+    if update.callback_query and update.callback_query.data == 'create_product':
+        title = user_data['add_product']['title']
+        prices = user_data['add_product']['prices']
+        files = user_data['add_product']['files']
+        #image_data = stream.getvalue()
+        def_cat = ProductCategory.get(title='Default')
+        product = Product.create(title=title, category=def_cat)
+        for count, price in prices:
+            ProductCount.create(product=product, price=price, count=count)
+        for file_id, ftype in files:
+            file = bot.get_file(file_id)
+            file_ext = os.path.splitext(file.file_path)[1]
+            filename = '{}{}'.format(file.file_id, file_ext)
+            media_dir = config.get_media_path()
+            filename = os.path.join(media_dir, filename)
+            file.download(custom_path=filename)
+            ProductMedia.create(product=product, file_path=filename, type=ftype)
+        for courier in Courier:
+            ProductWarehouse.create(product=product, courier=courier)
+        # clear new product data
+        del user_data['add_product']
+        chat_id, msg_id = update.callback_query.message.chat_id, update.callback_query.message.message_id
+        msg = _('New Product Created\n✅')
+        bot.edit_message_text(msg, chat_id, msg_id)
+        # chat_id = update.message.chat_id
+        # bot.send_message(chat_id=chat_id,
+        #                  text=_('New Product Created\n✅'))
+        bot.send_message(chat_id=chat_id,
+                         text=_('🏪 My Products'),
+                         reply_markup=create_bot_products_keyboard(_),
+                         parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_PRODUCTS
     chat_id = update.message.chat_id
-    bot.send_message(chat_id=chat_id,
-                     text=_('New Product Created\n✅'))
-    bot.send_message(chat_id=chat_id,
-                     text=_('🏪 My Products'),
-                     reply_markup=create_bot_products_keyboard(_),
-                     parse_mode=ParseMode.MARKDOWN)
-    return enums.ADMIN_PRODUCTS
+    files_types = ('video', 'photo', 'document', 'audio')
+    upd_msg = update.message
+    file, ftype = next((getattr(upd_msg, ftype), ftype) for ftype in files_types if getattr(upd_msg, ftype, None))
+    if type(file) == list:
+        file = file[-1]
+    file = bot.get_file(file.file_id)
+    msg = _('Send another photo, gif, video, audio, or document')
+    if file.file_size > 1000 * 20000:
+        err_msg = _('File size shouldn\'t be larger than 20 MB')
+        err_msg += msg
+        bot.send_message(chat_id, err_msg)
+    else:
+        # file_ext = os.path.splitext(file.file_path)[1]
+        # filename = '{}{}'.format(file.file_id, file_ext)
+        # media_dir = config.get_media_path()
+        # filename = os.path.join(media_dir, filename)
+        # file.download(custom_path=filename)
+        if not user_data['add_product'].get('files'):
+            user_data['add_product']['files'] = [(file.file_id, ftype)]
+        else:
+            user_data['add_product']['files'].append((file.file_id, ftype))
+        bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
+                         reply_markup=create_product_media_keyboard(_))
+    return enums.ADMIN_TXT_PRODUCT_PHOTO
+    # print(file.file_size)
+    # print(file.file_path)
+
+    #photo_file = bot.get_file(update.message.photo[-1].file_id)
+    #stream = io.BytesIO()
+    #photo_file.download(out=stream)
 
 
 def on_admin_cmd_delete_product(bot, update, user_data):
