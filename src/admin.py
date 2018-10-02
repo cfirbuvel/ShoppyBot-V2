@@ -16,7 +16,7 @@ from .keyboards import create_back_button, create_bot_couriers_keyboard, create_
     create_locations_keyboard, create_bot_products_keyboard, create_bot_product_add_keyboard, \
     general_select_keyboard, general_select_one_keyboard, create_warehouse_keyboard, \
     create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
-    create_categories_keyboard
+    create_categories_keyboard, create_add_courier_keyboard
 
 from . import shortcuts
 
@@ -221,7 +221,7 @@ def on_admin_category_add(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    if update.callback_query and update.callback_query == 'back':
+    if update.callback_query and update.callback_query.data == 'back':
         upd_msg = update.callback_query.message
         bot.edit_message_text(_('🛍 Categories'), upd_msg.chat_id, upd_msg.message_id, parse_mode=ParseMode.MARKDOWN,
                               reply_markup=create_categories_keyboard(_))
@@ -975,13 +975,10 @@ def on_admin_add_courier(bot, update, user_data):
     chat_id, message_id = query.message.chat_id, query.message.message_id
     action, param = query.data.split('|')
     if action == 'back':
-        bot.edit_message_text(chat_id=chat_id,
-                              message_id=message_id,
-                              text=_('🛵 Couriers'),
-                              reply_markup=create_bot_couriers_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
+        msg = _('🛵 Couriers')
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_bot_couriers_keyboard(_))
         query.answer()
-        return enums.ADMIN_COURIERS
     if action == 'page':
         current_page = int(param)
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
@@ -1002,6 +999,83 @@ def on_admin_add_courier(bot, update, user_data):
                               reply_markup=create_courier_locations_keyboard(_, locations))
         query.answer()
         return enums.ADMIN_TXT_COURIER_LOCATION
+    # query = update.callback_query
+    # user_id = get_user_id(update)
+    # _ = get_trans(user_id)
+    # chat_id, message_id = query.message.chat_id, query.message.message_id
+    # action = query.data
+    # if action == 'back':
+    #     bot.edit_message_text(_('🛵 Couriers'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+    #                           reply_markup=create_bot_couriers_keyboard(_))
+    #     query.answer()
+    #     return enums.ADMIN_COURIERS
+    # elif action == 'by_id':
+    #     msg = _('Enter telegram ID of courier')
+    #     bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+    #                           reply_markup=create_back_button(_))
+    #     query.answer()
+    #     return enums.ADMIN_COURIER_ADD_ID
+    # elif action == 'select':
+    #     couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
+    #     if not couriers:
+    #         msg = _('There\'s no couriers to add')
+    #         query.answer(msg)
+    #         return enums.ADMIN_COURIERS
+    #     bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+    #                           text=_('Select a courier to add'),
+    #                           reply_markup=general_select_one_keyboard(_, couriers),
+    #                           parse_mode=ParseMode.MARKDOWN)
+    #     query.answer()
+    #     return enums.ADMIN_COURIER_ADD_SELECT
+
+
+# def on_admin_add_courier_id(bot, update, user_data):
+#     user_id = get_user_id(update)
+#     _ = get_trans(user_id)
+#     if update.callback_query and update.callback_query.data == 'back':
+#         upd_msg = update.callback_query.message
+#         bot.edit_message_text(_('➕ Add couriers'), upd_msg.chat_id, upd_msg.message_id, parse_mode=ParseMode.MARKDOWN,
+#                               reply_markup=create_add_courier_keyboard(_))
+#         update.callback_query.answer()
+#         return enums.ADMIN_COURIER_ADD
+#     upd_msg = update.message
+#     courier_id = upd_msg.text
+#     user_data['add_courier_by_id'] = courier_id
+#     msg =
+#     bot.send_message()
+
+
+# def on_admin_add_courier_select(bot, update, user_data):
+    # query = update.callback_query
+    # user_id = get_user_id(update)
+    # _ = get_trans(user_id)
+    # chat_id, message_id = query.message.chat_id, query.message.message_id
+    # action, param = query.data.split('|')
+    # if action == 'back':
+    #     bot.edit_message_text(_('➕ Add couriers'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+    #                           reply_markup=create_add_courier_keyboard(_))
+    #     query.answer()
+    #     return enums.ADMIN_COURIER_ADD
+    # if action == 'page':
+    #     current_page = int(param)
+    #     couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
+    #     bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+    #                           text=_('Select a courier to add'),
+    #                           reply_markup=general_select_one_keyboard(_, couriers, current_page),
+    #                           parse_mode=ParseMode.MARKDOWN)
+    #     query.answer()
+    #     return enums.ADMIN_COURIER_ADD_SELECT
+    # elif action == 'select':
+    #     user_data['add_courier'] = {'location_ids': [], 'courier_id': param}
+    #     text = _('Choose locations for new courier')
+    #     locations = []
+    #     for location in Location:
+    #         is_picked = False
+    #         locations.append((location.title, location.id, is_picked))
+    #     bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
+    #                           reply_markup=create_courier_locations_keyboard(_, locations))
+    #     query.answer()
+    #     return enums.ADMIN_TXT_COURIER_LOCATION
 
 
 def on_admin_delete_courier(bot, update):

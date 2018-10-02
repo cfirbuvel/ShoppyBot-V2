@@ -17,7 +17,7 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
     create_courier_order_status_keyboard, create_admin_order_status_keyboard, general_select_one_keyboard, \
     create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard, create_bot_language_keyboard, \
-    create_product_keyboard, create_ping_client_keyboard
+    create_product_keyboard, create_ping_client_keyboard, create_add_courier_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos, \
     ProductCategory, Product
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
@@ -612,8 +612,9 @@ def on_service_send_order_to_courier(bot, update, user_data):
         bot.send_message(
             chat_id=config.get_service_channel(),
             text=_('Please choose who to send'),
-            reply_markup=couriers_choose_keyboard(couriers, order_id, update.callback_query.message.message_id),
+            reply_markup=couriers_choose_keyboard(_, couriers, order_id, update.callback_query.message.message_id),
         )
+        query.answer()
     elif label == 'order_send_to_couriers':
 
         if config.get_has_courier_option():
@@ -704,6 +705,12 @@ def on_service_send_order_to_courier(bot, update, user_data):
     else:
         enums.logger.info('that part is not handled yet')
 
+
+def delete_message(bot, update):
+    query = update.callback_query
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    bot.delete_message(chat_id, msg_id)
+    query.answer()
 
 def on_cancel(bot, update, user_data):
     return enter_state_init_order_cancelled(bot, update, user_data)
@@ -1222,6 +1229,9 @@ def on_admin_couriers(bot, update):
         query.answer()
         return enums.ADMIN_COURIERS_SHOW
     elif data == 'bot_couriers_add':
+        # bot.edit_message_text(_('➕ Add couriers'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+        #                       reply_markup=create_add_courier_keyboard(_))
+        # query.answer()
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
         if not couriers:
             msg = _('There\'s no couriers to add')
@@ -1379,7 +1389,7 @@ def on_admin_ban_list(bot, update):
     return ConversationHandler.END
 
 
-def on_courier_action_to_confirm(bot, update):
+def on_courier_action_to_confirm(bot, update, user_data):
     query = update.callback_query
     data = query.data
     user_id = get_user_id(update)
@@ -1390,6 +1400,7 @@ def on_courier_action_to_confirm(bot, update):
         'no': 'no|{}'.format(order_id)
     }
     msg = _('Are you sure?')
+    user_data['courier_menu_msg_to_delete'] = query.message.message_id
     bot.send_message(
         chat_id=query.message.chat_id,
         text=msg,
@@ -1499,7 +1510,7 @@ def on_courier_ping_client_soon(bot, update, user_data):
 
 
 
-def on_courier_confirm_order(bot, update):
+def on_courier_confirm_order(bot, update, user_data):
     query = update.callback_query
     data = query.data
     user_id = get_user_id(update)
@@ -1520,6 +1531,8 @@ def on_courier_confirm_order(bot, update):
             user = User.get(telegram_id=user_id)
             msg = _('Order №{} was delivered by admin {}\n').format(order.id, user.username)
         msg += _('Order can be finished now.')
+        delete_msg_id = user_data['courier_menu_msg_to_delete']
+        bot.delete_message(chat_id, delete_msg_id)
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
                               text=courier_msg)
