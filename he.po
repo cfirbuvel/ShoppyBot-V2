@@ -223,6 +223,10 @@ msgstr "🏪 המוצרים שלנו"
 msgid "🛍 Checkout"
 msgstr "🛍 הזמן"
 
+#: shoppybot.py:300
+msgid "🛍 Categories"
+msgstr "🛍 קטגוריות"
+
 #: shoppybot.py:301
 msgid "⭐ Reviews"
 msgstr "⭐ ביקורות"
@@ -1065,3 +1069,23 @@ msgstr "@{} השליחות לא באיזורך\n\nאנא פנה למהל כדי 
 #: keyboards.py:290
 msgid "Can't take responsibility for order"
 msgstr "אין אפשרות לקבל משלוח"
+
+#: keyboards.py:290
+msgid "🏪 Add products to category"
+msgstr "🏪 הוסף מוצרים לקטגוריה"
+
+#: keyboards.py:290
+msgid "➕ Add Category"
+msgstr "➕ הוסף קטגוריה"
+
+#: keyboards.py:290
+msgid "❌ Remove Category"
+msgstr "❌ מחק קטגוריה"
+
+#: keyboards.py:290
+msgid "Please select a category:"
+msgstr "בחר/י קטגוריה רצויה"
+
+#: keyboards.py:290
+msgid "Default"
+msgstr "ראשית"
