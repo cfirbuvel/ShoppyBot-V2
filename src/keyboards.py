@@ -571,7 +571,8 @@ def create_courier_locations_keyboard(trans, locations):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def couriers_choose_keyboard(couriers, order_id, message_id):
+def couriers_choose_keyboard(trans, couriers, order_id, message_id):
+    _ = trans
     couriers_list = []
     for courier in couriers:
         if hasattr(courier.location, 'title'):
@@ -582,6 +583,9 @@ def couriers_choose_keyboard(couriers, order_id, message_id):
             couriers_list.append([InlineKeyboardButton('@{}'.format(courier.username),
                                                        callback_data='sendto|{}|{}|{}'.format(courier.telegram_id,
                                                                                               order_id, message_id))])
+    couriers_list.append(
+        [InlineKeyboardButton(_('❌ Cancel'), callback_data='delete_msg')]
+    )
     return InlineKeyboardMarkup(couriers_list)
 
 
@@ -643,6 +647,16 @@ def create_ping_client_keyboard(trans):
         [InlineKeyboardButton(_('❌ Cancel'), callback_data='back')]
     ]
     return InlineKeyboardMarkup(buttons)
+
+
+def create_add_courier_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('🆔 Add by user ID'), callback_data='by_id')],
+        [InlineKeyboardButton(_('👆 Select courier'), callback_data='select')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
+    ]
+    return InlineKeyboardMarkup([buttons])
 
 
 def create_are_you_sure_keyboard(trans, callback_mapping):

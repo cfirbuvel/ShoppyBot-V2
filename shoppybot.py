@@ -30,7 +30,7 @@ def main():
     courier_conversation_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(triggers.on_courier_action_to_confirm,
-                                 pattern='^confirm_courier',
+                                 pattern='^confirm_courier', pass_user_data=True
                                  ),
             CallbackQueryHandler(triggers.on_courier_ping_choice,
                                  pattern='^ping', pass_user_data=True),
@@ -42,7 +42,7 @@ def main():
         states={
             enums.COURIER_STATE_INIT: [
                 CallbackQueryHandler(triggers.on_courier_action_to_confirm,
-                                     pattern='^confirm_courier',
+                                     pattern='^confirm_courier', pass_user_data=True
                                      ),
                 CallbackQueryHandler(triggers.on_courier_ping_choice,
                                      pattern='^ping', pass_user_data=True),
@@ -59,7 +59,7 @@ def main():
                 MessageHandler(Filters.text, triggers.on_courier_ping_client_soon, pass_user_data=True)
             ],
             enums.COURIER_STATE_CONFIRM_ORDER: [
-                CallbackQueryHandler(triggers.on_courier_confirm_order,)
+                CallbackQueryHandler(triggers.on_courier_confirm_order, pass_user_data=True)
                                      #pattern='^confirm_order')
 
             ],
@@ -214,6 +214,14 @@ def main():
             enums.ADMIN_COURIER_ADD: [
                 CallbackQueryHandler(admin.on_admin_add_courier, pass_user_data=True)
             ],
+            # enums.ADMIN_COURIER_ADD_ID: [
+            #     CallbackQueryHandler()
+            # ],
+            # enums.ADMIN_COURIER_ADD_USERNAME: [],
+            #
+            # enums.ADMIN_COURIER_ADD_SELECT: [
+            #     CallbackQueryHandler()
+            # ],
             enums.ADMIN_COURIER_DELETE: [
                 CallbackQueryHandler(admin.on_admin_delete_courier)
             ],
@@ -494,6 +502,10 @@ def main():
     #                                pattern='^ping')
     #
     # updater.dispatcher.add_handler()
+    updater.dispatcher.add_handler((
+        CallbackQueryHandler(triggers.delete_message,
+                             pattern='delete_msg')
+    ))
     updater.dispatcher.add_error_handler(on_error)
     updater.start_polling()
     updater.idle()
