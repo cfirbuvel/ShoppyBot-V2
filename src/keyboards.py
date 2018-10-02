@@ -791,8 +791,8 @@ def create_product_media_keyboard(trans):
 def create_categories_keyboard(trans):
     _ = trans
     buttons = [
-        [InlineKeyboardButton(_('➕ Add Category'), callback_data='add')],
         [InlineKeyboardButton(_('🏪 Add products to category'), callback_data='products')],
+        [InlineKeyboardButton(_('➕ Add Category'), callback_data='add')],
         [InlineKeyboardButton(_('❌ Remove Category'), callback_data='remove')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]
