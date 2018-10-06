@@ -94,9 +94,9 @@ def on_my_order_date(bot, update, user_data):
             # return enums.BOT_STATE_MY_ORDER_BY_DATE
             return enums.BOT_STATE_MY_LAST_ORDER
         else:
-            orders_ids = [order.id for order in orders]
-            orders = [('Order №{}'.format(val), val) for val in orders_ids]
-            user_data['my_orders_by_date_ids'] = orders_ids
+            orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
+            orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
+            user_data['my_orders_by_date'] = orders_data
             bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
                                   reply_markup=general_select_one_keyboard(_, orders),
                                   parse_mode=ParseMode.MARKDOWN)
@@ -115,7 +115,7 @@ def on_my_order_select(bot, update, user_data):
         return state
     elif action == 'page':
         current_page = int(val)
-        orders = [('Order №{}'.format(val), val) for val in user_data['my_orders_by_date_ids']]
+        orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in user_data['my_orders_by_date']]
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=_('Select order:'),
                               reply_markup=general_select_one_keyboard(_, orders, current_page),
@@ -432,6 +432,7 @@ def on_confirm_order(bot, update, user_data):
         total = cart.get_cart_total(user_data)
         delivery_cost = config.get_delivery_fee()
         delivery_min = config.get_delivery_min()
+        delivery_for_vip = config.get_delivery_fee_for_vip()
 
         try:
             user = User.get(telegram_id=user_id)
@@ -462,7 +463,7 @@ def on_confirm_order(bot, update, user_data):
         customer_username = user.username
 
         text = create_service_notice(_, is_pickup, order_id, customer_username, product_info, shipping_data,
-                                     total, delivery_min, delivery_cost)
+                                     total, delivery_min, delivery_cost, delivery_for_vip)
         order_data.order_text = text
 
         # ORDER CONFIRMED, send the details to service channel
@@ -1639,7 +1640,7 @@ def on_product_categories(bot, update, user_data):
         msg = _('{} products:').format(cat.title)
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN)
         # send_products to current chat
-        for product in Product.filter(category=cat):
+        for product in Product.filter(category=cat, is_active=True):
             product_count = cart.get_product_count(
                 user_data, product.id)
             subtotal = cart.get_product_subtotal(

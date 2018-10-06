@@ -42,7 +42,9 @@ class ConfigHelper:
                       'identification_stage2_required': False,
                       'identification_stage2_question': None,
                       'has_courier_option': True,
-                      'only_for_customers': False, 'delivery_fee': 0, })
+                      'only_for_customers': False, 'delivery_fee': 0,
+                      'delivery_fee_for_vip': False, 'discount': 0,
+                      'discount_min': 0})
         self.config.read(cfgfilename, encoding='utf-8')
         self.section = 'Settings'
 
@@ -182,6 +184,12 @@ class ConfigHelper:
         #     value = value == '1' or value == 'yes' or value is True
         return value
 
+    def get_delivery_fee_for_vip(self):
+        value = get_config_session().get('delivery_fee_for_vip')
+        if value is None:
+            value = self.config.getboolean(self.section, 'delivery_fee_for_vip')
+        return value
+
     def get_delivery_fee(self):
         value = get_config_session().get('delivery_fee')
         if value is None:
@@ -191,7 +199,7 @@ class ConfigHelper:
     def get_delivery_min(self):
         value = get_config_session().get('delivery_min')
         if value is None:
-            value = 0
+            value = self.config.get(self.section, 'delivery_min')
         return int(value)
 
     def get_bot_on_off(self):
@@ -206,6 +214,12 @@ class ConfigHelper:
         value = get_config_session().get('discount')
         if value is None:
             value = self.config.get(self.section, 'discount')
+        return value
+
+    def get_discount_min(self):
+        value = get_config_session().get('discount_min')
+        if value is None:
+            value = self.config.get(self.section, 'discount_min')
         return value
 
     def get_banned_users(self):
@@ -359,6 +373,27 @@ class CartHelper:
 
 cart = CartHelper()
 config = ConfigHelper(cfgfilename='shoppybot.conf')
+
+
+def parse_discount(discount_str):
+    discount_list = [v.strip() for v in discount_str.split('>')]
+    if len(discount_list) == 2:
+        discount, discount_min = discount_list
+        try:
+            discount_num = int(discount.split('%')[0].strip())
+            discount_min = int(discount_min)
+        except ValueError:
+            pass
+        else:
+            if discount_num > 0 and discount_min > 0:
+                return discount, discount_min
+
+
+def calculate_discount_total(discount, total):
+    if discount.endswith('%'):
+        discount = discount.replace('%', '').strip()
+        discount = round(total / 100 * int(discount))
+    return total - int(discount)
 
 
 def is_vip_customer(bot, user_id):

@@ -430,8 +430,9 @@ def create_bot_order_options_keyboard(trans):
                               callback_data='bot_order_options_warehouse')],
         [InlineKeyboardButton(_('💲 Add discount'),
                               callback_data='bot_order_options_discount')],
-        [InlineKeyboardButton(_('🚕 Add delivery fee'),
-                              callback_data='bot_order_options_delivery_fee')],
+        [InlineKeyboardButton(_('🚕 Delivery fee'), callback_data='bot_order_options_delivery_fee')],
+        # [InlineKeyboardButton(_('🚕 Add delivery fee'),
+        #                       callback_data='bot_order_options_delivery_fee')],
         [InlineKeyboardButton(_('🎯 locations'),
                               callback_data='bot_order_options_add_locations')],
         [InlineKeyboardButton(_('👨‍ Edit identify process'),
@@ -449,6 +450,26 @@ def create_bot_order_options_keyboard(trans):
     ]
 
     return InlineKeyboardMarkup(main_button_list)
+
+
+def create_delivery_fee_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('➕ Add delivery fee'), callback_data='add')],
+        [InlineKeyboardButton(_('🎖 Vip customers delivery fee'), callback_data='vip')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_general_on_off_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('ON'), callback_data='on')],
+        [InlineKeyboardButton(_('OFF'), callback_data='off')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
+    ]
+    return InlineKeyboardMarkup(buttons)
 
 
 def create_back_button(trans):
@@ -691,13 +712,22 @@ def create_edit_restriction_keyboard(trans, values):
         [InlineKeyboardButton(_('Save'), callback_data='save')]
     ]
     return InlineKeyboardMarkup(buttons)
-
+#
+# def create_product_media_keyboard(trans):
+#     _ = trans
+#     buttons = [
+#         [InlineKeyboardButton(_('Create Product'), callback_data='create_product')]
+#     ]
+#     return InlineKeyboardMarkup(buttons)
 def create_product_media_keyboard(trans):
     _ = trans
-    buttons = [
-        [InlineKeyboardButton(_('Create Product'), callback_data='create_product')]
+    button_row = [
+        [
+            KeyboardButton(_('Create Product')),
+            KeyboardButton(_('❌ Cancel'))
+        ],
     ]
-    return InlineKeyboardMarkup(buttons)
+    return ReplyKeyboardMarkup(button_row, resize_keyboard=True)
 
 
 def create_categories_keyboard(trans):
