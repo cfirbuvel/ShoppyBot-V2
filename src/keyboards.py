@@ -373,8 +373,20 @@ def create_bot_products_keyboard(trans):
     buttons = [
         [InlineKeyboardButton(_('🏪 View Products'), callback_data='bot_products_view')],
         [InlineKeyboardButton(_('➕ Add product'), callback_data='bot_products_add')],
+        [InlineKeyboardButton(_('✏️ Edit product'), callback_data='bot_products_edit')],
         [InlineKeyboardButton(_('➖ Remove product'), callback_data='bot_products_remove')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='bot_products_back')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_bot_product_edit_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('📝 Edit title'), callback_data='title')],
+        [InlineKeyboardButton(_('💰 Edit price'), callback_data='price')],
+        [InlineKeyboardButton(_('🖼 Edit media'), callback_data='media')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]
     return InlineKeyboardMarkup(buttons)
 

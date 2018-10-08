@@ -19,7 +19,7 @@ from .keyboards import create_back_button, create_bot_couriers_keyboard, create_
     general_select_keyboard, general_select_one_keyboard, create_warehouse_keyboard, \
     create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
     create_categories_keyboard, create_add_courier_keyboard, create_delivery_fee_keyboard, \
-    create_general_on_off_keyboard
+    create_general_on_off_keyboard, create_bot_product_edit_keyboard
 
 from . import shortcuts
 
@@ -634,6 +634,13 @@ def on_admin_products(bot, update, user_data):
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_PRODUCT_ADD
+    elif data == 'bot_products_edit':
+        products = Product.select(Product.title, Product.id).where(Product.is_active==True).tuples()
+        products_keyboard = general_select_one_keyboard(_, products)
+        msg = _('Select a product to edit')
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN, reply_markup=products_keyboard)
+        query.answer()
+        return enums.ADMIN_PRODUCT_EDIT_SELECT
     elif data == 'bot_products_remove':
         products = Product.filter(is_active=True)
         if not products:
@@ -683,6 +690,54 @@ def on_admin_show_product(bot, update, user_data):
         query.answer()
     return enums.ADMIN_PRODUCTS_SHOW
 
+
+def on_admin_edit_product(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    action, param = query.data.split('|')
+    if action == 'back':
+        msg = _('🏪 My Products')
+        bot.edit_message_text(msg, chat_id, msg_id,
+                              reply_markup=create_bot_products_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_PRODUCTS
+    if action == 'page':
+        products = Product.select(Product.title, Product.id).where(Product.is_active == True).tuples()
+        msg = _('Select a product to edit')
+        current_page = int(param)
+        bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=general_select_one_keyboard(_, products, current_page))
+        query.answer()
+        return enums.ADMIN_PRODUCT_EDIT_SELECT
+    elif action == 'select':
+        product = Product.get(id=param)
+        user_data['admin_product_edit_id'] = product.id
+        msg = _('Edit product "{}"').format(product.title)
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_bot_product_edit_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        # bot.delete_message(chat_id, msg_id)
+        # product_prices = ((obj.count, obj.price) for obj in product.product_counts)
+        # shortcuts.send_product_media(bot, product, chat_id)
+        # msg = messages.create_admin_product_description(_, product.title, product_prices)
+        # bot.send_message(chat_id, msg)
+        # msg = _('Select a product:')
+        # bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
+        #                  reply_markup=general_select_one_keyboard(_, products))
+        query.answer()
+        return enums.ADMIN_PRODUCT_EDIT
+    #return enums.ADMIN_PRODUCTS_SHOW
+
+
+# def on_admin_product_edit(bot, update, user_data):
+#     query = update.callback_query
+#     user_id = get_user_id(update)
+#     _ = get_trans(user_id)
+#     chat_id, msg_id = query.message.chat_id, query.message.message_id
+#     actioooooooooooooooooooooooooo
+#     if action == 'back':
 
 def on_admin_delete_product(bot, update, user_data):
     query = update.callback_query
