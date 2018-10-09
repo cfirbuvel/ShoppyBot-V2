@@ -1,5 +1,6 @@
 import io
 import os
+import mimetypes
 
 from telegram import ParseMode
 from telegram import ReplyKeyboardRemove
@@ -7,7 +8,8 @@ from telegram.error import TelegramError
 from telegram.ext import ConversationHandler
 
 from . import enums
-from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans
+from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans, \
+    parse_discount
 from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User, \
     ProductMedia, ProductCategory
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
@@ -16,7 +18,8 @@ from .keyboards import create_back_button, create_bot_couriers_keyboard, create_
     create_locations_keyboard, create_bot_products_keyboard, create_bot_product_add_keyboard, \
     general_select_keyboard, general_select_one_keyboard, create_warehouse_keyboard, \
     create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
-    create_categories_keyboard, create_add_courier_keyboard
+    create_categories_keyboard, create_add_courier_keyboard, create_delivery_fee_keyboard, \
+    create_general_on_off_keyboard, create_bot_product_edit_keyboard
 
 from . import shortcuts
 
@@ -108,25 +111,20 @@ def on_admin_order_options(bot, update, user_data):
             chat_id=query.message.chat_id,
             message_id=query.message.message_id,
             text=_('Enter discount like:\n'
-                  '50 > 500: all deals above 500$ will be -100$\n'
-                  '10% > 500: all deals above 500% will be -10%\n'
-                  'Current discount: {}'.format(config.get_discount())),
+                   '50 > 500: all deals above 500$ will be -50$\n'
+                   '10% > 500: all deals above 500$ will be -10%\n'
+                   'Current discount: {} > {}'.format(config.get_discount(), config.get_discount_min())),
             reply_markup=create_back_button(_),
             parse_mode=ParseMode.MARKDOWN,
         )
         query.answer()
         return enums.ADMIN_ADD_DISCOUNT
     elif data == 'bot_order_options_delivery_fee':
-        bot.edit_message_text(
-            chat_id=query.message.chat_id,
-            message_id=query.message.message_id,
-            text=(
-                _('Enter delivery fee:\nOnly works on delivery\n\nCurrent fee: {}').format(config.get_delivery_fee())),
-            reply_markup=create_back_button(_),
-            parse_mode=ParseMode.MARKDOWN,
-        )
+        msg = _('🚕 Delivery fee')
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_delivery_fee_keyboard(_))
         query.answer()
-        return enums.ADMIN_ADD_DELIVERY_FEE
+        return enums.ADMIN_DELIVERY_FEE
     elif data == 'bot_order_options_add_locations':
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -138,7 +136,7 @@ def on_admin_order_options(bot, update, user_data):
     elif data == 'bot_order_options_identify':
         first = config.get_identification_required()
         second = config.get_identification_stage2_required()
-        msg = _('👨 Edit identification stages:')
+        msg = _('👨 Edit identification process:')
         user_data['edit_identification_stages'] = (first, second)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -187,6 +185,74 @@ def on_admin_order_options(bot, update, user_data):
 
     return ConversationHandler.END
 
+
+def on_admin_delivery_fee(bot, update):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    msg_id = query.message.message_id
+    action = query.data
+    if action == 'add':
+        msg = _('Enter delivery fee like:\n'
+                '50 > 500: Deals below 500 will have delivery fee of 50\n'
+                'or\n'
+                '50: All deals will have delivery fee of 50\n'
+                'Only works on delivery\n\n'
+                'Current fee: {}').format(config.get_delivery_fee())
+        bot.edit_message_text(
+            msg, chat_id, msg_id,
+            reply_markup=create_back_button(_),
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        query.answer()
+        return enums.ADMIN_ADD_DELIVERY_FEE
+    elif action == 'back':
+        msg = _('💳 Order options')
+        bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_bot_order_options_keyboard(_))
+        return enums.ADMIN_ORDER_OPTIONS
+    elif action == 'vip':
+        msg = _('Activate delivery fee for vip customers')
+        bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_general_on_off_keyboard(_))
+        query.answer()
+        return enums.ADMIN_DELIVERY_FEE_VIP
+
+
+def on_admin_delivery_fee_vip(bot, update):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    msg_id = query.message.message_id
+    action = query.data
+    if action == 'back':
+        msg = _('🚕 Delivery fee')
+        # bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+        #                       reply_markup=create_delivery_fee_keyboard(_))
+        # query.answer()
+        # return enums.ADMIN_DELIVERY_FEE
+    else:
+        callback_map = {
+            'on': (True, _('Delivery fee for vip customers was activated')),
+            'off': (False, _('Delivery fee for vip customers was deactivated'))
+        }
+        config_val, msg = callback_map[action]
+        config_session = get_config_session()
+        config_session['delivery_fee_for_vip'] = config_val
+        set_config_session(config_session)
+    bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                          reply_markup=create_delivery_fee_keyboard(_))
+    query.answer()
+    return enums.ADMIN_DELIVERY_FEE
+
+# bot.send_message(chat_id=update.message.chat_id,
+#                  text='Delivery fee was changed',
+#                  reply_markup=create_bot_order_options_keyboard(_),
+#                  parse_mode=ParseMode.MARKDOWN)
+# return enums.ADMIN_ORDER_OPTIONS
+
 def on_admin_categories(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
@@ -232,6 +298,12 @@ def on_admin_category_add(bot, update, user_data):
         cat = ProductCategory.get(title=answer)
         msg = _('Category with name `{}` exists already').format(cat.title)
     except ProductCategory.DoesNotExist:
+        categories = ProductCategory.select().exists()
+        if not categories:
+            def_cat = ProductCategory.create(title='Default')
+            for product in Product.filter(is_active=True):
+                product.category = def_cat
+                product.save()
         cat = ProductCategory.create(title=answer)
         msg = _('Category `{}` has been created').format(cat.title)
     bot.send_message(update.message.chat_id, msg, parse_mode=ParseMode.HTML, reply_markup=create_categories_keyboard(_))
@@ -286,10 +358,11 @@ def on_admin_category_remove(bot, update, user_data):
                               reply_markup=create_categories_keyboard(_))
     elif action == 'select':
         cat = ProductCategory.get(id=val)
-        if cat.title == 'Default':
-            msg = _('Cannot delete default category')
-        else:
-            msg = _('Category "{}" has been deleted').format(cat.title)
+        # if cat.title == 'Default':
+        #     msg = _('Cannot delete default category')
+        # else:
+        cat.delete_instance()
+        msg = _('Category "{}" has been deleted').format(cat.title)
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
                               reply_markup=create_categories_keyboard(_))
     query.answer()
@@ -305,9 +378,9 @@ def on_admin_category_products_add(bot, update, user_data):
     action, val = query.data.split('|')
     selected_ids = user_data['category_products_add']['products_ids']
     if action == 'done':
+        cat_id = user_data['category_products_add']['category_id']
+        cat = ProductCategory.get(id=cat_id)
         if selected_ids:
-            cat_id = user_data['category_products_add']['category_id']
-            cat = ProductCategory(id=cat_id)
             products = Product.filter(Product.id << selected_ids)
             for product in products:
                 product.category = cat
@@ -370,7 +443,8 @@ def on_admin_warehouse_products(bot, update, user_data):
     elif action == 'select':
         user_data['product_warehouse'] = {'product_id': val}
         product = Product.get(id=val)
-        msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
+        msg = _('🏗\nProduct: `{}`\n'
+                'Credits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_WAREHOUSE
@@ -396,7 +470,7 @@ def on_admin_warehouse(bot, update, user_data):
         product_id = user_data['product_warehouse']['product_id']
         product = Product.get(id=product_id)
         msg = _('🏗\nProduct: `{}`\n'
-                'Credits: {}\n\n'
+                'Credits: {}\n'
                 'Please enter new number of credits:').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id=message_id, reply_markup=create_back_button(_), parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -425,7 +499,8 @@ def on_admin_warehouse_courier(bot, update, user_data):
     elif action == 'back':
         product_id = user_data['product_warehouse']['product_id']
         product = Product.get(id=product_id)
-        msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
+        msg = _('🏗\nProduct: `{}`\n'
+                'Credits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_WAREHOUSE
@@ -441,7 +516,7 @@ def on_admin_warehouse_courier(bot, update, user_data):
         user_data['product_warehouse']['courier_warehouse_id'] = product_warehouse.id
         msg = _('🏗\nProduct: `{}`\n'
                 'Courier: `{}`\n'
-                'Courier credits: {}\n\n'
+                'Courier credits: {}\n'
                 'Please enter new number of credits:').format(product.title, courier.username, product_warehouse.count)
         bot.edit_message_text(msg, chat_id, message_id=message_id, reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -455,7 +530,8 @@ def on_admin_warehouse_product_credits(bot, update, user_data):
     product_id = user_data['product_warehouse']['product_id']
     product = Product.get(id=product_id)
     if update.callback_query and update.callback_query.data == 'back':
-        msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
+        msg = _('🏗\nProduct: `{}`\n'
+                'Credits: {}').format(product.title, product.credits)
         bot.edit_message_text(msg, update.callback_query.message.chat_id, update.callback_query.message.message_id, reply_markup=create_warehouse_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_WAREHOUSE
@@ -469,15 +545,16 @@ def on_admin_warehouse_product_credits(bot, update, user_data):
         return enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS
     credits = abs(credits)
     if credits > 2**63-1:
-        msg = _('Entered amount is too big\n\n'
+        msg = _('Entered amount is too big\n'
                 'Please enter new number of credits:')
         bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
         return enums.ADMIN_WAREHOUSE_PRODUCT_CREDITS
     product.credits = credits
     product.save()
-    msg = _('✅\nProduct: {}\ncredits were changed to {}').format(product.title, credits)
+    msg = _('✅ Product\'s credits were changed to {}').format(credits)
     bot.send_message(chat_id, msg)
-    msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
+    msg = _('🏗\nProduct: `{}`\n'
+            'Credits: {}').format(product.title, product.credits)
     bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_WAREHOUSE
 
@@ -507,7 +584,7 @@ def on_admin_warehouse_courier_credits(bot, update, user_data):
     courier_warehouse = ProductWarehouse.get(id=warehouse_id)
     total_credits = product.credits + courier_warehouse.count
     if credits > total_credits:
-        msg = _('Cannot give to courier more credits than you have in warehouse: {}\n\n'
+        msg = _('Cannot give to courier more credits than you have in warehouse: {}\n'
                 'Please enter new number of credits:').format(total_credits)
         bot.send_message(chat_id, msg, reply_markup=create_back_button(_))
         return enums.ADMIN_WAREHOUSE_COURIER_CREDITS
@@ -516,9 +593,10 @@ def on_admin_warehouse_courier_credits(bot, update, user_data):
     courier_warehouse.count = credits
     courier_warehouse.save()
     product.save()
-    msg = _('✅\nCourier `{}` received `{}` credits').format(credits, courier_warehouse.courier.username)
+    msg = _('✅ You have given {} credits to courier `{}`').format(credits, courier_warehouse.courier.username)
     bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
-    msg = _('🏗\nProduct: `{}`\nCredits: {}').format(product.title, product.credits)
+    msg = _('🏗\nProduct: `{}`\n'
+            'Credits: {}').format(product.title, product.credits)
     bot.send_message(chat_id, msg, reply_markup=create_warehouse_keyboard(_), parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_WAREHOUSE
 
@@ -556,6 +634,13 @@ def on_admin_products(bot, update, user_data):
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_PRODUCT_ADD
+    elif data == 'bot_products_edit':
+        products = Product.select(Product.title, Product.id).where(Product.is_active==True).tuples()
+        products_keyboard = general_select_one_keyboard(_, products)
+        msg = _('Select a product to edit')
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN, reply_markup=products_keyboard)
+        query.answer()
+        return enums.ADMIN_PRODUCT_EDIT_SELECT
     elif data == 'bot_products_remove':
         products = Product.filter(is_active=True)
         if not products:
@@ -599,12 +684,60 @@ def on_admin_show_product(bot, update, user_data):
         shortcuts.send_product_media(bot, product, chat_id)
         msg = messages.create_admin_product_description(_, product.title, product_prices)
         bot.send_message(chat_id, msg)
-        msg = _('product {} viewed:').format(product.title)
+        msg = _('Select a product:')
         bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
                          reply_markup=general_select_one_keyboard(_, products))
         query.answer()
     return enums.ADMIN_PRODUCTS_SHOW
 
+
+def on_admin_edit_product(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    action, param = query.data.split('|')
+    if action == 'back':
+        msg = _('🏪 My Products')
+        bot.edit_message_text(msg, chat_id, msg_id,
+                              reply_markup=create_bot_products_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_PRODUCTS
+    if action == 'page':
+        products = Product.select(Product.title, Product.id).where(Product.is_active == True).tuples()
+        msg = _('Select a product to edit')
+        current_page = int(param)
+        bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=general_select_one_keyboard(_, products, current_page))
+        query.answer()
+        return enums.ADMIN_PRODUCT_EDIT_SELECT
+    elif action == 'select':
+        product = Product.get(id=param)
+        user_data['admin_product_edit_id'] = product.id
+        msg = _('Edit product "{}"').format(product.title)
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_bot_product_edit_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        # bot.delete_message(chat_id, msg_id)
+        # product_prices = ((obj.count, obj.price) for obj in product.product_counts)
+        # shortcuts.send_product_media(bot, product, chat_id)
+        # msg = messages.create_admin_product_description(_, product.title, product_prices)
+        # bot.send_message(chat_id, msg)
+        # msg = _('Select a product:')
+        # bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
+        #                  reply_markup=general_select_one_keyboard(_, products))
+        query.answer()
+        return enums.ADMIN_PRODUCT_EDIT
+    #return enums.ADMIN_PRODUCTS_SHOW
+
+
+# def on_admin_product_edit(bot, update, user_data):
+#     query = update.callback_query
+#     user_id = get_user_id(update)
+#     _ = get_trans(user_id)
+#     chat_id, msg_id = query.message.chat_id, query.message.message_id
+#     actioooooooooooooooooooooooooo
+#     if action == 'back':
 
 def on_admin_delete_product(bot, update, user_data):
     query = update.callback_query
@@ -788,7 +921,7 @@ def on_admin_txt_product_prices(bot, update, user_data):
     update.message.reply_text(
         text=msg,
         #text=_('Send the new product photo'),
-        reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.MARKDOWN,
+        reply_markup=create_product_media_keyboard(_), parse_mode=ParseMode.MARKDOWN,
     )
     return enums.ADMIN_TXT_PRODUCT_PHOTO
 
@@ -796,11 +929,18 @@ def on_admin_txt_product_prices(bot, update, user_data):
 def on_admin_txt_product_photo(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    if update.callback_query and update.callback_query.data == 'create_product':
+    upd_msg = update.message
+    msg_text = upd_msg.text
+    chat_id = update.message.chat_id
+    if msg_text == _('Create Product'):
         title = user_data['add_product']['title']
         prices = user_data['add_product']['prices']
-        files = user_data['add_product']['files']
-        #image_data = stream.getvalue()
+        try:
+            files = user_data['add_product']['files']
+        except KeyError:
+            msg = _('Send a photo, gif, video, audio or document')
+            bot.send_message(chat_id, msg)
+            return enums.ADMIN_TXT_PRODUCT_PHOTO
         def_cat = ProductCategory.get(title='Default')
         product = Product.create(title=title, category=def_cat)
         for count, price in prices:
@@ -817,48 +957,42 @@ def on_admin_txt_product_photo(bot, update, user_data):
             ProductWarehouse.create(product=product, courier=courier)
         # clear new product data
         del user_data['add_product']
-        chat_id, msg_id = update.callback_query.message.chat_id, update.callback_query.message.message_id
         msg = _('New Product Created\n✅')
-        bot.edit_message_text(msg, chat_id, msg_id)
-        # chat_id = update.message.chat_id
-        # bot.send_message(chat_id=chat_id,
-        #                  text=_('New Product Created\n✅'))
+        bot.send_message(chat_id, msg, reply_markup=ReplyKeyboardRemove())
         bot.send_message(chat_id=chat_id,
                          text=_('🏪 My Products'),
                          reply_markup=create_bot_products_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCTS
-    chat_id = update.message.chat_id
+    elif msg_text == _('❌ Cancel'):
+        del user_data['add_product']
+        bot.send_message(chat_id, _('Cancelled'), reply_markup=ReplyKeyboardRemove())
+        bot.send_message(chat_id=chat_id,
+                         text=_('🏪 My Products'),
+                         reply_markup=create_bot_products_keyboard(_),
+                         parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_PRODUCTS
     files_types = ('video', 'photo', 'document', 'audio')
-    upd_msg = update.message
     file, ftype = next((getattr(upd_msg, ftype), ftype) for ftype in files_types if getattr(upd_msg, ftype, None))
     if type(file) == list:
         file = file[-1]
     file = bot.get_file(file.file_id)
-    msg = _('Send another photo, gif, video, audio, or document')
     if file.file_size > 1000 * 20000:
         err_msg = _('File size shouldn\'t be larger than 20 MB')
-        err_msg += msg
         bot.send_message(chat_id, err_msg)
     else:
-        # file_ext = os.path.splitext(file.file_path)[1]
-        # filename = '{}{}'.format(file.file_id, file_ext)
-        # media_dir = config.get_media_path()
-        # filename = os.path.join(media_dir, filename)
-        # file.download(custom_path=filename)
+        new_type = mimetypes.guess_type(file.file_path)[0]
+        if new_type:
+            new_type = new_type.split('/')[0]
+        if new_type in files_types + ('image',):
+            if new_type == 'image':
+                new_type = 'photo'
+            ftype = new_type
         if not user_data['add_product'].get('files'):
             user_data['add_product']['files'] = [(file.file_id, ftype)]
         else:
             user_data['add_product']['files'].append((file.file_id, ftype))
-        bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
-                         reply_markup=create_product_media_keyboard(_))
     return enums.ADMIN_TXT_PRODUCT_PHOTO
-    # print(file.file_size)
-    # print(file.file_path)
-
-    #photo_file = bot.get_file(update.message.photo[-1].file_id)
-    #stream = io.BytesIO()
-    #photo_file.download(out=stream)
 
 
 def on_admin_cmd_delete_product(bot, update, user_data):
@@ -953,7 +1087,7 @@ def on_admin_show_courier(bot, update, user_data):
         locations = CourierLocation.filter(courier=courier)
         locations = [item.location.title for item in locations]
         msg = ''
-        msg += _('name:\n`@{}`\n').format(courier.username)
+        msg += _('Name:\n`@{}`\n').format(courier.username)
         msg += _('courier ID:\n`{}`\n').format(courier.id)
         msg += _('telegram ID:\n`{}`\n').format(courier.telegram_id)
         msg += _('locations:\n{}\n').format(locations)
@@ -1194,10 +1328,10 @@ def on_admin_btn_courier_location(bot, update, user_data):
     location_ids = user_data['add_courier']['location_ids']
     if location_id in location_ids:
         location_ids = [l_id for l_id in location_ids if location_id != l_id]
-        text = _('Courier location removed')
+        text = 'Location removed'
     else:
         location_ids.append(location_id)
-        text = _('Courier location added')
+        text = 'Location added'
     user_data['add_courier']['location_ids'] = location_ids
 
     locations = []
@@ -1537,24 +1671,44 @@ def on_admin_add_discount(bot, update, user_data):
         return enums.ADMIN_ORDER_OPTIONS
     # user_id = get_user_id(update)
     discount = update.message.text
-    config_session = get_config_session()
-    config_session['discount'] = discount
-    set_config_session(config_session)
-    bot.send_message(chat_id=update.message.chat_id,
-                     text='Discount was changed',
-                     reply_markup=create_bot_order_options_keyboard(_),
-                     parse_mode=ParseMode.MARKDOWN)
-    return enums.ADMIN_ORDER_OPTIONS
-
+    discount = parse_discount(discount)
+    if discount:
+        discount, discount_min = discount
+        config_session = get_config_session()
+        config_session['discount'] = discount
+        config_session['discount_min'] = discount_min
+        set_config_session(config_session)
+        bot.send_message(chat_id=update.message.chat_id,
+                         text=_('Discount was changed'),
+                         reply_markup=create_bot_order_options_keyboard(_),
+                         parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_ORDER_OPTIONS
+    else:
+        msg = _('Invalid format')
+        msg += '\n'
+        msg += _('Enter discount like:\n'
+                 '50 > 500: all deals above 500$ will be -50$\n'
+                 '10% > 500: all deals above 500$ will be -10%\n'
+                 'Current discount: {} > {}'.format(config.get_discount(), config.get_discount_min()))
+        bot.send_message(update.message.chat_id,
+                         msg, reply_markup=create_back_button(_),
+                         parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_ADD_DISCOUNT
 
 def on_admin_add_delivery(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
-        option_back_function(
-            bot, update, create_bot_order_options_keyboard(_),
-            'Order options')
-        return enums.ADMIN_ORDER_OPTIONS
+        msg = _('🚕 Delivery fee')
+        upd_msg = update.callback_query.message
+        bot.edit_message_text(msg, upd_msg.chat_id, upd_msg.message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_delivery_fee_keyboard(_))
+        update.callback_query.answer()
+        return enums.ADMIN_DELIVERY_FEE
+        # option_back_function(
+        #     bot, update, create_bot_order_options_keyboard(_),
+        #     'Order options')
+        # return enums.ADMIN_ORDER_OPTIONS
     # user_id = get_user_id(update)
     delivery = update.message.text
     cleaned_data = [int(i.strip()) for i in delivery.split('>')]
@@ -1566,11 +1720,17 @@ def on_admin_add_delivery(bot, update, user_data):
         config_session['delivery_min'] = 0
     set_config_session(config_session)
 
-    bot.send_message(chat_id=update.message.chat_id,
-                     text='Delivery fee was changed',
-                     reply_markup=create_bot_order_options_keyboard(_),
+    bot.send_message(update.message.chat_id,
+                     _('Delivery fee was changed'),
+                     reply_markup=create_delivery_fee_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
-    return enums.ADMIN_ORDER_OPTIONS
+    return enums.ADMIN_DELIVERY_FEE
+
+    # bot.send_message(chat_id=update.message.chat_id,
+    #                  text='Delivery fee was changed',
+    #                  reply_markup=create_bot_order_options_keyboard(_),
+    #                  parse_mode=ParseMode.MARKDOWN)
+    # return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_bot_on_off(bot, update, user_data):
@@ -1745,7 +1905,7 @@ def on_admin_add_ban_list(bot, update, user_data):
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
             bot, update, create_ban_list_keyboard(_),
-            _('🔥 Client ban-list'))
+            'Ban list')
         return enums.ADMIN_BAN_LIST
 
     username = update.message.text.replace('@', '').replace(' ', '')
@@ -1769,7 +1929,7 @@ def on_admin_remove_ban_list(bot, update, user_data):
     if update.callback_query and update.callback_query.data == 'back':
         option_back_function(
             bot, update, create_ban_list_keyboard(_),
-            _('🔥 Client ban-list'))
+            'Ban list')
         return enums.ADMIN_BAN_LIST
 
     username = update.message.text.replace('@', '').replace(' ', '')

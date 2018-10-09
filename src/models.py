@@ -119,14 +119,14 @@ def create_tables():
             Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia
         ], safe=True
     )
-    try:
-        def_cat = ProductCategory.get(title='Default')
-    except ProductCategory.DoesNotExist:
-        def_cat = ProductCategory.create(title='Default')
-    for product in Product:
-        if not product.category:
-            product.category = def_cat
-            product.save()
+    # try:
+    #     def_cat = ProductCategory.get(title='Default')
+    # except ProductCategory.DoesNotExist:
+    #     def_cat = ProductCategory.create(title='Default')
+    # for product in Product:
+    #     if not product.category:
+    #         product.category = def_cat
+    #         product.save()
 
 
 def close_db():

@@ -357,6 +357,12 @@ def main():
                     admin.on_admin_edit_restriction, pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
+            enums.ADMIN_DELIVERY_FEE: [
+                CallbackQueryHandler(admin.on_admin_delivery_fee)
+            ],
+            enums.ADMIN_DELIVERY_FEE_VIP: [
+                CallbackQueryHandler(admin.on_admin_delivery_fee_vip)
+            ],
             enums.ADMIN_ADD_DELIVERY_FEE: [
                 CallbackQueryHandler(
                     admin.on_admin_add_delivery, pass_user_data=True),
@@ -408,8 +414,8 @@ def main():
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
             enums.ADMIN_TXT_PRODUCT_PHOTO: [
-                CallbackQueryHandler(admin.on_admin_txt_product_photo, pass_user_data=True),
-                MessageHandler((Filters.photo | Filters.video | Filters.audio | Filters.document), admin.on_admin_txt_product_photo,
+                # CallbackQueryHandler(admin.on_admin_txt_product_photo, pass_user_data=True),
+                MessageHandler((Filters.text | Filters.photo | Filters.video | Filters.audio | Filters.document), admin.on_admin_txt_product_photo,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],

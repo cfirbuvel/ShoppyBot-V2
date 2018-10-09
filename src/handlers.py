@@ -66,17 +66,50 @@ def on_menu(bot, update, user_data=None):
     BOT_ON = config.get_bot_on_off()
     total = cart.get_cart_total(get_user_session(user_id))
     user = User.get(telegram_id=user_id)
+    chat_id = query.message.chat_id
     if BOT_ON or is_admin(bot, user_id):
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
             if data == 'menu_products':
                 # the menu disappears
                 categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
-                keyboard = general_select_one_keyboard(_, categories)
-                msg = _('Please select a category:')
-                bot.edit_message_text(msg, query.message.chat_id, query.message.message_id,
-                                      parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
-                query.answer()
-                return enums.PRODUCT_CATEGORIES
+                if categories:
+                    keyboard = general_select_one_keyboard(_, categories)
+                    msg = _('Please select a category:')
+                    bot.edit_message_text(msg, query.message.chat_id, query.message.message_id,
+                                          parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
+                    query.answer()
+                    return enums.PRODUCT_CATEGORIES
+                else:
+                    for product in Product.filter(is_active=True):
+                        product_count = cart.get_product_count(
+                            user_data, product.id)
+                        subtotal = cart.get_product_subtotal(
+                            user_data, product.id)
+                        delivery_fee = config.get_delivery_fee()
+                        delivery_min = config.get_delivery_min()
+                        product_title, prices = cart.product_full_info(
+                            user_data, product.id)
+                        shortcuts.send_product_media(bot, product, chat_id)
+                        bot.send_message(chat_id,
+                                         text=create_product_description(
+                                             user_id,
+                                             product_title, prices,
+                                             product_count, subtotal,
+                                             delivery_min, delivery_fee),
+                                         reply_markup=create_product_keyboard(_,
+                                                                              product.id, user_data, cart),
+                                         parse_mode=ParseMode.HTML,
+                                         timeout=20, )
+                    user = User.get(telegram_id=user_id)
+                    total = cart.get_cart_total(get_user_session(user_id))
+                    bot.send_message(chat_id,
+                                     text=config.get_order_text(),
+                                     reply_markup=create_main_keyboard(_,
+                                                                       config.get_reviews_channel(),
+                                                                       user,
+                                                                       is_admin(bot, user_id), total),
+                                     parse_mode=ParseMode.HTML)
+                    return enums.BOT_STATE_INIT
             elif data == 'menu_order':
                 if cart.is_full(user_data):
                     # we are not using enter_state_... here because it relies

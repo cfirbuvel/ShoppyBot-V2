@@ -151,8 +151,8 @@ def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query
     _ = trans
     current_date = datetime.date.today()
     year, month = current_date.year, current_date.month
-    if not 'calendar_date' in user_data:
-        user_data['calendar_date'] = year, month
+    #if not 'calendar_date' in user_data:
+    user_data['calendar_date'] = year, month
     user_data['calendar_state'] = state
     msg = _('Pick year, month or day')
     if query_id:
