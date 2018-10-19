@@ -205,6 +205,10 @@ msgid "⚙️ Settings"
 msgstr "⚙️ הגדרות"
 
 #: shoppybot.py:304
+msgid "🈚️ Bot Languages"
+msgstr "Bot Languages 🈚️"
+
+#: shoppybot.py:304
 msgid "📖 My Orders"
 msgstr "📖 ההזמנות שלי"
 
@@ -218,7 +222,7 @@ msgstr "📦 הזמנה אחרונה"
 
 #: shoppybot.py:305
 msgid "⚙ Bot settings"
-msgstr "⚙️ הגדרות בוט ⚙️"
+msgstr "⚙️ הגדרות בוט️"
 
 #: shoppybot.py:306
 msgid "📈 Statistics"
@@ -277,8 +281,8 @@ msgid "💵 General statistics"
 msgstr "💵 סטטיסטיקה כללית"
 
 #: keyboards.py:188
-msgid "🛵 Get statistics by different couriers"
-msgstr "🛵 סטטיסטיקה עפ״י שליחים"
+msgid "🚕 Get statistics by different couriers"
+msgstr "🚕 סטטיסטיקה עפ״י שליחים"
 
 #: keyboards.py:190
 msgid "🏠 Get statistics by locations"
@@ -296,16 +300,8 @@ msgstr "הכנס יוזר של לקוח"
 msgid "❌Reset all data❌"
 msgstr "❌מחק נתונים❌"
 
-#: keyboards.py:290
-msgid "September"
-msgstr "סעפטעמבער"
-
-#: keyboards.py:290
-msgid "August"
-msgstr "אויגוסט"
-
 #: shoppybot.py:315
-msgid "🛵 View couriers"
+msgid "🚕 View couriers"
 msgstr "🚕 השליחים שלי"
 
 #: shoppybot.py:316
@@ -365,12 +361,24 @@ msgid "No products to delete"
 msgstr "אין מוצרים למחיקה"
 
 #: shoppybot.py:320
+msgid "🛍 Categories"
+msgstr "🛍 קטגוריות"
+
+#: shoppybot.py:320
 msgid "💲 Add discount"
 msgstr "💲 הוסף הנחה"
 
 #: shoppybot.py:320
-msgid "🚕 Add delivery fee"
-msgstr "🚕 הוסף דמי משלוח"
+msgid "🚕 Delivery fee"
+msgstr "🚕 דמי משלוח"
+
+#: shoppybot.py:320
+msgid "➕ Add delivery fee"
+msgstr "➕ הוסף דמי משלוח"
+
+#: shoppybot.py:320
+msgid "🎖 Vip customers delivery fee"
+msgstr "🎖 דמי משלוח ללקוחות VIP"
 
 #: shoppybot.py:318
 msgid "🎯 locations"
@@ -724,6 +732,10 @@ msgid "🏪 View Products"
 msgstr "🏪 הצג מוצרים"
 
 #: admin.py:330
+msgid "✏️ Edit product"
+msgstr "✏️ ערוך מוצר"
+
+#: admin.py:330
 msgid "Active products:"
 msgstr "מוצרים פעילים"
 
@@ -760,7 +772,7 @@ msgid "🏗 Warehouse"
 msgstr "🏗 מחסן"
 
 #: admin.py:101
-msgid "Select a product"
+msgid "Select a product to add credit"
 msgstr "בחר מוצר להוספת קרדיט לשליח"
 
 #: admin.py:565
@@ -811,6 +823,30 @@ msgstr "🚴‍♀️ הוספת קרדיט לשליח"
 msgid "You don't have any products yet"
 msgstr "הוסף מוצרים לפני הוספת קרדיט"
 
+#: admin.py:306
+msgid "➕ Add Category"
+msgstr "➕ הוסף קטגוריה"
+
+#: admin.py:306
+msgid "🏪 Add products to category"
+msgstr "🏪 הוסף מוצר לקטגוריה"
+
+#: admin.py:306
+msgid "'❌ Remove Category"
+msgstr "'❌ מחק קטגוריה"
+
+#: admin.py:306
+msgid "Activate delivery fee for vip customers"
+msgstr "דמי משלוח ללקוחות VIP"
+
+#: admin.py:306
+msgid "ON"
+msgstr "הוסף דמי משלוח"
+
+#: admin.py:306
+msgid "OFF"
+msgstr "ללא דמי משלוח"
+
 #: admin.py:196
 msgid ""
 "Enter delivery fee like:\n"
@@ -821,10 +857,73 @@ msgid ""
 "\n"
 "Current fee: {}"
 msgstr ""
-"אַרייַן עקספּרעס אָפּצאָל ווי:\n"
-"50> 500: דילז אונטער 500 וועט האָבן עקספּרעס אָפּצאָל פון 50\n"
-"אָדער\n"
-"50: כל דילז וועט האָבן עקספּרעס אָפּצאָל פון 50\n"
-"נאָר אַרבעט אויף עקספּרעס\n"
+"הכנס דמי משלוח בסדר הנ״ל:\n"
+"50 < 500: דמי המשלוח יהיו 50 ש״ח על כל משלוח מתחת ל500 ש״ח\n"
+"או\n"
+"50: כל משלוח יעלה 50 ש״ח\n"
 "\n"
-"קראַנט אָפּצאָל:{}"
+"דמי משלוח המוגדרים כעת: {}"
+
+#: admin.py:306
+msgid "January"
+msgstr "ינואר"
+
+#: admin.py:306
+msgid "February"
+msgstr "פברואר"
+
+#: admin.py:306
+msgid "March"
+msgstr "מרץ"
+
+#: admin.py:306
+msgid "April"
+msgstr "אפריל"
+
+#: admin.py:306
+msgid "May"
+msgstr "מאי"
+
+#: admin.py:306
+msgid "June"
+msgstr "יוני"
+
+#: admin.py:306
+msgid "July"
+msgstr "יולי"
+
+#: admin.py:306
+msgid "August"
+msgstr "אוגוסט"
+
+#: admin.py:306
+msgid "September"
+msgstr "ספטטמבר"
+
+#: admin.py:306
+msgid "October"
+msgstr "אוקטובר"
+
+#: admin.py:306
+msgid "November"
+msgstr "נובמבר"
+
+#: admin.py:306
+msgid "December"
+msgstr "דצמבר"
+
+#: admin.py:306
+msgid "Pick year, month or day"
+msgstr "בחר יום, חודש או שנה"
+
+#: admin.py:306
+msgid "Select a courier:"
+msgstr "בחר שליח"
+
+#: admin.py:306
+msgid "Select location:"
+msgstr "בחר איזור"
+
+#: admin.py:306
+msgid "Select a product to view"
+msgstr "בחר מוצר"
