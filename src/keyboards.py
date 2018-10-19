@@ -724,13 +724,19 @@ def create_edit_restriction_keyboard(trans, values):
         [InlineKeyboardButton(_('Save'), callback_data='save')]
     ]
     return InlineKeyboardMarkup(buttons)
-#
-# def create_product_media_keyboard(trans):
-#     _ = trans
-#     buttons = [
-#         [InlineKeyboardButton(_('Create Product'), callback_data='create_product')]
-#     ]
-#     return InlineKeyboardMarkup(buttons)
+
+
+def create_product_edit_media_keyboard(trans):
+    _ = trans
+    buttons = [
+        [
+            KeyboardButton(_('Save Changes')),
+            KeyboardButton(_('❌ Cancel'))
+        ]
+    ]
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+
+
 def create_product_media_keyboard(trans):
     _ = trans
     button_row = [

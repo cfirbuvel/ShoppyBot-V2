@@ -58,8 +58,10 @@ class Product(BaseModel):
 
 class ProductMedia(BaseModel):
     product = ForeignKeyField(Product, related_name='product_media')
-    file_path = CharField()
-    type = CharField()
+    file_id = CharField()
+    file_type = CharField(null=True)
+    #file_path = CharField()
+    #type = CharField()
 
 
 class ProductCount(BaseModel):

@@ -230,12 +230,24 @@ def change_order_products_credits(order, add=False, courier=None):
             product.save()
 
 
+# def send_product_media(bot, product, chat_id):
+#     for media in product.product_media:
+#         with open(media.file_path, 'rb') as file:
+#             func = getattr(bot, 'send_{}'.format(media.type))
+#             stream = io.BytesIO(file.read())
+#             func(chat_id, stream)
+
 def send_product_media(bot, product, chat_id):
+    from telegram import InputMediaPhoto
+    media_list = []
     for media in product.product_media:
-        with open(media.file_path, 'rb') as file:
-            func = getattr(bot, 'send_{}'.format(media.type))
-            stream = io.BytesIO(file.read())
-            func(chat_id, stream)
+        file = InputMediaPhoto(media=media.file_id)
+        media_list.append(file)
+    bot.send_media_group(chat_id, media_list)
+        # with open(media.file_path, 'rb') as file:
+        #     func = getattr(bot, 'send_{}'.format(media.type))
+        #     stream = io.BytesIO(file.read())
+        #     func(chat_id, stream)
 # def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
 #     _ = trans
 #     # first_iter = True

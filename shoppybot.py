@@ -25,6 +25,9 @@ def fallback_query_handler(bot, update, user_data):
 def close_db_on_signal(signum, frame):
     close_db()
 
+def error_callback(bot, update, error):
+    raise error
+
 
 def main():
     courier_conversation_handler = ConversationHandler(
@@ -240,6 +243,25 @@ def main():
             enums.ADMIN_PRODUCT_LAST_ADD: [
                 CallbackQueryHandler(admin.on_admin_product_last_select, pass_user_data=True)
             ],
+            enums.ADMIN_PRODUCT_EDIT_SELECT: [
+                CallbackQueryHandler(admin.on_admin_product_edit_select, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_EDIT: [
+                CallbackQueryHandler(admin.on_admin_product_edit, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_EDIT_TITLE: [
+                CallbackQueryHandler(admin.on_admin_product_edit_title, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_product_edit_title, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_EDIT_PRICES: [
+                CallbackQueryHandler(admin.on_admin_product_edit_prices, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_product_edit_prices, pass_user_data=True),
+            ],
+            enums.ADMIN_PRODUCT_EDIT_MEDIA: [
+                MessageHandler((Filters.text | Filters.photo), admin.on_admin_product_edit_media,
+                               pass_user_data=True),
+                CommandHandler('cancel', admin.on_admin_cancel),
+            ],
             enums.ADMIN_WAREHOUSE_PRODUCT: [
                 CallbackQueryHandler(admin.on_admin_warehouse_products, pass_user_data=True)
             ],
@@ -415,7 +437,7 @@ def main():
             ],
             enums.ADMIN_TXT_PRODUCT_PHOTO: [
                 # CallbackQueryHandler(admin.on_admin_txt_product_photo, pass_user_data=True),
-                MessageHandler((Filters.text | Filters.photo | Filters.video | Filters.audio | Filters.document), admin.on_admin_txt_product_photo,
+                MessageHandler((Filters.text | Filters.photo), admin.on_admin_txt_product_photo,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
