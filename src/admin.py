@@ -108,7 +108,7 @@ def on_admin_order_options(bot, update, user_data):
         products = [(product.title, product.id) for product in products]
         products_keyboard = general_select_one_keyboard(_, products)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-                              text=_('Select a product'),
+                              text=_('Select a product to add credit'),
                               reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_WAREHOUSE_PRODUCT
@@ -572,7 +572,7 @@ def on_admin_warehouse_products(bot, update, user_data):
         products = [(product.title, product.id) for product in products]
         products_keyboard = general_select_one_keyboard(_, products, int(val))
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-                              text=_('Select a product'),
+                              text=_('Select a product to add credit'),
                               reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_WAREHOUSE_PRODUCT
@@ -606,7 +606,7 @@ def on_admin_warehouse(bot, update, user_data):
         products = [(product.title, product.id) for product in products]
         products_keyboard = general_select_one_keyboard(_, products)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-                              text=_('Select a product'),
+                              text=_('Select a product to add credit'),
                               reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_WAREHOUSE_PRODUCT
@@ -765,7 +765,7 @@ def on_admin_products(bot, update, user_data):
         if not products:
             query.answer(_('You don\'t have products'))
             return enums.ADMIN_PRODUCTS
-        msg = _('Select a product:')
+        msg = _('Select a product to view')
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
                               reply_markup=general_select_one_keyboard(_, products))
         query.answer()
@@ -817,7 +817,7 @@ def on_admin_show_product(bot, update, user_data):
     products = Product.select(Product.title, Product.id).where(Product.is_active == True).tuples()
     if action == 'page':
         current_page = int(param)
-        msg = _('Select a product:')
+        msg = _('Select a product to view')
         bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
                               reply_markup=general_select_one_keyboard(_, products, current_page))
         query.answer()
@@ -828,7 +828,7 @@ def on_admin_show_product(bot, update, user_data):
         shortcuts.send_product_media(bot, product, chat_id)
         msg = messages.create_admin_product_description(_, product.title, product_prices)
         bot.send_message(chat_id, msg)
-        msg = _('Select a product:')
+        msg = _('Select a product to view')
         bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
                          reply_markup=general_select_one_keyboard(_, products))
         query.answer()
