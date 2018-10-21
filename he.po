@@ -365,6 +365,38 @@ msgid "🛍 Categories"
 msgstr "🛍 קטגוריות"
 
 #: shoppybot.py:320
+msgid "Please enter the name of category"
+msgstr "הכנס שם קטגוריה"
+
+#: shoppybot.py:320
+msgid "Category `{}` has been created"
+msgstr "קטגוריה בשם `{}` נוצרה בהצלחה"
+
+#: shoppybot.py:320
+msgid "Category `{}` has been deleted"
+msgstr "קטגוריה בשם `{}` נמחקה"
+
+#: shoppybot.py:320
+msgid "Cannot delete default category"
+msgstr "לא ניתן למחוק קטגוריה ראשית"
+
+#: shoppybot.py:320
+msgid "Category `{}` was updated"
+msgstr "קטגוריה בשם `{}` עודכנה"
+
+#: shoppybot.py:320
+msgid "Please select a category:"
+msgstr "בחר קטגוריה"
+
+#: shoppybot.py:320
+msgid "Default"
+msgstr "קטגוריה ראשית"
+
+#: shoppybot.py:320
+msgid "Please select products to add"
+msgstr "בחר מוצר להוספה"
+
+#: shoppybot.py:320
 msgid "💲 Add discount"
 msgstr "💲 הוסף הנחה"
 
@@ -380,8 +412,16 @@ msgstr "➕ הוסף דמי משלוח"
 msgid "🎖 Vip customers delivery fee"
 msgstr "🎖 דמי משלוח ללקוחות VIP"
 
+#: shoppybot.py:320
+msgid "Delivery fee for vip customers was activated"
+msgstr "דמי משלוח ללקוחות VIP הופעלו"
+
+#: shoppybot.py:320
+msgid "Delivery fee for vip customers was deactivated"
+msgstr "דמי משלוח ללקוחות VIP בוטלו"
+
 #: shoppybot.py:318
-msgid "🎯 locations"
+msgid "🎯 Locations"
 msgstr "🎯 איזורי פעילות"
 
 #: shoppybot.py:318
@@ -389,20 +429,52 @@ msgid "🎯️ View locations"
 msgstr "🎯 האיזורים שלי"
 
 #: shoppybot.py:318
+msgid "My locations:\n\n{}"
+msgstr "איזורי פעילות מוגדרים:\n\n{}"
+
+#: shoppybot.py:318
 msgid "➕ Add location"
 msgstr "➕ הוסף איזור"
+
+#: shoppybot.py:318
+msgid "Enter new location"
+msgstr "הכנס איזור פעילות חדש"
 
 #: shoppybot.py:318
 msgid "➖ Remove location"
 msgstr "➖ מחק איזור"
 
 #: shoppybot.py:318
-msgid "👨‍ Edit identify process"
+msgid "Choose location to delete"
+msgstr "בחר איזור למחיקה"
+
+#: shoppybot.py:318
+msgid "👨 Edit identification process"
 msgstr "👨‍ ערוך תהליך אימות"
 
 #: shoppybot.py:318
-msgid "🔥 Edit Restricted area"
+msgid "👨 Edit identification stages"
+msgstr "👨‍ ערוך שלבי אימות"
+
+#: shoppybot.py:318
+msgid "First stage: {}"
+msgstr "שלב אימות ראשון: {}"
+
+#: shoppybot.py:318
+msgid "Second stage: {}"
+msgstr "שלב אימות שני: {}"
+
+#: shoppybot.py:318
+msgid "🔥 Edit restricted area"
 msgstr "🔥 ערוך מגבלות בוט"
+
+#: shoppybot.py:318
+msgid "Only for customers option: {}"
+msgstr "בוט פעיל רק למי שבקבוצת לקוחות: {}"
+
+#: shoppybot.py:318
+msgid "Vip customers option: {}"
+msgstr "הגדרת לקוחות VIP: {}"
 
 #: shoppybot.py:318
 msgid "✉ Edit Welcome message"
@@ -495,6 +567,22 @@ msgstr "✅ כן"
 #: shoppybot.py:318
 msgid "❌ No"
 msgstr "❌ לא"
+
+#: shoppybot.py:318
+msgid "Enabled ✅"
+msgstr "✅ פעיל"
+
+#: shoppybot.py:318
+msgid "Disabled ❌"
+msgstr "לא פעיל ❌"
+
+#: shoppybot.py:318
+msgid "Cancelled"
+msgstr "בוטל"
+
+#: shoppybot.py:318
+msgid "Save Changes"
+msgstr "שמור שינויים"
 
 #: shoppybot.py:313
 msgid "Assign @{}"
@@ -716,7 +804,7 @@ msgid "Enter new product prices\none per line in the format\n*COUNT PRICE*, e.g.
 msgstr "הכנס מחיר מוצר\nכמות ומחיר אחד כל שורה\n`כמות מחיר` לדוגמא:\n*1 100*\n*5 500*"
 
 #: admin.py:242
-msgid "Send the new product photo"
+msgid "Send photos for new product"
 msgstr "שלח תמונה של המוצר"
 
 #: admin.py:266
@@ -734,6 +822,18 @@ msgstr "🏪 הצג מוצרים"
 #: admin.py:330
 msgid "✏️ Edit product"
 msgstr "✏️ ערוך מוצר"
+
+#: admin.py:330
+msgid "🖼 Edit media"
+msgstr "🖼 ערוך תמונות מוצר"
+
+#: admin.py:330
+msgid "💰 Edit price"
+msgstr "💰 ערוך מחיר מוצר"
+
+#: admin.py:330
+msgid "📝 Edit title"
+msgstr "📝 ערוך שם מוצר"
 
 #: admin.py:330
 msgid "Active products:"
@@ -773,7 +873,15 @@ msgstr "🏗 מחסן"
 
 #: admin.py:101
 msgid "Select a product to add credit"
-msgstr "בחר מוצר להוספת קרדיט לשליח"
+msgstr "בחר מוצר להוספת קרדיט"
+
+#: admin.py:101
+msgid "Select a courier"
+msgstr "בחר שליח"
+
+#: admin.py:101
+msgid "✅ Product's credits were changed to {}"
+msgstr "✅ הקרדיט למוצר שונה ל: {}"
 
 #: admin.py:565
 msgid "Service"
@@ -832,12 +940,12 @@ msgid "🏪 Add products to category"
 msgstr "🏪 הוסף מוצר לקטגוריה"
 
 #: admin.py:306
-msgid "'❌ Remove Category"
-msgstr "'❌ מחק קטגוריה"
+msgid "❌ Remove Category"
+msgstr "❌ מחק קטגוריה"
 
 #: admin.py:306
 msgid "Activate delivery fee for vip customers"
-msgstr "דמי משלוח ללקוחות VIP"
+msgstr "הפעלת דמי משלוח ללקוחות VIP"
 
 #: admin.py:306
 msgid "ON"
@@ -846,6 +954,22 @@ msgstr "הוסף דמי משלוח"
 #: admin.py:306
 msgid "OFF"
 msgstr "ללא דמי משלוח"
+
+#: admin.py:306
+msgid "Identification question was changed"
+msgstr "שאלת אימות שונתה בהצלחה"
+
+#: admin.py:306
+msgid "Restriction options changed"
+msgstr "מגבלות בוט שונו בהצלחה"
+
+#: admin.py:196
+msgid ""
+"Identification question: {}\n"
+"Enter new identification question:"
+msgstr ""
+"שאלת אימות: {}\n"
+"הכנס שאלת אימות חדשה:"
 
 #: admin.py:196
 msgid ""
@@ -863,6 +987,48 @@ msgstr ""
 "50: כל משלוח יעלה 50 ש״ח\n"
 "\n"
 "דמי משלוח המוגדרים כעת: {}"
+
+#: admin.py:196
+msgid ""
+"Enter discount like:\n"
+"50 > 500: all deals above 500$ will be -50$\n"
+"10% > 500: all deals above 500$ will be -10%\n"
+"Current discount: {} > {}"
+msgstr ""
+"הכנס הנחה בסדר הנ״ל:\n"
+"50 < 500: תהיה הנחה של 50 ש״ח על כל עסקה מתחת ל500 ש״ח\n"
+"10% > 500: על כל עסקה מעלה 500 ש״ח יהיה 10% הנחה\n"
+"הנחה המוגדרת כעת: {} > {}"
+
+#: admin.py:196
+msgid ""
+"🏗\nProduct: `{}`\n"
+"Credits: {}"
+msgstr ""
+"🏗\nמוצר: `{}`\n"
+"קרדיט: {}"
+
+#: admin.py:196
+msgid ""
+"🏗\nProduct: `{}`\n"
+"Credits: {}\n"
+"Please enter new number of credits:"
+msgstr ""
+"🏗\nמוצר: `{}`\n"
+"קרדיט: {}\n"
+"הכנס כמות קרדיט חדשה"
+
+#: admin.py:196
+msgid ""
+"🏗\nProduct: `{}`\n"
+"Courier: `{}`\n'"
+"Courier credits: {}\n"
+"Please enter new number of credits:"
+msgstr ""
+"🏗\nמוצר: `{}`\n"
+"שליח: `{}`\n"
+"קרדיט נוכחי לשליח: {}\n"
+"הכנס כמות קרדיט חדשה לשליח"
 
 #: admin.py:306
 msgid "January"
@@ -898,7 +1064,7 @@ msgstr "אוגוסט"
 
 #: admin.py:306
 msgid "September"
-msgstr "ספטטמבר"
+msgstr "ספטמבר"
 
 #: admin.py:306
 msgid "October"
@@ -927,3 +1093,27 @@ msgstr "בחר איזור"
 #: admin.py:306
 msgid "Select a product to view"
 msgstr "בחר מוצר"
+
+#: admin.py:306
+msgid "Select a product to edit"
+msgstr "בחר מוצר לעריכה"
+
+#: admin.py:306
+msgid "Edit product {}"
+msgstr "עריכת מוצר: {}"
+
+#: admin.py:306
+msgid "Current title: {}\n\nEnter new title for product"
+msgstr "שם מוצר המוגדר כעת: {}\n\nהכנס שם מוצר חדש"
+
+#: admin.py:306
+msgid "Current prices:\n\n"
+msgstr "מחיר המוגדר כעת:\n\n"
+
+#: admin.py:306
+msgid "Upload new photos for product"
+msgstr "שלח תמונות חדשות עבור המוצר"
+
+#: admin.py:306
+msgid "Create Product"
+msgstr "אשר מוצר"
