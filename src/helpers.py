@@ -389,8 +389,8 @@ def parse_discount(discount_str):
         except ValueError:
             pass
         else:
-            if discount_num > 0 and discount_min > 0:
-                return discount, discount_min
+            # if discount_num > 0 and discount_min > 0:
+            return discount, discount_min
 
 
 def calculate_discount_total(discount, total):

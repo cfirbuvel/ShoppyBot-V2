@@ -17,9 +17,9 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
     create_courier_order_status_keyboard, create_admin_order_status_keyboard, general_select_one_keyboard, \
     create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard, create_bot_language_keyboard, \
-    create_product_keyboard, create_ping_client_keyboard, create_add_courier_keyboard
+    create_product_keyboard, create_ping_client_keyboard, create_add_courier_keyboard, create_cancel_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos, \
-    ProductCategory, Product
+    ProductCategory, Product, IdentificationStage
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
@@ -306,6 +306,17 @@ def on_checkout_time(bot, update, user_data):
 
         if config.get_phone_number_required():
             return enter_state_phone_number_text(bot, update, user_data)
+        # else:
+        #     identification_stages = IdentificationStage.filter(active=True)
+        #     if len(identification_stages):
+        #         first_stage = identification_stages[0]
+        #         user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': {}}
+        #         msg = first_stage.content
+        #         bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
+        #                          parse_mode=ParseMode.MARKDOWN)
+        #         return enums.BOT_STATE_CHECKOUT_IDENTIFY
+        #     else:
+        #         return enter_state_order_confirm(bot, update, user_data)
         else:
             if config.get_identification_required():
                 return enter_state_identify_photo(bot, update, user_data)
@@ -359,6 +370,48 @@ def on_phone_number_text(bot, update, user_data):
         user.save()
         if config.get_identification_required():
             return enter_state_identify_photo(bot, update, user_data)
+        return enter_state_order_confirm(bot, update, user_data)
+
+
+def on_identify_general(bot, update, user_data):
+    key = update.message.text
+    user_id = get_user_id(update)
+    user_data = get_user_session(user_id)
+    _ = get_trans(user_id)
+    data = user_data['order_identification']
+    if key == _('❌ Cancel'):
+        return enter_state_init_order_cancelled(bot, update, user_data)
+    elif key == _('↩ Back'):
+        passed_ids = data['passed_ids']
+        if passed_ids:
+            prev_stage = passed_ids.pop()
+            data['current_id'] = prev_stage
+            msg = prev_stage.content
+            bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
+                             parse_mode=ParseMode.MARKDOWN)
+            return enums.BOT_STATE_CHECKOUT_IDENTIFY
+        elif config.get_phone_number_required():
+            return enter_state_phone_number_text(bot, update, user_data)
+        else:
+            return enter_state_shipping_time(bot, update, user_data)
+    current_id = data['current_id']
+    current_stage = IdentificationStage.get(id=current_id)
+    if current_stage.type == 'photo':
+        answer = update.message.photo[-1].file_id
+    else:
+        answer = key
+    data['answers'][current_id] = answer
+    passed_ids = data['passed_ids']
+    passed_ids.append(current_id)
+    stages_left = IdentificationStage.select().where(IdentificationStage.active == True & IdentificationStage.id.not_in(passed_ids))
+    if stages_left:
+        next_stage = stages_left[0]
+        data['current_id'] = next_stage.id
+        msg = next_stage.content
+        bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
+                         parse_mode=ParseMode.MARKDOWN)
+        return enums.BOT_STATE_CHECKOUT_IDENTIFY
+    else:
         return enter_state_order_confirm(bot, update, user_data)
 
 
@@ -469,7 +522,8 @@ def on_confirm_order(bot, update, user_data):
         txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
-        if 'latitude' in shipping_data['location']:
+        shipping_location = shipping_data.get('location')
+        if shipping_location and 'latitude' in shipping_location:
             order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
         else:
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
