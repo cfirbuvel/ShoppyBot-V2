@@ -78,7 +78,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
     discount = config.get_discount()
     discount_min = config.get_discount_min()
     if is_vip:
-        if total >= discount_min:
+        if discount_min > 0 and total >= discount_min:
             text += '\n\n'
             if not discount.endswith('%'):
                 discount_str = '{}$'.format(discount)
@@ -119,7 +119,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
     discount = config.get_discount()
     discount_min = config.get_discount_min()
     if is_vip:
-        if total >= discount_min:
+        if discount_min > 0 and total >= discount_min:
             text += '\n\n'
             if not discount.endswith('%'):
                 discount_str = '{}$'.format(discount)

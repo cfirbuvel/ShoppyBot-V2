@@ -701,17 +701,43 @@ def create_are_you_sure_keyboard(trans, callback_mapping):
     return InlineKeyboardMarkup([buttons])
 
 
-def create_edit_identification_keyboard(trans, values):
+# def create_edit_identification_keyboard(trans, values):
+#     _ = trans
+#     stage_one_text, stage_two_text = (_('Enabled') if val else _('Disabled') for val in values)
+#     stage_one_text = _('First stage: {}').format(stage_one_text)
+#     stage_two_text = _('Second stage: {}').format(stage_two_text)
+#     buttons = [
+#         [InlineKeyboardButton(stage_one_text, callback_data='stage_one')],
+#         [InlineKeyboardButton(stage_two_text, callback_data='stage_two')],
+#         [InlineKeyboardButton(_('Save'), callback_data='save')]
+#     ]
+#     return InlineKeyboardMarkup(buttons)
+
+
+def create_edit_identification_keyboard(trans, questions):
     _ = trans
-    stage_one_text, stage_two_text = (_('Enabled') if val else _('Disabled') for val in values)
-    stage_one_text = _('First stage: {}').format(stage_one_text)
-    stage_two_text = _('Second stage: {}').format(stage_two_text)
+    buttons = []
+    for count, q in enumerate(questions, 1):
+        q_id, q_active = q
+        btn = [
+            InlineKeyboardButton(_('Question №{}').format(count), callback_data='edit|{}'.format(q_id)),
+            InlineKeyboardButton(_('Active') if q_active else _('Disabled'), callback_data='toggle|{}'.format(q_id))
+        ]
+        buttons.append(btn)
+    buttons.append([InlineKeyboardButton(_('Add new question'), callback_data='add|')])
+    buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data='back|')])
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_edit_identification_type_keyboard(trans):
+    _ = trans
     buttons = [
-        [InlineKeyboardButton(stage_one_text, callback_data='stage_one')],
-        [InlineKeyboardButton(stage_two_text, callback_data='stage_two')],
-        [InlineKeyboardButton(_('Save'), callback_data='save')]
+        [InlineKeyboardButton(_('📝 Text'), callback_data='text')],
+        [InlineKeyboardButton(_('🖼 Photo'), callback_data='photo')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]
     return InlineKeyboardMarkup(buttons)
+
 
 def create_edit_restriction_keyboard(trans, values):
     _ = trans

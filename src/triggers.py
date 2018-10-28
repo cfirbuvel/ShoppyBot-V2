@@ -196,7 +196,6 @@ def on_my_last_order_cancel(bot, update, user_data):
                           parse_mode=ParseMode.MARKDOWN)
     query.answer()
     return enums.BOT_STATE_MY_LAST_ORDER
-# def on_my_order_by_date(bot, update, user_data):
 
 
 def on_shipping_method(bot, update, user_data):
@@ -664,15 +663,10 @@ def on_service_send_order_to_courier(bot, update, user_data):
         usr_id = get_user_id(update)
         order = Order.get(id=order_id)
         _ = get_trans(usr_id)
-        # credits_msg = shortcuts.check_order_products_credits(order, _)
-        # if credits_msg:
-        #     bot.send_message(chat_id=usr_id, text=credits_msg, parse_mode=ParseMode.MARKDOWN)
-        # else:
         order_data = OrderPhotos.get(order=order)
         order.courier = User.get(telegram_id=usr_id)
         order.confirmed = True
         order.save()
-        #shortcuts.change_order_products_credits(order)
         bot.send_message(chat_id=usr_id,
                          text=order_data.order_text,
                          reply_markup=create_admin_order_status_keyboard(_, order_id),
@@ -680,7 +674,6 @@ def on_service_send_order_to_courier(bot, update, user_data):
         query.answer(text='Message sent', show_alert=True)
     elif label == 'order_ban_client':
         order = Order.get(id=order_id)
-        # usr = User.get(order_id=order_id)
         usr = order.usr
         username = usr.username
         banned = config.get_banned_users()
@@ -689,14 +682,12 @@ def on_service_send_order_to_courier(bot, update, user_data):
         config_session = get_config_session()
         config_session['banned'] = banned
         set_config_session(config_session)
-        # user_id = get_user_id(update)
         bot.send_message(chat_id=query.message.chat_id,
                          text='@{} was banned'.format(username),
                          parse_mode=ParseMode.MARKDOWN)
     elif label == 'order_add_to_vip':
         order = Order.get(id=order_id)
         user_id = order.user.telegram_id
-        # user_id = User.get(order_id=order_id).telegram_id
         bul = is_vip_customer(bot, user_id)
         if bul:
             query.answer(text='Client is already VIP', show_alert=True)
@@ -713,6 +704,7 @@ def delete_message(bot, update):
     bot.delete_message(chat_id, msg_id)
     query.answer()
 
+
 def on_cancel(bot, update, user_data):
     return enter_state_init_order_cancelled(bot, update, user_data)
 
@@ -723,9 +715,7 @@ def checkout_fallback_command_handler(bot, update, user_data):
     _ = get_trans(user_id)
     bot.answer_callback_query(query.id, text=_(
         'Cannot process commands when checking out'))
-#
-# handle couriers
-#
+
 
 def service_channel_courier_query_handler(bot, update, user_data):
     query = update.callback_query
@@ -1230,9 +1220,6 @@ def on_admin_couriers(bot, update):
         query.answer()
         return enums.ADMIN_COURIERS_SHOW
     elif data == 'bot_couriers_add':
-        # bot.edit_message_text(_('➕ Add couriers'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
-        #                       reply_markup=create_add_courier_keyboard(_))
-        # query.answer()
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
         if not couriers:
             msg = _('There\'s no couriers to add')
@@ -1327,6 +1314,7 @@ def on_admin_channels(bot, update):
 
     return ConversationHandler.END
 
+
 def on_admin_channels_language(bot, update):
     query = update.callback_query
     data = query.data
@@ -1342,7 +1330,6 @@ def on_admin_channels_language(bot, update):
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_CHANNELS
-
 
 
 def on_admin_ban_list(bot, update):
@@ -1413,6 +1400,7 @@ def on_courier_action_to_confirm(bot, update, user_data):
     elif action == 'confirm_courier_report_client':
         return enums.COURIER_STATE_CONFIRM_REPORT
 
+
 def on_courier_ping_choice(bot, update, user_data):
     query = update.callback_query
     data = query.data
@@ -1441,14 +1429,7 @@ def on_courier_ping_client(bot, update, user_data):
     order_id = user_data['courier_ping_order_id']
     order = Order.get(id=order_id)
     if order.client_notified:
-        # user_id = get_user_id(update)
-        # _ = get_trans(user_id)
         msg = _('Client was notified already')
-        # if user_data['courier_ping_admin']:
-        #     keyboard = create_admin_order_status_keyboard(_, order_id)
-        # else:
-        #     keyboard = create_courier_order_status_keyboard(_, order_id)
-        # bot.edit_message_text(msg, chat_id, msg_id, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer(msg)
         bot.delete_message(chat_id, msg_id)
         return enums.COURIER_STATE_INIT
@@ -1470,6 +1451,7 @@ def on_courier_ping_client(bot, update, user_data):
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_back_button(_))
         query.answer()
         return enums.COURIER_STATE_PING_SOON
+
 
 def on_courier_ping_client_soon(bot, update, user_data):
     user_id = get_user_id(update)

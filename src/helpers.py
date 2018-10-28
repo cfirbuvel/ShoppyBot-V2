@@ -220,6 +220,10 @@ class ConfigHelper:
         value = get_config_session().get('discount_min')
         if value is None:
             value = self.config.get(self.section, 'discount_min')
+            try:
+                value = int(value)
+            except ValueError:
+                value = 0
         return value
 
     def get_banned_users(self):

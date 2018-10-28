@@ -11,7 +11,7 @@ from . import enums
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans, \
     parse_discount
 from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User, \
-    ProductMedia, ProductCategory
+    ProductMedia, ProductCategory, IdentificationStage
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
     create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
@@ -19,7 +19,8 @@ from .keyboards import create_back_button, create_bot_couriers_keyboard, create_
     general_select_keyboard, general_select_one_keyboard, create_warehouse_keyboard, \
     create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
     create_categories_keyboard, create_add_courier_keyboard, create_delivery_fee_keyboard, \
-    create_general_on_off_keyboard, create_bot_product_edit_keyboard, create_product_edit_media_keyboard
+    create_general_on_off_keyboard, create_bot_product_edit_keyboard, create_product_edit_media_keyboard, \
+    create_edit_identification_type_keyboard
 
 from . import shortcuts
 
@@ -134,14 +135,12 @@ def on_admin_order_options(bot, update, user_data):
         query.answer()
         return enums.ADMIN_LOCATIONS
     elif data == 'bot_order_options_identify':
-        first = config.get_identification_required()
-        second = config.get_identification_stage2_required()
+        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
         msg = _('👨 Edit identification process:')
-        user_data['edit_identification_stages'] = (first, second)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
-                              reply_markup=create_edit_identification_keyboard(_, (first, second)),
+                              reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
     elif data == 'bot_order_options_restricted':
@@ -723,17 +722,8 @@ def on_admin_product_edit_select(bot, update, user_data):
         msg = _('Edit product "{}"').format(product.title)
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_bot_product_edit_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
-        # bot.delete_message(chat_id, msg_id)
-        # product_prices = ((obj.count, obj.price) for obj in product.product_counts)
-        # shortcuts.send_product_media(bot, product, chat_id)
-        # msg = messages.create_admin_product_description(_, product.title, product_prices)
-        # bot.send_message(chat_id, msg)
-        # msg = _('Select a product:')
-        # bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN,
-        #                  reply_markup=general_select_one_keyboard(_, products))
         query.answer()
         return enums.ADMIN_PRODUCT_EDIT
-    #return enums.ADMIN_PRODUCTS_SHOW
 
 
 def on_admin_product_edit(bot, update, user_data):
@@ -2011,54 +2001,138 @@ def on_admin_edit_final_message(bot, update, user_data):
                      parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_ORDER_OPTIONS
 
+
 def on_admin_edit_identification_stages(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     query = update.callback_query
-    chat_id = query.message.chat_id
-    message_id = query.message.message_id
-    config_session = get_config_session()
-    stage_one, stage_two = user_data['edit_identification_stages']
-    if query.data == 'save':
-        config_session['identification_required'] = stage_one
-        config_session['identification_stage2_required'] = stage_two
-        set_config_session(config_session)
-        old_question = config.get_identification_stage2_question()
-        msg = _('Identification question: {}\n'
-                'Enter new identification question:').format(old_question)
-        bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_back_button(_),
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    action, data = query.data.split('|')
+    if action == 'back':
+        msg = _('💳 Order options')
+        bot.edit_message_text(msg, chat_id, msg_id,
+                         reply_markup=create_bot_order_options_keyboard(_),
+                         parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_ORDER_OPTIONS
+    elif action == 'toggle':
+        question = IdentificationStage.get(id=data)
+        question.active = not question.active
+        question.save()
+        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
+        msg = _('👨 Edit identification process:')
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
-        query.answer()
+        return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
+    if action == 'add':
+        user_data['admin_edit_identification'] = {'new': True}
+    elif action == 'edit':
+        user_data['admin_edit_identification'] = {'new': False, 'id': data}
+    msg = _('Select type of identification question')
+    bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_type_keyboard(_),
+                          parse_mode=ParseMode.MARKDOWN)
+    return enums.ADMIN_EDIT_IDENTIFICATION_QUESTION_TYPE
+
+
+def on_admin_edit_identification_question_type(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    query = update.callback_query
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    action = query.data
+    if action == 'back':
+        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
+        msg = _('👨 Edit identification process:')
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
+    #new_q = user_data['admin_edit_identification']['new']
+    if action in ('photo', 'text'):
+        edit_options = user_data['admin_edit_identification']
+        #user_data['admin_edit_identification']['type'] = action
+        edit_options['type'] = action
+        msg = _('Enter new question')
+        if not edit_options['new']:
+            question = IdentificationStage.get(id=edit_options['id'])
+            msg = _('Current question: {}\n{}').format(question.content, msg)
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_back_button(_),
+                              parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_EDIT_IDENTIFICATION_QUESTION
-    if query.data == 'stage_one':
-        stage_one = not stage_one
-    elif query.data == 'stage_two':
-        stage_two = not stage_two
-    user_data['edit_identification_stages'] = (stage_one, stage_two)
-    msg = _('👨 Edit identification stages:')
-    bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
-                          reply_markup=create_edit_identification_keyboard(_, (stage_one, stage_two)))
-    query.answer()
-    return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
 
 
-def on_admin_edit_identification_question(bot, update):
+def on_admin_edit_identification_question(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     if update.callback_query and update.callback_query.data == 'back':
-        option_back_function(
-            bot, update, create_bot_order_options_keyboard(_),
-            'Order options')
-        return enums.ADMIN_ORDER_OPTIONS
-    config_session = get_config_session()
-    config_session['identification_stage2_question'] = update.message.text
-    set_config_session(config_session)
-    msg = _('Identification was changed')
-    bot.send_message(update.message.chat_id, msg,
-                     reply_markup=create_bot_order_options_keyboard(_),
-                     parse_mode=ParseMode.MARKDOWN)
-    return enums.ADMIN_ORDER_OPTIONS
+        upd_msg = update.callback_query.message
+        msg = _('Select type of identification question')
+        bot.edit_message_text(msg, upd_msg.chat_id, upd_msg.message_id, reply_markup=create_edit_identification_type_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        return enums.ADMIN_EDIT_IDENTIFICATION_QUESTION_TYPE
 
+    upd_msg = update.message
+    edit_options = user_data['admin_edit_identification']
+
+    if edit_options['new']:
+        IdentificationStage.create(content=upd_msg.text, type=edit_options['type'])
+        msg = _('Identification question has been created')
+    else:
+        question = IdentificationStage.get(id=edit_options['id'])
+        question.content = upd_msg.text
+        question.type = edit_options['type']
+        question.save()
+        msg = _('Identification question has been changed')
+    questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
+    bot.send_message(upd_msg.chat_id, msg, reply_markup=create_edit_identification_keyboard(_, questions),
+                          parse_mode=ParseMode.MARKDOWN)
+    return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
+
+
+# def on_admin_edit_identification_stages(bot, update, user_data):
+#     user_id = get_user_id(update)
+#     _ = get_trans(user_id)
+#     query = update.callback_query
+#     chat_id = query.message.chat_id
+#     message_id = query.message.message_id
+    # config_session = get_config_session()
+    # stage_one, stage_two = user_data['edit_identification_stages']
+    # if query.data == 'save':
+    #     config_session['identification_required'] = stage_one
+    #     config_session['identification_stage2_required'] = stage_two
+    #     set_config_session(config_session)
+    #     old_question = config.get_identification_stage2_question()
+    #     msg = _('Identification question: {}\n'
+    #             'Enter new identification question:').format(old_question)
+    #     bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_back_button(_),
+    #                           parse_mode=ParseMode.MARKDOWN)
+    #     query.answer()
+    #     return enums.ADMIN_EDIT_IDENTIFICATION_QUESTION
+    # if query.data == 'stage_one':
+    #     stage_one = not stage_one
+    # elif query.data == 'stage_two':
+    #     stage_two = not stage_two
+    # user_data['edit_identification_stages'] = (stage_one, stage_two)
+    # msg = _('👨 Edit identification stages:')
+    # bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+    #                       reply_markup=create_edit_identification_keyboard(_, (stage_one, stage_two)))
+    # query.answer()
+    # return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
+
+# def on_admin_edit_identification_question(bot, update):
+#     user_id = get_user_id(update)
+#     _ = get_trans(user_id)
+#     if update.callback_query and update.callback_query.data == 'back':
+#         option_back_function(
+#             bot, update, create_bot_order_options_keyboard(_),
+#             'Order options')
+#         return enums.ADMIN_ORDER_OPTIONS
+#     config_session = get_config_session()
+#     config_session['identification_stage2_question'] = update.message.text
+#     set_config_session(config_session)
+#     msg = _('Identification was changed')
+#     bot.send_message(update.message.chat_id, msg,
+#                      reply_markup=create_bot_order_options_keyboard(_),
+#                      parse_mode=ParseMode.MARKDOWN)
+#     return enums.ADMIN_ORDER_OPTIONS
 
 def on_admin_edit_restriction(bot, update, user_data):
     user_id = get_user_id(update)

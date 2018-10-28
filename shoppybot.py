@@ -370,9 +370,12 @@ def main():
             enums.ADMIN_EDIT_IDENTIFICATION_STAGES: [
                 CallbackQueryHandler(admin.on_admin_edit_identification_stages, pass_user_data=True)
             ],
+            enums.ADMIN_EDIT_IDENTIFICATION_QUESTION_TYPE: [
+                CallbackQueryHandler(admin.on_admin_edit_identification_question_type, pass_user_data=True)
+            ],
             enums.ADMIN_EDIT_IDENTIFICATION_QUESTION: [
-                CallbackQueryHandler(admin.on_admin_edit_identification_question),
-                MessageHandler(Filters.text, admin.on_admin_edit_identification_question)
+                CallbackQueryHandler(admin.on_admin_edit_identification_question, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_edit_identification_question, pass_user_data=True)
             ],
             enums.ADMIN_EDIT_RESTRICTION: [
                 CallbackQueryHandler(

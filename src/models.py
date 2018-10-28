@@ -108,6 +108,17 @@ class OrderPhotos(BaseModel):
     order_text_msg_id = TextField(null=True)
 
 
+class IdentificationStage(BaseModel):
+    content = CharField()
+    active = BooleanField(default=True)
+    type = CharField()
+
+
+class OrderIdentificationAnswer(BaseModel):
+    stage = ForeignKeyField(IdentificationStage, related_name='identification_answers')
+    order = ForeignKeyField(Order, related_name='identification_answers')
+    content = CharField()
+
 def create_tables():
     try:
         db.connect()
@@ -118,7 +129,7 @@ def create_tables():
     db.create_tables(
         [
             Location, User, Courier, CourierLocation, ProductCategory, Product, ProductCount,
-            Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia
+            Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia, IdentificationStage
         ], safe=True
     )
     # try:
