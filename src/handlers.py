@@ -72,7 +72,7 @@ def on_menu(bot, update, user_data=None):
             if data == 'menu_products':
                 # the menu disappears
                 categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
-                if len(categories) > 1:
+                if categories:
                     keyboard = general_select_one_keyboard(_, categories)
                     msg = _('Please select a category:')
                     bot.edit_message_text(msg, query.message.chat_id, query.message.message_id,

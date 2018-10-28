@@ -362,9 +362,12 @@ def on_admin_category_remove(bot, update, user_data):
             msg = _('Cannot delete default category')
         else:
             default = ProductCategory.get(title='Default')
-            for product in cat.products:
-                product.category = default
-                product.save()
+            if cat_len == 2:
+                default.delete_instance()
+            else:
+                for product in cat.products:
+                    product.category = default
+                    product.save()
             cat.delete_instance()
             msg = _('Category "{}" has been deleted').format(cat.title)
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
