@@ -362,9 +362,9 @@ def on_admin_category_remove(bot, update, user_data):
         if cat.title == 'Default' and cat_len > 1:
             msg = _('Cannot delete default category')
         else:
-            default = ProductCategory.get(title=_('Default'))
+            # default = ProductCategory.get(title=_('Default'))
             for product in cat.products:
-                product.category = default
+                # product.category = default
                 product.save()
             cat.delete_instance()
             msg = _('Category "{}" has been deleted').format(cat.title)
@@ -392,7 +392,7 @@ def on_admin_category_products_add(bot, update, user_data):
                 product.save()
         msg = _('Category `{}" was updated').format(cat.title)
         del user_data['category_products_add']
-        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+        bot.edit_message_text(msg, chat_id, message_id,
                               reply_markup=create_categories_keyboard(_))
         query.answer()
         return enums.ADMIN_CATEGORIES

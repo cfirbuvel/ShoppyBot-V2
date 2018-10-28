@@ -470,8 +470,11 @@ def on_confirm_order(bot, update, user_data):
         txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
-        if 'latitude' in shipping_data['location']:
-            order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
+        if is_pickup:
+            txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
+        elif 'latitude' in shipping_data['location']:
+                order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
+                txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
         else:
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
 
