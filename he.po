@@ -949,11 +949,11 @@ msgstr "הפעלת דמי משלוח ללקוחות VIP"
 
 #: admin.py:306
 msgid "ON"
-msgstr "הוסף דמי משלוח"
+msgstr "בוט פעיל ✅"
 
 #: admin.py:306
 msgid "OFF"
-msgstr "ללא דמי משלוח"
+msgstr "בוט סגור ⛔️"
 
 #: admin.py:306
 msgid "Identification question was changed"
@@ -1117,3 +1117,11 @@ msgstr "שלח תמונות חדשות עבור המוצר"
 #: admin.py:306
 msgid "Create Product"
 msgstr "אשר מוצר"
+
+#: admin.py:306
+msgid "Customer: @{}"
+msgstr "לקוח: @{}"
+
+#: admin.py:306
+msgid "Discount: {}"
+msgstr "הנחת VIP: {}"

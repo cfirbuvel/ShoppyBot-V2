@@ -467,7 +467,7 @@ def on_confirm_order(bot, update, user_data):
         order_data.order_text = text
 
         # ORDER CONFIRMED, send the details to service channel
-        txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
+        txt = _('Order confirmed from\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
         if is_pickup:
@@ -494,7 +494,10 @@ def on_confirm_order(bot, update, user_data):
     elif key == _('↩ Back'):
         if config.get_identification_required():
             if config.get_identification_stage2_required():
-                return enter_state_identify_stage2(bot, update, user_data)
+                if 'vip' in user_data['shipping']:
+                    return enter_state_identify_photo(bot, update, user_data)
+                else:
+                    return enter_state_identify_stage2(bot, update, user_data)
             else:
                 return enter_state_identify_photo(bot, update, user_data)
         elif config.get_phone_number_required():

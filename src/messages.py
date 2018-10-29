@@ -68,13 +68,6 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
 
     is_vip = True if 'vip' in shipping_data else False
 
-
-    if total < delivery_min or delivery_min == 0:
-        if not is_vip or delivery_for_vip:
-            if not is_pickup:
-                text += '\n\n'
-                text += _('Delivery Fee: {}$').format(delivery_cost)
-
     discount = config.get_discount()
     discount_min = config.get_discount_min()
     if is_vip:
@@ -86,10 +79,26 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
                 discount_str = discount
             text += _('Discount: {}').format(discount_str)
             total = calculate_discount_total(discount, total)
-    total += delivery_cost
-    text += '\n\n'
-    text += _('Total: ${}').format(total)
-    return text
+            text += '\n\n'
+            text += _('Total: ${}').format(total)
+            return text
+        else:
+            text += '\n\n'
+            text += _('Total: ${}').format(total)
+            return text
+    else:
+        if total <= delivery_min or delivery_min == 0:
+            if not is_vip or delivery_for_vip:
+                if not is_pickup:
+                    total = total+delivery_cost
+                    text += '\n\n'
+                    text += _('Delivery Fee: {}$').format(delivery_cost)
+                    text += '\n'
+                    text += _('Total: ${}').format(total)
+                else:
+                    text += '\n\n'
+                    text += _('Total: ${}').format(total)
+        return text
 
 
 def create_service_notice(trans, is_pickup, order_id, username, product_info, shipping_data,
@@ -110,27 +119,35 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
         text += '\n'
 
     is_vip = True if 'vip' in shipping_data else False
-    if total < delivery_min or delivery_min == 0:
-        if not is_vip or delivery_for_vip:
-            if not is_pickup:
-                text += '\n\n'
-                text += _('Delivery Fee: {}$').format(delivery_cost)
 
     discount = config.get_discount()
     discount_min = config.get_discount_min()
     if is_vip:
         if total >= discount_min:
-            text += '\n\n'
+            text += '\n'
             if not discount.endswith('%'):
                 discount_str = '{}$'.format(discount)
             else:
                 discount_str = discount
             text += _('Discount: {}').format(discount_str)
             total = calculate_discount_total(discount, total)
+            text += '\n\n'
+            text += _('Total: ${}').format(total)
+        else:
+            text += '\n\n'
+            text += _('Total: ${}').format(total)
 
-    total += delivery_cost
-    text += '\n\n'
-    text += _('Total: ${}').format(total)
+    if total <= delivery_min or delivery_min == 0:
+        if not is_vip or delivery_for_vip:
+            if not is_pickup:
+                total = total + delivery_cost
+                text += '\n\n'
+                text += _('Delivery Fee: {}$').format(delivery_cost)
+                text += '\n'
+                text += _('Total: ${}').format(total)
+            else:
+                text += '\n\n'
+                text += _('Total: ${}').format(total)
 
     text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
@@ -138,7 +155,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
     text += _('Customer: @{}').format(username)
     text += '\n'
     text += _('Vip Customer') + '\n' if is_vip else ''
-    text += '\n\n'
+    text += '\n'
     text += _('Shipping details:')
     text += '\n'
     for key, value in shipping_data.items():
