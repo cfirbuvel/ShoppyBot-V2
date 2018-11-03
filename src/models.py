@@ -118,6 +118,7 @@ class OrderIdentificationAnswer(BaseModel):
     stage = ForeignKeyField(IdentificationStage, related_name='identification_answers')
     order = ForeignKeyField(Order, related_name='identification_answers')
     content = CharField()
+    msg_id = CharField(null=True)
 
 def create_tables():
     try:
@@ -129,7 +130,8 @@ def create_tables():
     db.create_tables(
         [
             Location, User, Courier, CourierLocation, ProductCategory, Product, ProductCount,
-            Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia, IdentificationStage
+            Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia, IdentificationStage,
+            OrderIdentificationAnswer
         ], safe=True
     )
     # try:

@@ -131,18 +131,21 @@ def main():
                 MessageHandler(Filters.contact | Filters.text,
                                triggers.on_phone_number_text, pass_user_data=True),
             ],
-            enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE1: [
-                CallbackQueryHandler(triggers.checkout_fallback_command_handler,
-                                     pass_user_data=True),
-                MessageHandler(Filters.all, triggers.on_shipping_identify_photo,
-                               pass_user_data=True),
+            enums.BOT_STATE_CHECKOUT_IDENTIFY: [
+                MessageHandler(Filters.text | Filters.photo, triggers.on_identify_general, pass_user_data=True)
             ],
-            enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE2: [
-                CallbackQueryHandler(triggers.checkout_fallback_command_handler,
-                                     pass_user_data=True),
-                MessageHandler(Filters.all, triggers.on_shipping_identify_stage2,
-                               pass_user_data=True),
-            ],
+            # enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE1: [
+            #     CallbackQueryHandler(triggers.checkout_fallback_command_handler,
+            #                          pass_user_data=True),
+            #     MessageHandler(Filters.all, triggers.on_shipping_identify_photo,
+            #                    pass_user_data=True),
+            # ],
+            # enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE2: [
+            #     CallbackQueryHandler(triggers.checkout_fallback_command_handler,
+            #                          pass_user_data=True),
+            #     MessageHandler(Filters.all, triggers.on_shipping_identify_stage2,
+            #                    pass_user_data=True),
+            # ],
             enums.BOT_STATE_ORDER_CONFIRMATION: [
                 CallbackQueryHandler(triggers.checkout_fallback_command_handler,
                                      pass_user_data=True),

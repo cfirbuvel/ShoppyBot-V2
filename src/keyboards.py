@@ -127,13 +127,13 @@ def create_locations_keyboard(location_names, trans):
     return InlineKeyboardMarkup(button_row)
 
 
-def create_service_notice_keyboard(order_id, trans, photo_msg_id):
+def create_service_notice_keyboard(order_id, trans, answers_ids):
     _ = trans
     buttons = [
         [
             InlineKeyboardButton(
                 _('Take Responsibility'),
-                callback_data='courier|{}|{}'.format(order_id, photo_msg_id))
+                callback_data='courier|{}|{}'.format(order_id, answers_ids))
         ]
     ]
     return InlineKeyboardMarkup(buttons)
@@ -434,6 +434,8 @@ def create_bot_locations_keyboard(trans):
 def create_bot_order_options_keyboard(trans):
     _ = trans
     main_button_list = [
+        [InlineKeyboardButton(_('📖 Orders'),
+                              callback_data='bot_order_options_orders')],
         [InlineKeyboardButton(_('🏪 My Products'),
                               callback_data='bot_order_options_product')],
         [InlineKeyboardButton(_('🛍 Categories'),
@@ -463,6 +465,15 @@ def create_bot_order_options_keyboard(trans):
 
     return InlineKeyboardMarkup(main_button_list)
 
+
+def create_bot_orders_keyboard(trans):
+    _ = trans
+    main_button_list = [
+        [InlineKeyboardButton(_('Finished orders'), callback_data='all')],
+        [InlineKeyboardButton(_('Pending orders'), callback_data='pending')],
+        [InlineKeyboardButton(_('Back'), callback_data='back')]
+    ]
+    return InlineKeyboardMarkup(main_button_list)
 
 def create_delivery_fee_keyboard(trans):
     _ = trans
@@ -516,7 +527,7 @@ def create_ban_list_keyboard(trans):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def general_select_keyboard(trans, objects, cmd_prefix= '', page_num=1, page_len=50):
+def general_select_keyboard(trans, objects, cmd_prefix= '', page_num=1, page_len=15):
     _ = trans
     buttons = []
     prev_page = None
@@ -548,7 +559,7 @@ def general_select_keyboard(trans, objects, cmd_prefix= '', page_num=1, page_len
     return InlineKeyboardMarkup(buttons)
 
 
-def general_select_one_keyboard(trans, objects, page_num=1, page_len=50):
+def general_select_one_keyboard(trans, objects, page_num=1, page_len=15):
     _ = trans
     buttons = []
     prev_page = None

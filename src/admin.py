@@ -20,7 +20,7 @@ from .keyboards import create_back_button, create_bot_couriers_keyboard, create_
     create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
     create_categories_keyboard, create_add_courier_keyboard, create_delivery_fee_keyboard, \
     create_general_on_off_keyboard, create_bot_product_edit_keyboard, create_product_edit_media_keyboard, \
-    create_edit_identification_type_keyboard
+    create_edit_identification_type_keyboard, create_bot_orders_keyboard
 
 from . import shortcuts
 
@@ -80,6 +80,11 @@ def on_admin_order_options(bot, update, user_data):
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_BOT_SETTINGS
+    if data == 'bot_order_options_orders':
+        bot.edit_message_text(_('📖 Orders'), chat_id, message_id, reply_markup=create_bot_orders_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_ORDERS
     if data == 'bot_order_options_product':
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,

@@ -8,7 +8,7 @@ from .helpers import cart, config, session_client, get_user_session, get_user_id
 from .keyboards import create_main_keyboard, create_admin_keyboard, create_product_keyboard, create_shipping_keyboard, \
     create_bot_language_keyboard, create_my_orders_keyboard, general_select_one_keyboard
 from .messages import create_product_description
-from .models import User, Product, ProductCategory
+from .models import User, Product, ProductCategory, Order
 from . import enums
 from .states import is_admin
 from . import shortcuts
@@ -114,6 +114,11 @@ def on_menu(bot, update, user_data=None):
                 if cart.is_full(user_data):
                     # we are not using enter_state_... here because it relies
                     #  on update.message
+                    unfinished_orders = Order.select().where(Order.user == user & Order.delivered == False)
+                    if len(unfinished_orders):
+                        msg = _('You cannot make new order if previous order is not finished')
+                        query.answer(msg)
+                        return enums.BOT_STATE_INIT
                     bot.send_message(query.message.chat_id,
                                      text=_('Please choose pickup or delivery'),
                                      reply_markup=create_shipping_keyboard(_),

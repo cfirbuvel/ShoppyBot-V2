@@ -19,7 +19,7 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard, create_bot_language_keyboard, \
     create_product_keyboard, create_ping_client_keyboard, create_add_courier_keyboard, create_cancel_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos, \
-    ProductCategory, Product, IdentificationStage
+    ProductCategory, Product, IdentificationStage, OrderIdentificationAnswer
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
@@ -306,22 +306,23 @@ def on_checkout_time(bot, update, user_data):
 
         if config.get_phone_number_required():
             return enter_state_phone_number_text(bot, update, user_data)
-        # else:
-        #     identification_stages = IdentificationStage.filter(active=True)
-        #     if len(identification_stages):
-        #         first_stage = identification_stages[0]
-        #         user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': {}}
-        #         msg = first_stage.content
-        #         bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
-        #                          parse_mode=ParseMode.MARKDOWN)
-        #         return enums.BOT_STATE_CHECKOUT_IDENTIFY
-        #     else:
-        #         return enter_state_order_confirm(bot, update, user_data)
         else:
-            if config.get_identification_required():
-                return enter_state_identify_photo(bot, update, user_data)
+            identification_stages = IdentificationStage.filter(active=True)
+            if len(identification_stages):
+                first_stage = identification_stages[0]
+                user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': []}
+                session_client.json_set(user_id, user_data)
+                msg = first_stage.content
+                bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
+                                 parse_mode=ParseMode.MARKDOWN)
+                return enums.BOT_STATE_CHECKOUT_IDENTIFY
             else:
                 return enter_state_order_confirm(bot, update, user_data)
+        # else:
+        #     if config.get_identification_required():
+        #         return enter_state_identify_photo(bot, update, user_data)
+        #     else:
+        #         return enter_state_order_confirm(bot, update, user_data)
     elif key == _('📅 Set time'):
         user_data['shipping']['time'] = key
         session_client.json_set(user_id, user_data)
@@ -368,8 +369,17 @@ def on_phone_number_text(bot, update, user_data):
         user = User.get(telegram_id=user_id)
         user.phone_number = phone_number_text
         user.save()
-        if config.get_identification_required():
-            return enter_state_identify_photo(bot, update, user_data)
+        # if config.get_identification_required():
+        #     return enter_state_identify_photo(bot, update, user_data)
+        identification_stages = IdentificationStage.filter(active=True)
+        if len(identification_stages):
+            first_stage = identification_stages[0]
+            user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': []}
+            session_client.json_set(user_id, user_data)
+            msg = first_stage.content
+            bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
+                             parse_mode=ParseMode.MARKDOWN)
+            return enums.BOT_STATE_CHECKOUT_IDENTIFY
         return enter_state_order_confirm(bot, update, user_data)
 
 
@@ -386,6 +396,7 @@ def on_identify_general(bot, update, user_data):
         if passed_ids:
             prev_stage = passed_ids.pop()
             data['current_id'] = prev_stage
+            session_client.json_set(user_id, user_data)
             msg = prev_stage.content
             bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
@@ -397,16 +408,25 @@ def on_identify_general(bot, update, user_data):
     current_id = data['current_id']
     current_stage = IdentificationStage.get(id=current_id)
     if current_stage.type == 'photo':
-        answer = update.message.photo[-1].file_id
+        try:
+            answer = update.message.photo[-1].file_id
+        except IndexError:
+            msg = _('_Please upload a photo as an answer_')
+            bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
+                             parse_mode=ParseMode.MARKDOWN)
+            return enums.BOT_STATE_CHECKOUT_IDENTIFY
     else:
         answer = key
-    data['answers'][current_id] = answer
+    data['answers'].append((current_id, answer))
+    #data['answers'][current_id] = answer
     passed_ids = data['passed_ids']
     passed_ids.append(current_id)
     stages_left = IdentificationStage.select().where(IdentificationStage.active == True & IdentificationStage.id.not_in(passed_ids))
+    session_client.json_set(user_id, user_data)
     if stages_left:
         next_stage = stages_left[0]
         data['current_id'] = next_stage.id
+        session_client.json_set(user_id, user_data)
         msg = next_stage.content
         bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
@@ -505,10 +525,10 @@ def on_confirm_order(bot, update, user_data):
         cart.fill_order(user_data, order)
 
         order_data = OrderPhotos(order=order)
-        if 'photo_id' in shipping_data:
-            order_data.photo_id = shipping_data['photo_id'] + '|'
-        if 'stage2_id' in shipping_data:
-            order_data.stage2_id = shipping_data['stage2_id'] + '|'
+        # if 'photo_id' in shipping_data:
+        #     order_data.photo_id = shipping_data['photo_id'] + '|'
+        # if 'stage2_id' in shipping_data:
+        #     order_data.stage2_id = shipping_data['stage2_id'] + '|'
 
         _ = get_channel_trans()
 
@@ -517,6 +537,10 @@ def on_confirm_order(bot, update, user_data):
         text = create_service_notice(_, is_pickup, order_id, customer_username, product_info, shipping_data,
                                      total, delivery_min, delivery_cost, delivery_for_vip)
         order_data.order_text = text
+        #print(user_data['order_identification']['answers'])
+        for q_id, answer in user_data['order_identification']['answers']:
+            id_stage = IdentificationStage.get(id=q_id)
+            OrderIdentificationAnswer.create(stage=id_stage, order=order, content=answer)
 
         # ORDER CONFIRMED, send the details to service channel
         txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
@@ -538,15 +562,24 @@ def on_confirm_order(bot, update, user_data):
         # ORDER CANCELLED, send nothing
         # and only clear shipping details
         user_data['shipping'] = {}
+        del user_data['order_identification']
         session_client.json_set(user_id, user_data)
 
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
-        if config.get_identification_required():
-            if config.get_identification_stage2_required():
-                return enter_state_identify_stage2(bot, update, user_data)
-            else:
-                return enter_state_identify_photo(bot, update, user_data)
+        identification_stages = IdentificationStage.filter(active=True)
+        if len(identification_stages):
+            last_stage_id = user_data['order_identification']['current_id']
+            last_stage = IdentificationStage.get(id=last_stage_id)
+            msg = last_stage.content
+            bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
+                             parse_mode=ParseMode.MARKDOWN)
+            return enums.BOT_STATE_CHECKOUT_IDENTIFY
+        # if config.get_identification_required():
+        #     if config.get_identification_stage2_required():
+        #         return enter_state_identify_stage2(bot, update, user_data)
+        #     else:
+        #         return enter_state_identify_photo(bot, update, user_data)
         elif config.get_phone_number_required():
             return enter_state_phone_number_text(bot, update, user_data)
         else:
@@ -593,76 +626,87 @@ def on_service_send_order_to_courier(bot, update, user_data):
     data = query.data
     label, order_id = data.split('|')
     # _ = get_trans(user_id)
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
     if label == 'order_show':
-        order = OrderPhotos.get(order_id=order_id)
-        service_channel = config.get_service_channel()
+        order_data = OrderPhotos.get(order_id=order_id)
+        # service_channel = config.get_service_channel()
         _ = get_channel_trans()
-        media = []
-        if order.photo_id:
-            order.photo_id, msg = order.photo_id.split('|')
-            media.append(InputMediaPhoto(media=order.photo_id,
-                                         caption=_('Stage 1 Identification - Selfie')))
-
-        if order.stage2_id:
-            order.stage2_id, msg = order.stage2_id.split('|')
-            media.append(InputMediaPhoto(media=order.stage2_id,
-                                         caption=_('Stage 2 Identification - FB')))
-        if media:
-            messages = bot.send_media_group(service_channel,
-                                            media=media)
-            joined = []
-            for hash_id, message in zip([order.photo_id, order.stage2_id], messages):
-                joined.append('|'.join([hash_id, str(message['message_id'])]))
-            order.photo_id = joined[0]
-            try:
-                order.stage2_id = joined[1]
-            except IndexError:
-                pass
+        order = Order.get(id=order_id)
+        shortcuts.send_order_idenification_answers(bot, chat_id, order)
+        # media = []
+        # if order.photo_id:
+        #     order.photo_id, msg = order.photo_id.split('|')
+        #     media.append(InputMediaPhoto(media=order.photo_id,
+        #                                  caption=_('Stage 1 Identification - Selfie')))
+        #
+        # if order.stage2_id:
+        #     order.stage2_id, msg = order.stage2_id.split('|')
+        #     media.append(InputMediaPhoto(media=order.stage2_id,
+        #                                  caption=_('Stage 2 Identification - FB')))
+        # if media:
+        #     messages = bot.send_media_group(service_channel,
+        #                                     media=media)
+        #     joined = []
+        #     for hash_id, message in zip([order.photo_id, order.stage2_id], messages):
+        #         joined.append('|'.join([hash_id, str(message['message_id'])]))
+        #     order.photo_id = joined[0]
+        #     try:
+        #         order.stage2_id = joined[1]
+        #     except IndexError:
+        #         pass
             # order.save()
-        if order.coordinates:
-            lat, long, msg_id = order.coordinates.split('|')
+        if order_data.coordinates:
+            lat, long, msg_id = order_data.coordinates.split('|')
             msg = bot.send_location(
-                service_channel,
+                chat_id,
                 latitude=lat,
                 longitude=long,
             )
-            order.coordinates = lat + '|' + long + '|' + str(msg['message_id'])
+            order_data.coordinates = lat + '|' + long + '|' + str(msg['message_id'])
             # order.save()
-        bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                           message_id=update.callback_query.message.message_id, )
+        bot.delete_message(chat_id, msg_id)
         order_msg = bot.send_message(
-            chat_id=service_channel,
-            text=order.order_text,
+            chat_id=chat_id,
+            text=order_data.order_text,
             parse_mode=ParseMode.HTML,
             reply_markup=create_service_channel_keyboard(_, order_id))
-        order.order_text_msg_id = str(order_msg['message_id'])
-        order.save()
+        order_data.order_text_msg_id = str(order_msg['message_id'])
+        order_data.save()
     elif label == 'order_hide':
-        service_channel = config.get_service_channel()
+        # service_channel = config.get_service_channel()
         _ = get_channel_trans()
-        order = OrderPhotos.get(order_id=order_id)
-        txt = order.order_hidden_text
-
-        bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                           message_id=update.callback_query.message.message_id, )
-        if order.coordinates:
-            coord1, coord2, msg_id = order.coordinates.split('|')
-            bot.delete_message(chat_id=update.callback_query.message.chat_id,
+        order_data = OrderPhotos.get(order_id=order_id)
+        txt = order_data.order_hidden_text
+        order = Order.get(id=order_id)
+        bot.delete_message(chat_id=chat_id,
+                           message_id=msg_id, )
+        if order_data.coordinates:
+            coord1, coord2, msg_id = order_data.coordinates.split('|')
+            bot.delete_message(chat_id=chat_id,
                                message_id=msg_id, )
-        if order.photo_id:
-            ph_id, msg_id = order.photo_id.split('|')
-            bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=msg_id, )
-        if order.stage2_id:
-            st2_id, msg_id = order.stage2_id.split('|')
-            bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                               message_id=msg_id, )
+        for answer in order.identification_answers:
+            answer_msg_id = answer.msg_id
+            if answer_msg_id:
+                bot.delete_message(chat_id, answer_msg_id)
+        # if order.photo_id:
+        #     ph_id, msg_id = order.photo_id.split('|')
+        #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
+        #                        message_id=msg_id, )
+        # if order.stage2_id:
+        #     st2_id, msg_id = order.stage2_id.split('|')
+        #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
+        #                        message_id=msg_id, )
 
         shortcuts.bot_send_order_msg(bot, update.callback_query.message.chat_id, txt, _, order_id, order)
 
     elif label == 'order_send_to_specific_courier':
-        couriers = Courier.select(Courier.username, Courier.telegram_id, Courier.location)
         _ = get_channel_trans()
+        order = Order.get(id=order_id)
+        if order.delivered:
+            msg = _('Order is delivered. Cannot send it to couriers again.')
+            query.answer(text=msg, show_alert=True)
+            return
+        couriers = Courier.select(Courier.username, Courier.telegram_id, Courier.location)
         bot.send_message(
             chat_id=config.get_service_channel(),
             text=_('Please choose who to send'),
@@ -672,24 +716,31 @@ def on_service_send_order_to_courier(bot, update, user_data):
     elif label == 'order_send_to_couriers':
 
         if config.get_has_courier_option():
+            order = Order.get(id=order_id)
             _ = get_channel_trans()
-            couriers_channel = config.get_couriers_channel()
-            order = OrderPhotos.get(order_id=order_id)
-            photo_msg_id = ''
-            if order.photo_id:
-                photo_id, msg_id = order.photo_id.split('|')
-                photo_msg = bot.send_photo(couriers_channel,
-                               photo=photo_id,
-                               caption=_('Stage 1 Identification - Selfie'),
-                               parse_mode=ParseMode.MARKDOWN, )
-                photo_msg_id = photo_msg['message_id']
-            bot.send_message(chat_id=couriers_channel,
-                             text=order.order_text,
-                             reply_markup=create_service_notice_keyboard(order_id, _, photo_msg_id),
-                             parse_mode=ParseMode.HTML,
-                             )
+            if order.delivered:
+                msg = _('Order is delivered. Cannot send it to couriers again.')
+                query.answer(text=msg, show_alert=True)
+            else:
+                couriers_channel = config.get_couriers_channel()
+                order_data = OrderPhotos.get(order_id=order_id)
+                answers_ids = shortcuts.send_order_idenification_answers(bot, couriers_channel, order)
+                answers_ids = ','.join(answers_ids)
+            # photo_msg_id = ''
+            # if order_data.photo_id:
+            #     photo_id, msg_id = order_data.photo_id.split('|')
+            #     photo_msg = bot.send_photo(couriers_channel,
+            #                    photo=photo_id,
+            #                    caption=_('Stage 1 Identification - Selfie'),
+            #                    parse_mode=ParseMode.MARKDOWN, )
+            #     photo_msg_id = photo_msg['message_id']
+                bot.send_message(chat_id=couriers_channel,
+                                 text=order_data.order_text,
+                                 reply_markup=create_service_notice_keyboard(order_id, _, answers_ids),
+                                 parse_mode=ParseMode.HTML,
+                                 )
 
-            query.answer(text='Order sent to couriers channel', show_alert=True)
+                query.answer(text='Order sent to couriers channel', show_alert=True)
         query.answer(text='You have disabled courier\'s option', show_alert=True)
     elif label == 'order_finished':
         order = Order.get(id=order_id)
@@ -698,22 +749,31 @@ def on_service_send_order_to_courier(bot, update, user_data):
             not_delivered_msg = _('Order cannot be finished because it was not delivered yet')
             query.answer(text=not_delivered_msg, show_alert=True)
         else:
-            order = OrderPhotos.get(order_id=order_id)
+            order_data = OrderPhotos.get(order_id=order_id)
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
                                message_id=update.callback_query.message.message_id, )
-            if order.photo_id:
-                id, msg_id = order.photo_id.split('|')
-                bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                                   message_id=msg_id, )
-            if order.stage2_id:
-                id, msg_id = order.stage2_id.split('|')
-                bot.delete_message(chat_id=update.callback_query.message.chat_id,
-                                   message_id=msg_id, )
-            if order.coordinates:
-                lat, long, msg_id = order.coordinates.split('|')
+            for answer in order.identification_answers:
+                if answer.msg_id:
+                    bot.delete_message(chat_id, answer.msg_id)
+            # if order.photo_id:
+            #     id, msg_id = order.photo_id.split('|')
+            #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
+            #                        message_id=msg_id, )
+            # if order.stage2_id:
+            #     id, msg_id = order.stage2_id.split('|')
+            #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
+            #                        message_id=msg_id, )
+            if order_data.coordinates:
+                lat, long, msg_id = order_data.coordinates.split('|')
                 bot.delete_message(chat_id=update.callback_query.message.chat_id,
                                    message_id=msg_id, )
     elif label == 'order_send_to_self':
+        order = Order.get(id=order_id)
+        _ = get_channel_trans()
+        if order.delivered:
+            msg = _('Order is delivered. Cannot send it to couriers again.')
+            query.answer(text=msg, show_alert=True)
+            return
         usr_id = get_user_id(update)
         order = Order.get(id=order_id)
         _ = get_trans(usr_id)
@@ -776,7 +836,7 @@ def service_channel_courier_query_handler(bot, update, user_data):
     data = query.data
     courier_nickname = get_username(update)
     courier_id = get_user_id(update)
-    label, order_id, photo_msg_id = data.split('|')
+    label, order_id, answers_ids = data.split('|')
     _ = get_channel_trans()
     try:
         if order_id:
@@ -826,7 +886,7 @@ def service_channel_courier_query_handler(bot, update, user_data):
                          'Confirm this?'.format(
                         courier_nickname, order_id),
                     reply_markup=create_courier_confirmation_keyboard(order_id, courier_nickname, _,
-                                                                      photo_msg_id, assigned_msg_id)
+                                                                      answers_ids, assigned_msg_id)
                 )
                 bot.answer_callback_query(
                     query.id,

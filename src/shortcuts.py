@@ -48,12 +48,15 @@ def make_confirm(bot, update, user_data):
 def make_unconfirm(bot, update, user_data):
     query = update.callback_query
     data = query.data
-    label, order_id, courier_name, photo_msg_id, assigned_msg_id = data.split('|')
+    label, order_id, courier_name, answers_ids, assigned_msg_id = data.split('|')
     bot.delete_message(config.get_service_channel(),
                        message_id=query.message.message_id)
     couriers_channel = config.get_couriers_channel()
-    bot.delete_message(couriers_channel,
-                       message_id=photo_msg_id)
+    for answer_id in answers_ids.split(','):
+        bot.delete_message(couriers_channel,
+                           message_id=answer_id)
+    # bot.delete_message(couriers_channel,
+    #                    message_id=photo_msg_id)
     bot.delete_message(couriers_channel,
                        message_id=assigned_msg_id)
     try:
@@ -71,18 +74,20 @@ def make_unconfirm(bot, update, user_data):
                          text='The admin did not confirm. Please retake '
                               'responsibility for order №{}'.format(order_id),
                          )
-        photo_msg_id = ''
-        if order_data.photo_id:
-            photo_id, msg_id = order_data.photo_id.split('|')
-            photo_msg = bot.send_photo(couriers_channel,
-                                       photo=photo_id,
-                                       caption=_('Stage 1 Identification - Selfie'),
-                                       parse_mode=ParseMode.MARKDOWN, )
-            photo_msg_id = photo_msg['message_id']
+        # photo_msg_id = ''
+        # if order_data.photo_id:
+        #     photo_id, msg_id = order_data.photo_id.split('|')
+        #     photo_msg = bot.send_photo(couriers_channel,
+        #                                photo=photo_id,
+        #                                caption=_('Stage 1 Identification - Selfie'),
+        #                                parse_mode=ParseMode.MARKDOWN, )
+        #     photo_msg_id = photo_msg['message_id']
+        answers_ids = send_order_idenification_answers(bot, couriers_channel, order)
+        answers_ids = ','.join(answers_ids)
 
         bot.send_message(chat_id=couriers_channel,
                          text=order_data.order_text,
-                         reply_markup=keyboards.create_service_notice_keyboard(order_id, _, photo_msg_id),
+                         reply_markup=keyboards.create_service_notice_keyboard(order_id, _, answers_ids),
                          parse_mode=ParseMode.HTML,
                          )
 
@@ -105,20 +110,22 @@ def resend_responsibility_keyboard(bot, update):
     _ = get_channel_trans()
     bot.delete_message(query.message.chat_id,
                        message_id=query.message.message_id)
-    order = OrderPhotos.get(order_id=order_id)
+    order_data = OrderPhotos.get(order_id=order_id)
     bot.send_message(chat_id=couriers_channel,
                      text='Order №{} was dropped by courier'.format(order_id))
-    photo_msg_id = ''
-    if order.photo_id:
-        photo_id, msg_id = order.photo_id.split('|')
-        photo_msg = bot.send_photo(couriers_channel,
-                       photo=photo_id,
-                       caption=_('Stage 1 Identification - Selfie'),
-                       parse_mode=ParseMode.MARKDOWN, )
-        photo_msg_id = photo_msg['message_id']
+    answers_ids = send_order_idenification_answers(bot, couriers_channel, order)
+    answers_ids = ','.join(answers_ids)
+    # photo_msg_id = ''
+    # if order.photo_id:
+    #     photo_id, msg_id = order.photo_id.split('|')
+    #     photo_msg = bot.send_photo(couriers_channel,
+    #                    photo=photo_id,
+    #                    caption=_('Stage 1 Identification - Selfie'),
+    #                    parse_mode=ParseMode.MARKDOWN, )
+    #     photo_msg_id = photo_msg['message_id']
     bot.send_message(chat_id=couriers_channel,
-                     text=order.order_text,
-                     reply_markup=keyboards.create_service_notice_keyboard(order_id, _, photo_msg_id),
+                     text=order_data.order_text,
+                     reply_markup=keyboards.create_service_notice_keyboard(order_id, _, answers_ids),
                      parse_mode=ParseMode.HTML,
                      )
 
@@ -134,6 +141,25 @@ def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=N
     order_data.order_hidden_text = message
     order_data.order_text_msg_id = str(order_msg['message_id'])
     order_data.save()
+
+
+def send_order_idenification_answers(bot, chat_id, order):
+    msg_ids = []
+    for answer in order.identification_answers:
+        type = answer.stage.type
+        content = answer.content
+        question = answer.stage.content
+        if type == 'photo':
+            msg = bot.send_photo(chat_id, content, caption=question)
+        else:
+            msg = '_{}:_\n' \
+                  '{}'.format(question, content)
+            msg = bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
+        sent_msg_id = msg['message_id']
+        answer.msg_id = sent_msg_id
+        answer.save()
+        msg_ids.append(str(sent_msg_id))
+    return msg_ids
 
 
 def send_product_info(bot, product, chat_id, trans):
