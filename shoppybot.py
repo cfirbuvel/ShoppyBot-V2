@@ -234,6 +234,19 @@ def main():
             enums.ADMIN_LOCATIONS: [
                 CallbackQueryHandler(
                     admin.on_admin_locations, pattern='^bot_locations')],
+            enums.ADMIN_ORDERS: [
+                CallbackQueryHandler(admin.on_admin_orders, pass_user_data=True)
+            ],
+            enums.ADMIN_ORDERS_PENDING_SELECT: [
+                CallbackQueryHandler(admin.on_admin_orders_pending_select, pass_user_data=True)
+            ],
+            enums.ADMIN_ORDERS_FINISHED_DATE: [
+                CallbackQueryHandler(triggers.on_calendar_change, pattern='^calendar', pass_user_data=True),
+                CallbackQueryHandler(admin.on_admin_orders_finished_date, pass_user_data=True)
+            ],
+            enums.ADMIN_ORDERS_FINISHED_SELECT: [
+                CallbackQueryHandler(admin.on_admin_orders_finished_select, pass_user_data=True)
+            ],
             enums.ADMIN_PRODUCTS: [
                 CallbackQueryHandler(admin.on_admin_products, pattern='^bot_products', pass_user_data=True)
             ],

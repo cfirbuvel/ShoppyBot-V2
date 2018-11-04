@@ -469,11 +469,12 @@ def create_bot_order_options_keyboard(trans):
 def create_bot_orders_keyboard(trans):
     _ = trans
     main_button_list = [
-        [InlineKeyboardButton(_('Finished orders'), callback_data='all')],
-        [InlineKeyboardButton(_('Pending orders'), callback_data='pending')],
-        [InlineKeyboardButton(_('Back'), callback_data='back')]
+        [InlineKeyboardButton(_('📦 Finished orders'), callback_data='finished')],
+        [InlineKeyboardButton(_('🚚 Pending orders'), callback_data='pending')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]
     return InlineKeyboardMarkup(main_button_list)
+
 
 def create_delivery_fee_keyboard(trans):
     _ = trans

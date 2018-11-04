@@ -9,9 +9,9 @@ from telegram.ext import ConversationHandler
 
 from . import enums
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans, \
-    parse_discount
+    parse_discount, get_channel_trans
 from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User, \
-    ProductMedia, ProductCategory, IdentificationStage
+    ProductMedia, ProductCategory, IdentificationStage, Order, OrderPhotos
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
     create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
@@ -188,6 +188,125 @@ def on_admin_order_options(bot, update, user_data):
         return enums.ADMIN_EDIT_FINAL_MESSAGE
 
     return ConversationHandler.END
+
+
+def on_admin_orders(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    msg_id = query.message.message_id
+    action = query.data
+    if action == 'back':
+        msg = _('💳 Order options')
+        bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_bot_order_options_keyboard(_))
+        query.answer()
+        return enums.ADMIN_ORDER_OPTIONS
+    if action == 'pending':
+        orders = Order.select().where(Order.delivered == False)
+        orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
+        orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
+        user_data['admin_pending_orders'] = orders
+        keyboard = general_select_one_keyboard(_, orders)
+        msg = _('Please select an order\n'
+                'Bot will send it to service channel:')
+        bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=keyboard)
+        query.answer()
+        return enums.ADMIN_ORDERS_PENDING_SELECT
+    elif action == 'finished':
+        state = enums.ADMIN_ORDERS_FINISHED_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, msg_id, state, _, query.id)
+        return state
+
+
+def on_admin_orders_pending_select(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    action, val = query.data.split('|')
+    if action == 'back':
+        bot.edit_message_text(_('📖 Orders'), chat_id, message_id, reply_markup=create_bot_orders_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_ORDERS
+    if action == 'page':
+        #orders = Order.select().where(Order.delivered == False).tuples()
+        orders = user_data['admin_pending_orders']
+        keyboard = general_select_one_keyboard(_, orders, int(val))
+        msg = _('Please select an order\n'
+                'Bot will send it to service channel:')
+        bot.edit_message_text(msg, chat_id, message_id,
+                              reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+    elif action == 'select':
+        # order = Order.get(id=val)
+        service_trans = get_channel_trans()
+        msg = service_trans('Order №{}').format(val)
+        shortcuts.bot_send_order_msg(bot, config.get_service_channel(), msg, service_trans, val)
+        query.answer(_('Order has been sent to service channel'), show_alert=True)
+    return enums.ADMIN_ORDERS_PENDING_SELECT
+
+
+def on_admin_orders_finished_date(bot, update, user_data):
+    print('invoked\n\n')
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    if action == 'ignore':
+        return enums.ADMIN_ORDERS_FINISHED_DATE
+    elif action == 'back':
+        bot.edit_message_text(_('📖 Orders'), chat_id, message_id, reply_markup=create_bot_orders_keyboard(_),
+                             parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_ORDERS
+    elif action in ('day', 'month', 'year'):
+        print('if entered')
+        year, month = user_data['calendar_date']
+        queries = shortcuts.get_order_subquery(action, val, month, year)
+        orders = Order.select().where(*queries & Order.delivered == True)
+        orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
+        orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
+        user_data['admin_finished_orders'] = orders
+        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
+                              reply_markup=general_select_one_keyboard(_, orders),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_ORDERS_FINISHED_SELECT
+
+
+def on_admin_orders_finished_select(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    action, val = query.data.split('|')
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+    if action == 'back':
+        state = enums.ADMIN_ORDERS_FINISHED_DATE
+        shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
+        return state
+    orders = user_data['admin_finished_orders']
+    if action == 'page':
+        page_num = int(val)
+        keyboard = general_select_one_keyboard(_, orders, page_num)
+        msg = _('Select order')
+    elif action == 'select':
+        order = Order.get(id=val)
+        msg = OrderPhotos.get(order=order).order_text
+        courier_delivered = _('Courier: {}').format(order.courier.username)
+        msg += '\n\n' + courier_delivered
+        keyboard = general_select_one_keyboard(_, orders)
+    bot.edit_message_text(msg, chat_id, message_id,
+                          reply_markup=keyboard)
+    query.answer()
+    return enums.ADMIN_ORDERS_FINISHED_SELECT
 
 
 def on_admin_delivery_fee(bot, update):
