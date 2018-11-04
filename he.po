@@ -67,6 +67,22 @@ msgstr "❌ בטל שליחות"
 msgid "Courier: @{}, apply for order №{}.\nConfirm this?"
 msgstr "שליח @{} קיבל את הזמנה מס׳{}.\nהאם אתה רוצה לאשר?"
 
+#: shoppybot.py:66
+msgid "Order №{} was delivered by courier @{}\n"
+msgstr "הזמנה מס׳ {} נשלחה ע״י השליח @{}\n"
+
+#: shoppybot.py:66
+msgid "Order №{} was delivered by admin {}\n"
+msgstr "הזמנה מס׳{} נשלחה ע״י המנהל {}\n"
+
+#: shoppybot.py:66
+msgid "Order can be finished now."
+msgstr "ניתן לסיים את ההזמנה כעת"
+
+#: shoppybot.py:66
+msgid "Order №{} is completed!"
+msgstr "הזמנה מס׳ {}\nהסתיימה בהצלחה ✅"
+
 #: shoppybot.py:112
 msgid "👍"
 msgstr "👍"
@@ -530,7 +546,7 @@ msgstr "🔥 הוסף לרשימה השחורה"
 
 #: shoppybot.py:318
 msgid "✅ Order Finished"
-msgstr "✅ ההזמנה הסתיימה"
+msgstr "✅ סיים הזמנה"
 
 #: shoppybot.py:318
 msgid "❌ Cancel order"
@@ -561,6 +577,34 @@ msgid "❌ Drop responsibility"
 msgstr "❌ בטל אחריות"
 
 #: shoppybot.py:318
+msgid "🔔 Now"
+msgstr "🔔 עכשיו"
+
+#: shoppybot.py:318
+msgid "🕐 Soon"
+msgstr "🕐 בקרוב"
+
+#: shoppybot.py:318
+msgid "Are you sure?"
+msgstr "האם אתה בטוח?"
+
+#: shoppybot.py:318
+msgid "Enter number of minutes left"
+msgstr "הכנס מספר דקות להגעה ליעד"
+
+#: shoppybot.py:318
+msgid "Client has been notified"
+msgstr "הלקוח קיבל התראה"
+
+#: shoppybot.py:318
+msgid "Courier will arrive in {} minutes."
+msgstr "השליח יגיע בעוד כ-{} דקות.\nאנא המתן לשליח במקום שנקבע"
+
+#: shoppybot.py:318
+msgid "Courier has arrived to deliver your order."
+msgstr "השליח הגיע עם המשלוח"
+
+#: shoppybot.py:318
 msgid "✅ Yes"
 msgstr "✅ כן"
 
@@ -588,6 +632,10 @@ msgstr "שמור שינויים"
 msgid "Assign @{}"
 msgstr "העבר משלוח ל@{}"
 
+#: shoppybot.py:313
+msgid "Please choose who to send"
+msgstr "בחר למי להעביר את המשלוח"
+
 #: shoppybot.py:376
 msgid "Sorry {}\nYou are not authorized to use this bot"
 msgstr "סליחה {}\nאין לך אישור להשתמש בבוט\n\nלאישור דבר עם המנהל,\nכנס לקבוצת לקוחות\nולחץ /start שוב"
@@ -614,7 +662,7 @@ msgstr "בחר/י משלוח או איסוף עצמי:"
 
 #: shoppybot.py:516
 msgid "Please choose where do you want to pickup your order:"
-msgstr "מאיזו עיר תרצה את האיסוף:"
+msgstr "מאיזו עיר?"
 
 #: shoppybot.py:525
 msgid "Please enter delivery address as text or send a location."
@@ -1021,7 +1069,7 @@ msgstr ""
 #: admin.py:196
 msgid ""
 "🏗\nProduct: `{}`\n"
-"Courier: `{}`\n'"
+"Courier: `{}`\n"
 "Courier credits: {}\n"
 "Please enter new number of credits:"
 msgstr ""
@@ -1029,6 +1077,26 @@ msgstr ""
 "שליח: `{}`\n"
 "קרדיט נוכחי לשליח: {}\n"
 "הכנס כמות קרדיט חדשה לשליח"
+
+#: admin.py:306
+msgid "You don't have enough credits to deliver products:\n"
+msgstr "אין לך מספיק קרדיט לשלוח את המוצר\n"
+
+#: admin.py:306
+msgid "✅ You have given {} credits to courier `{}`"
+msgstr "✅נוספו {} קרדיט, לשליח `{}`"
+
+#: admin.py:306
+msgid "Product: `{}`, Count: {}, Courier credits: {}\n"
+msgstr "מוצר: `{}`, כמות: {}, כמות קרדיט לשליח: {}\n"
+
+#: admin.py:306
+msgid "Product: `{}`, Count: {}, Warehouse credits: {}\n"
+msgstr "מוצר: `{}`, כמות: {}, כמות קרדיט במחסן: {}\n"
+
+#: admin.py:306
+msgid "There are not enough credits in warehouse to deliver products:\n"
+msgstr "אין מספיק קרדיט במחסן לשלוח את המוצר\n"
 
 #: admin.py:306
 msgid "January"

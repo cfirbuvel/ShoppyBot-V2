@@ -87,7 +87,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
             text += _('Total: ${}').format(total)
             return text
     else:
-        if total <= delivery_min or delivery_min == 0:
+        if total < delivery_min or delivery_min == 0:
             if not is_vip or delivery_for_vip:
                 if not is_pickup:
                     total = total+delivery_cost
@@ -98,6 +98,9 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
                 else:
                     text += '\n\n'
                     text += _('Total: ${}').format(total)
+        else:
+            text += '\n\n'
+            text += _('Total: ${}').format(total)
         return text
 
 
@@ -137,7 +140,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
             text += '\n\n'
             text += _('Total: ${}').format(total)
 
-    if total <= delivery_min or delivery_min == 0:
+    if total < delivery_min or delivery_min == 0:
         if not is_vip or delivery_for_vip:
             if not is_pickup:
                 total = total + delivery_cost
@@ -148,6 +151,9 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
             else:
                 text += '\n\n'
                 text += _('Total: ${}').format(total)
+    else:
+        text += '\n\n'
+        text += _('Total: ${}').format(total)
 
     text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
