@@ -308,6 +308,8 @@ def on_checkout_time(bot, update, user_data):
             return enter_state_phone_number_text(bot, update, user_data)
         else:
             identification_stages = IdentificationStage.filter(active=True)
+            if is_vip_customer(bot, user_id):
+                identification_stages = identification_stages.filter(vip_required=True)
             if len(identification_stages):
                 first_stage = identification_stages[0]
                 user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': []}
@@ -372,6 +374,8 @@ def on_phone_number_text(bot, update, user_data):
         # if config.get_identification_required():
         #     return enter_state_identify_photo(bot, update, user_data)
         identification_stages = IdentificationStage.filter(active=True)
+        if is_vip_customer(bot, user_id):
+            identification_stages = identification_stages.filter(vip_required=True)
         if len(identification_stages):
             first_stage = identification_stages[0]
             user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': []}
@@ -422,6 +426,8 @@ def on_identify_general(bot, update, user_data):
     passed_ids = data['passed_ids']
     passed_ids.append(current_id)
     stages_left = IdentificationStage.select().where(IdentificationStage.active == True & IdentificationStage.id.not_in(passed_ids))
+    if is_vip_customer(bot, user_id):
+        stages_left = stages_left.filter(vip_required=True)
     session_client.json_set(user_id, user_data)
     if stages_left:
         next_stage = stages_left[0]
@@ -562,7 +568,10 @@ def on_confirm_order(bot, update, user_data):
         # ORDER CANCELLED, send nothing
         # and only clear shipping details
         user_data['shipping'] = {}
-        del user_data['order_identification']
+        try:
+            del user_data['order_identification']
+        except KeyError:
+            pass
         session_client.json_set(user_id, user_data)
 
         return enter_state_init_order_cancelled(bot, update, user_data)

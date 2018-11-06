@@ -535,7 +535,7 @@ def general_select_keyboard(trans, objects, cmd_prefix= '', page_num=1, page_len
     next_page = None
     if len(objects) > 50:
         max_pages = math.ceil(len(objects) / float(page_len))
-        objects = objects[(page_num - 1) * page_len: (page_num - 1) * page_len]
+        objects = objects[(page_num - 1) * page_len: page_num * page_len]
         prev_page = page_num - 1 if page_num > 1 else None
         next_page = page_num + 1 if page_num < max_pages else None
     for name, id, is_picked in objects:
@@ -567,7 +567,7 @@ def general_select_one_keyboard(trans, objects, page_num=1, page_len=15):
     next_page = None
     if len(objects) > 50:
         max_pages = math.ceil(len(objects) / float(page_len))
-        objects = objects[(page_num - 1) * page_len: (page_num - 1) * page_len]
+        objects = objects[(page_num - 1) * page_len: page_num * page_len]
         prev_page = page_num - 1 if page_num > 1 else None
         next_page = page_num + 1 if page_num < max_pages else None
     for name, id in objects:
@@ -730,9 +730,10 @@ def create_edit_identification_keyboard(trans, questions):
     _ = trans
     buttons = []
     for count, q in enumerate(questions, 1):
-        q_id, q_active = q
+        q_id, q_active, q_vip = q
         btn = [
             InlineKeyboardButton(_('Question №{}').format(count), callback_data='edit|{}'.format(q_id)),
+            InlineKeyboardButton(_('Vip: Active') if q_vip else _('Vip: Disabled'), callback_data='vip_toggle|{}'.format(q_id)),
             InlineKeyboardButton(_('Active') if q_active else _('Disabled'), callback_data='toggle|{}'.format(q_id))
         ]
         buttons.append(btn)

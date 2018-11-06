@@ -140,7 +140,7 @@ def on_admin_order_options(bot, update, user_data):
         query.answer()
         return enums.ADMIN_LOCATIONS
     elif data == 'bot_order_options_identify':
-        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
+        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
         msg = _('👨 Edit identification process:')
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
@@ -2141,11 +2141,14 @@ def on_admin_edit_identification_stages(bot, update, user_data):
                          reply_markup=create_bot_order_options_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_ORDER_OPTIONS
-    elif action == 'toggle':
+    if action in ('toggle', 'vip_toggle'):
         question = IdentificationStage.get(id=data)
-        question.active = not question.active
+        if action == 'toggle':
+            question.active = not question.active
+        elif action == 'vip_toggle':
+            question.vip_required = not question.vip_required
         question.save()
-        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
+        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
         msg = _('👨 Edit identification process:')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
@@ -2167,7 +2170,7 @@ def on_admin_edit_identification_question_type(bot, update, user_data):
     chat_id, msg_id = query.message.chat_id, query.message.message_id
     action = query.data
     if action == 'back':
-        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
+        questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
         msg = _('👨 Edit identification process:')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
@@ -2208,7 +2211,7 @@ def on_admin_edit_identification_question(bot, update, user_data):
         question.type = edit_options['type']
         question.save()
         msg = _('Identification question has been changed')
-    questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active).tuples()
+    questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
     bot.send_message(upd_msg.chat_id, msg, reply_markup=create_edit_identification_keyboard(_, questions),
                           parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_EDIT_IDENTIFICATION_STAGES

@@ -133,7 +133,8 @@ def resend_responsibility_keyboard(bot, update):
 
 def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=None):
     if not order_data:
-        order_data = OrderPhotos.get(order_id=order_id)
+        order = Order.get(id=order_id)
+        order_data = OrderPhotos.get(order=order)
     _ = trans_func
     order_msg = bot.send_message(chat_id,
                          text=message,

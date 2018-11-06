@@ -111,6 +111,7 @@ class OrderPhotos(BaseModel):
 class IdentificationStage(BaseModel):
     content = CharField()
     active = BooleanField(default=True)
+    vip_required = BooleanField(default=False)
     type = CharField()
 
 
