@@ -1,4 +1,5 @@
 import datetime
+import random
 
 from telegram import ParseMode, InputMediaPhoto, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
@@ -19,7 +20,7 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard, create_bot_language_keyboard, \
     create_product_keyboard, create_ping_client_keyboard, create_add_courier_keyboard, create_cancel_keyboard
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos, \
-    ProductCategory, Product, IdentificationStage, OrderIdentificationAnswer
+    ProductCategory, Product, IdentificationStage, OrderIdentificationAnswer, IdentificationQuestion
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
     enter_state_location_delivery, enter_state_shipping_time, enter_state_phone_number_text, enter_state_identify_photo, \
     enter_state_order_confirm, enter_state_shipping_time_text, enter_state_identify_stage2, \
@@ -312,9 +313,11 @@ def on_checkout_time(bot, update, user_data):
                 identification_stages = identification_stages.filter(vip_required=True)
             if len(identification_stages):
                 first_stage = identification_stages[0]
-                user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': []}
+                questions = first_stage.identification_questions
+                question = random.choice(list(questions))
+                user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'current_q_id': question.id, 'answers': []}
                 session_client.json_set(user_id, user_data)
-                msg = first_stage.content
+                msg = question.content
                 bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                                  parse_mode=ParseMode.MARKDOWN)
                 return enums.BOT_STATE_CHECKOUT_IDENTIFY
@@ -378,9 +381,12 @@ def on_phone_number_text(bot, update, user_data):
             identification_stages = identification_stages.filter(vip_required=True)
         if len(identification_stages):
             first_stage = identification_stages[0]
-            user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'answers': []}
+            questions = first_stage.identification_questions
+            question = random.choice(list(questions))
+            user_data['order_identification'] = {'passed_ids': [], 'current_id': first_stage.id, 'current_q_id': question.id,'answers': []}
             session_client.json_set(user_id, user_data)
-            msg = first_stage.content
+            msg = question.content
+            #msg = first_stage.content
             bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
             return enums.BOT_STATE_CHECKOUT_IDENTIFY
@@ -398,10 +404,11 @@ def on_identify_general(bot, update, user_data):
     elif key == _('↩ Back'):
         passed_ids = data['passed_ids']
         if passed_ids:
-            prev_stage = passed_ids.pop()
+            prev_stage, prev_q = passed_ids.pop()
             data['current_id'] = prev_stage
+            data['current_q_id'] = prev_q
             session_client.json_set(user_id, user_data)
-            msg = prev_stage.content
+            msg = IdentificationQuestion.get(id=prev_q).content
             bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
             return enums.BOT_STATE_CHECKOUT_IDENTIFY
@@ -421,19 +428,24 @@ def on_identify_general(bot, update, user_data):
             return enums.BOT_STATE_CHECKOUT_IDENTIFY
     else:
         answer = key
-    data['answers'].append((current_id, answer))
+    current_q_id = data['current_q_id']
+    data['answers'].append((current_id, current_q_id, answer))
     #data['answers'][current_id] = answer
     passed_ids = data['passed_ids']
-    passed_ids.append(current_id)
-    stages_left = IdentificationStage.select().where(IdentificationStage.active == True & IdentificationStage.id.not_in(passed_ids))
+    passed_ids.append((current_id, current_q_id))
+    passed_stages_ids = [v[0] for v in passed_ids]
+    stages_left = IdentificationStage.select().where(IdentificationStage.active == True & IdentificationStage.id.not_in(passed_stages_ids))
     if is_vip_customer(bot, user_id):
         stages_left = stages_left.filter(vip_required=True)
     session_client.json_set(user_id, user_data)
     if stages_left:
         next_stage = stages_left[0]
+        questions = next_stage.identification_questions
+        question = random.choice(list(questions))
         data['current_id'] = next_stage.id
+        data['current_q_id'] = question.id
         session_client.json_set(user_id, user_data)
-        msg = next_stage.content
+        msg = question.content
         bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return enums.BOT_STATE_CHECKOUT_IDENTIFY
@@ -544,9 +556,10 @@ def on_confirm_order(bot, update, user_data):
                                      total, delivery_min, delivery_cost, delivery_for_vip)
         order_data.order_text = text
         #print(user_data['order_identification']['answers'])
-        for q_id, answer in user_data['order_identification']['answers']:
-            id_stage = IdentificationStage.get(id=q_id)
-            OrderIdentificationAnswer.create(stage=id_stage, order=order, content=answer)
+        for stage_id, q_id, answer in user_data['order_identification']['answers']:
+            stage = IdentificationStage.get(id=stage_id)
+            question = IdentificationQuestion.get(id=q_id)
+            OrderIdentificationAnswer.create(stage=stage, question=question, order=order, content=answer)
 
         # ORDER CONFIRMED, send the details to service channel
         txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
@@ -580,7 +593,9 @@ def on_confirm_order(bot, update, user_data):
         if len(identification_stages):
             last_stage_id = user_data['order_identification']['current_id']
             last_stage = IdentificationStage.get(id=last_stage_id)
-            msg = last_stage.content
+            last_q_id = user_data['order_identification']['current_q_id']
+            last_question = IdentificationQuestion.get(id=last_q_id)
+            msg = last_question.content
             bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
             return enums.BOT_STATE_CHECKOUT_IDENTIFY

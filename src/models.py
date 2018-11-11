@@ -109,14 +109,19 @@ class OrderPhotos(BaseModel):
 
 
 class IdentificationStage(BaseModel):
-    content = CharField()
+    # content = CharField()
     active = BooleanField(default=True)
     vip_required = BooleanField(default=False)
     type = CharField()
 
+class IdentificationQuestion(BaseModel):
+    content = CharField()
+    stage = ForeignKeyField(IdentificationStage, related_name='identification_questions')
+
 
 class OrderIdentificationAnswer(BaseModel):
     stage = ForeignKeyField(IdentificationStage, related_name='identification_answers')
+    question = ForeignKeyField(IdentificationQuestion, related_name='identification_answers')
     order = ForeignKeyField(Order, related_name='identification_answers')
     content = CharField()
     msg_id = CharField(null=True)
@@ -132,7 +137,7 @@ def create_tables():
         [
             Location, User, Courier, CourierLocation, ProductCategory, Product, ProductCount,
             Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia, IdentificationStage,
-            OrderIdentificationAnswer
+            OrderIdentificationAnswer, IdentificationQuestion
         ], safe=True
     )
     # try:

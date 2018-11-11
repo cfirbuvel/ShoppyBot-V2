@@ -11,7 +11,7 @@ from . import enums
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans, \
     parse_discount, get_channel_trans
 from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User, \
-    ProductMedia, ProductCategory, IdentificationStage, Order, OrderPhotos
+    ProductMedia, ProductCategory, IdentificationStage, Order, OrderPhotos, IdentificationQuestion
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
     create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
@@ -270,10 +270,12 @@ def on_admin_orders_finished_date(bot, update, user_data):
         print('if entered')
         year, month = user_data['calendar_date']
         queries = shortcuts.get_order_subquery(action, val, month, year)
-        orders = Order.select().where(*queries & Order.delivered == True)
+        orders = Order.select().where(*queries)
+        orders = orders.select().where(Order.delivered == True)
         orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
         orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
         user_data['admin_finished_orders'] = orders
+        print('before edit msg')
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
                               reply_markup=general_select_one_keyboard(_, orders),
                               parse_mode=ParseMode.MARKDOWN)
@@ -2180,10 +2182,16 @@ def on_admin_edit_identification_question_type(bot, update, user_data):
         edit_options = user_data['admin_edit_identification']
         #user_data['admin_edit_identification']['type'] = action
         edit_options['type'] = action
-        msg = _('Enter new question')
+        msg = _('Enter new question or variants to choose randomly, e.g.:\n'
+                '_Send identification photo_ ✌️\n'
+                '_Send identification photo_ 🖖')
         if not edit_options['new']:
-            question = IdentificationStage.get(id=edit_options['id'])
-            msg = _('Current question: {}\n{}').format(question.content, msg)
+            questions = IdentificationStage.get(id=edit_options['id']).identification_questions
+            q_msg = ''
+            for q in questions:
+                q_msg += '_{}_\n'.format(q.content)
+            msg = _('Current questions:\n'
+                    '{}\n{}').format(q_msg, msg)
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_back_button(_),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_EDIT_IDENTIFICATION_QUESTION
@@ -2201,15 +2209,22 @@ def on_admin_edit_identification_question(bot, update, user_data):
 
     upd_msg = update.message
     edit_options = user_data['admin_edit_identification']
-
+    msg_text = upd_msg.text
     if edit_options['new']:
-        IdentificationStage.create(content=upd_msg.text, type=edit_options['type'])
+        stage = IdentificationStage.create(type=edit_options['type'])
+        for q_text in msg_text.split('\n'):
+            if q_text:
+                IdentificationQuestion.create(content=q_text, stage=stage)
         msg = _('Identification question has been created')
     else:
-        question = IdentificationStage.get(id=edit_options['id'])
-        question.content = upd_msg.text
-        question.type = edit_options['type']
-        question.save()
+        stage = IdentificationStage.get(id=edit_options['id'])
+        stage.type = edit_options['type']
+        stage.save()
+        for q in stage.identification_questions:
+            q.delete_instance()
+        for q_text in msg_text.split('\n'):
+            if q_text:
+                IdentificationQuestion.create(content=q_text, stage=stage)
         msg = _('Identification question has been changed')
     questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
     bot.send_message(upd_msg.chat_id, msg, reply_markup=create_edit_identification_keyboard(_, questions),

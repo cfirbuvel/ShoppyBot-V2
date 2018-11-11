@@ -149,7 +149,7 @@ def send_order_idenification_answers(bot, chat_id, order):
     for answer in order.identification_answers:
         type = answer.stage.type
         content = answer.content
-        question = answer.stage.content
+        question = answer.question.content
         if type == 'photo':
             msg = bot.send_photo(chat_id, content, caption=question)
         else:

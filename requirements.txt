@@ -3,3 +3,4 @@ future==0.16.0
 peewee==3.5.0
 python-telegram-bot==10.1.0
 redis==2.10.6
+peewee-migrate
