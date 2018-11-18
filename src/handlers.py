@@ -112,9 +112,10 @@ def on_menu(bot, update, user_data=None):
                     return enums.BOT_STATE_INIT
             elif data == 'menu_order':
                 if cart.is_full(user_data):
-                    # we are not using enter_state_... here because it relies
-                    #  on update.message
-                    unfinished_orders = Order.select().where(Order.user == user & Order.delivered == False)
+                    unfinished_orders = Order.select().where(Order.user == user, Order.delivered == False)
+                    print('debug id', user.id)
+                    for order in unfinished_orders:
+                        print(order.user, order.delivered)
                     if len(unfinished_orders):
                         msg = _('You cannot make new order if previous order is not finished')
                         query.answer(msg)

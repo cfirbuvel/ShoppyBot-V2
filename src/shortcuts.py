@@ -1,4 +1,4 @@
-from telegram import ParseMode, TelegramError
+from telegram import ParseMode, TelegramError, InputMediaPhoto
 import io
 import datetime
 import operator
@@ -145,22 +145,33 @@ def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=N
 
 
 def send_order_idenification_answers(bot, chat_id, order):
-    msg_ids = []
+    answers = []
+    photos_answers = []
+    photos = []
     for answer in order.identification_answers:
         type = answer.stage.type
         content = answer.content
         question = answer.question.content
         if type == 'photo':
-            msg = bot.send_photo(chat_id, content, caption=question)
+            content = InputMediaPhoto(content, question)
+            photos.append(content)
+            photos_answers.append(answer)
         else:
-            msg = '_{}:_\n' \
+            content = '_{}:_\n' \
                   '{}'.format(question, content)
-            msg = bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
+            answers.append((content, answer))
+    photo_msgs = bot.send_media_group(chat_id, photos)
+    msgs_ids = [msg['message_id'] for msg in photo_msgs]
+    for ph_id, answer in zip(msgs_ids, photos_answers):
+        answer.msg_id = ph_id
+        answer.save()
+    for content, answer in answers:
+        msg = bot.send_message(chat_id, content, parse_mode=ParseMode.MARKDOWN)
         sent_msg_id = msg['message_id']
         answer.msg_id = sent_msg_id
         answer.save()
-        msg_ids.append(str(sent_msg_id))
-    return msg_ids
+        msgs_ids.append(str(sent_msg_id))
+    return msgs_ids
 
 
 def send_product_info(bot, product, chat_id, trans):

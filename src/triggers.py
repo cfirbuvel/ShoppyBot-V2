@@ -542,20 +542,12 @@ def on_confirm_order(bot, update, user_data):
         order_id = order.id
         cart.fill_order(user_data, order)
 
-        order_data = OrderPhotos(order=order)
-        # if 'photo_id' in shipping_data:
-        #     order_data.photo_id = shipping_data['photo_id'] + '|'
-        # if 'stage2_id' in shipping_data:
-        #     order_data.stage2_id = shipping_data['stage2_id'] + '|'
-
         _ = get_channel_trans()
 
         customer_username = user.username
 
         text = create_service_notice(_, is_pickup, order_id, customer_username, product_info, shipping_data,
                                      total, delivery_min, delivery_cost, delivery_for_vip)
-        order_data.order_text = text
-        #print(user_data['order_identification']['answers'])
         for stage_id, q_id, answer in user_data['order_identification']['answers']:
             stage = IdentificationStage.get(id=stage_id)
             question = IdentificationQuestion.get(id=q_id)
@@ -566,11 +558,12 @@ def on_confirm_order(bot, update, user_data):
         service_channel = config.get_service_channel()
 
         shipping_location = shipping_data.get('location')
+        coordinates = None
         if shipping_location and 'latitude' in shipping_location:
-            order_data.coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
+            coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
         else:
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
-
+        order_data = OrderPhotos(order=order, coordinates=coordinates, order_text=text)
         shortcuts.bot_send_order_msg(bot, service_channel, txt, _, order_id, order_data)
         user_data['cart'] = {}
         user_data['shipping'] = {}
