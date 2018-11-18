@@ -734,7 +734,8 @@ def create_edit_identification_keyboard(trans, questions):
         btn = [
             InlineKeyboardButton(_('Question №{}').format(count), callback_data='edit|{}'.format(q_id)),
             InlineKeyboardButton(_('Vip: Active') if q_vip else _('Vip: Disabled'), callback_data='vip_toggle|{}'.format(q_id)),
-            InlineKeyboardButton(_('Active') if q_active else _('Disabled'), callback_data='toggle|{}'.format(q_id))
+            InlineKeyboardButton(_('Active') if q_active else _('Disabled'), callback_data='toggle|{}'.format(q_id)),
+            InlineKeyboardButton(_('Delete'), callback_data='delete|{}'.format(q_id))
         ]
         buttons.append(btn)
     buttons.append([InlineKeyboardButton(_('Add new question'), callback_data='add|')])

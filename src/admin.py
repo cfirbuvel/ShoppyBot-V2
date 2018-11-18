@@ -2143,13 +2143,16 @@ def on_admin_edit_identification_stages(bot, update, user_data):
                          reply_markup=create_bot_order_options_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_ORDER_OPTIONS
-    if action in ('toggle', 'vip_toggle'):
+    if action in ('toggle', 'vip_toggle', 'delete'):
         question = IdentificationStage.get(id=data)
         if action == 'toggle':
             question.active = not question.active
+            question.save()
         elif action == 'vip_toggle':
             question.vip_required = not question.vip_required
-        question.save()
+            question.save()
+        elif action == 'delete':
+            question.delete_instance()
         questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
         msg = _('👨 Edit identification process:')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
