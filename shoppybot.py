@@ -25,15 +25,18 @@ def fallback_query_handler(bot, update, user_data):
 def close_db_on_signal(signum, frame):
     close_db()
 
+def error_callback(bot, update, error):
+    raise error
+
 
 def main():
     courier_conversation_handler = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(triggers.on_courier_action_to_confirm,
-                                 pattern='^confirm_courier',
+                                 pattern='^confirm_courier', pass_user_data=True
                                  ),
-            CallbackQueryHandler(triggers.on_courier_ping_client,
-                                 pattern='^ping'),
+            CallbackQueryHandler(triggers.on_courier_ping_choice,
+                                 pattern='^ping', pass_user_data=True),
             CallbackQueryHandler(triggers.on_admin_drop_order, pattern='^admin_dropped'),
             CallbackQueryHandler(resend_responsibility_keyboard,
                                  pattern='^dropped',
@@ -42,17 +45,24 @@ def main():
         states={
             enums.COURIER_STATE_INIT: [
                 CallbackQueryHandler(triggers.on_courier_action_to_confirm,
-                                     pattern='^confirm_courier',
+                                     pattern='^confirm_courier', pass_user_data=True
                                      ),
-                CallbackQueryHandler(triggers.on_courier_ping_client,
-                                     pattern='^ping'),
+                CallbackQueryHandler(triggers.on_courier_ping_choice,
+                                     pattern='^ping', pass_user_data=True),
                 CallbackQueryHandler(triggers.on_admin_drop_order, pattern='^admin_dropped'),
                 CallbackQueryHandler(resend_responsibility_keyboard,
                                      pattern='^dropped',
                                      )
             ],
+            enums.COURIER_STATE_PING: [
+                CallbackQueryHandler(triggers.on_courier_ping_client, pass_user_data=True)
+            ],
+            enums.COURIER_STATE_PING_SOON: [
+                CallbackQueryHandler(triggers.on_courier_ping_client_soon, pass_user_data=True),
+                MessageHandler(Filters.text, triggers.on_courier_ping_client_soon, pass_user_data=True)
+            ],
             enums.COURIER_STATE_CONFIRM_ORDER: [
-                CallbackQueryHandler(triggers.on_courier_confirm_order,)
+                CallbackQueryHandler(triggers.on_courier_confirm_order, pass_user_data=True)
                                      #pattern='^confirm_order')
 
             ],
@@ -121,18 +131,21 @@ def main():
                 MessageHandler(Filters.contact | Filters.text,
                                triggers.on_phone_number_text, pass_user_data=True),
             ],
-            enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE1: [
-                CallbackQueryHandler(triggers.checkout_fallback_command_handler,
-                                     pass_user_data=True),
-                MessageHandler(Filters.all, triggers.on_shipping_identify_photo,
-                               pass_user_data=True),
+            enums.BOT_STATE_CHECKOUT_IDENTIFY: [
+                MessageHandler(Filters.text | Filters.photo, triggers.on_identify_general, pass_user_data=True)
             ],
-            enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE2: [
-                CallbackQueryHandler(triggers.checkout_fallback_command_handler,
-                                     pass_user_data=True),
-                MessageHandler(Filters.all, triggers.on_shipping_identify_stage2,
-                               pass_user_data=True),
-            ],
+            # enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE1: [
+            #     CallbackQueryHandler(triggers.checkout_fallback_command_handler,
+            #                          pass_user_data=True),
+            #     MessageHandler(Filters.all, triggers.on_shipping_identify_photo,
+            #                    pass_user_data=True),
+            # ],
+            # enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE2: [
+            #     CallbackQueryHandler(triggers.checkout_fallback_command_handler,
+            #                          pass_user_data=True),
+            #     MessageHandler(Filters.all, triggers.on_shipping_identify_stage2,
+            #                    pass_user_data=True),
+            # ],
             enums.BOT_STATE_ORDER_CONFIRMATION: [
                 CallbackQueryHandler(triggers.checkout_fallback_command_handler,
                                      pass_user_data=True),
@@ -153,8 +166,14 @@ def main():
             enums.BOT_STATE_MY_LAST_ORDER: [
                 CallbackQueryHandler(triggers.on_my_last_order, pass_user_data=True)
             ],
+            enums.BOT_STATE_MY_LAST_ORDER_CANCEL: [
+                CallbackQueryHandler(triggers.on_my_last_order_cancel, pass_user_data=True)
+            ],
             enums.BOT_STATE_MY_ORDER_SELECT:[
                 CallbackQueryHandler(triggers.on_my_order_select, pass_user_data=True)
+            ],
+            enums.PRODUCT_CATEGORIES: [
+                CallbackQueryHandler(triggers.on_product_categories, pass_user_data=True)
             ],
             #
             # admin states
@@ -167,8 +186,6 @@ def main():
             enums.ADMIN_STATISTICS_GENERAL: [
                 CallbackQueryHandler(triggers.on_calendar_change, pattern='^calendar', pass_user_data=True),
                 CallbackQueryHandler(triggers.on_statistics_general, pass_user_data=True),
-                #CallbackQueryHandler(on_calendar_change, pattern='^calendar', pass_user_data=True),
-                # CallbackQueryHandler(on_statistics_general, pass_user_data=True)
             ],
             enums.ADMIN_STATISTICS_COURIERS: [
                 CallbackQueryHandler(triggers.on_statistics_courier_select, pass_user_data=True)
@@ -197,23 +214,69 @@ def main():
             enums.ADMIN_COURIERS: [
                 CallbackQueryHandler(
                     triggers.on_admin_couriers, pattern='^bot_couriers')],
+            enums.ADMIN_COURIERS_SHOW: [
+                CallbackQueryHandler(admin.on_admin_show_courier, pass_user_data=True)
+            ],
             enums.ADMIN_COURIER_ADD: [
                 CallbackQueryHandler(admin.on_admin_add_courier, pass_user_data=True)
             ],
+            # enums.ADMIN_COURIER_ADD_ID: [
+            #     CallbackQueryHandler()
+            # ],
+            # enums.ADMIN_COURIER_ADD_USERNAME: [],
+            #
+            # enums.ADMIN_COURIER_ADD_SELECT: [
+            #     CallbackQueryHandler()
+            # ],
             enums.ADMIN_COURIER_DELETE: [
                 CallbackQueryHandler(admin.on_admin_delete_courier)
             ],
             enums.ADMIN_LOCATIONS: [
                 CallbackQueryHandler(
                     admin.on_admin_locations, pattern='^bot_locations')],
+            enums.ADMIN_ORDERS: [
+                CallbackQueryHandler(admin.on_admin_orders, pass_user_data=True)
+            ],
+            enums.ADMIN_ORDERS_PENDING_SELECT: [
+                CallbackQueryHandler(admin.on_admin_orders_pending_select, pass_user_data=True)
+            ],
+            enums.ADMIN_ORDERS_FINISHED_DATE: [
+                CallbackQueryHandler(triggers.on_calendar_change, pattern='^calendar', pass_user_data=True),
+                CallbackQueryHandler(admin.on_admin_orders_finished_date, pass_user_data=True)
+            ],
+            enums.ADMIN_ORDERS_FINISHED_SELECT: [
+                CallbackQueryHandler(admin.on_admin_orders_finished_select, pass_user_data=True)
+            ],
             enums.ADMIN_PRODUCTS: [
                 CallbackQueryHandler(admin.on_admin_products, pattern='^bot_products', pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCTS_SHOW: [
+                CallbackQueryHandler(admin.on_admin_show_product, pass_user_data=True)
             ],
             enums.ADMIN_PRODUCT_ADD: [
                 CallbackQueryHandler(admin.on_admin_product_add, pattern='^bot_product', pass_user_data=True)
             ],
             enums.ADMIN_PRODUCT_LAST_ADD: [
                 CallbackQueryHandler(admin.on_admin_product_last_select, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_EDIT_SELECT: [
+                CallbackQueryHandler(admin.on_admin_product_edit_select, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_EDIT: [
+                CallbackQueryHandler(admin.on_admin_product_edit, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_EDIT_TITLE: [
+                CallbackQueryHandler(admin.on_admin_product_edit_title, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_product_edit_title, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_EDIT_PRICES: [
+                CallbackQueryHandler(admin.on_admin_product_edit_prices, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_product_edit_prices, pass_user_data=True),
+            ],
+            enums.ADMIN_PRODUCT_EDIT_MEDIA: [
+                MessageHandler((Filters.text | Filters.photo), admin.on_admin_product_edit_media,
+                               pass_user_data=True),
+                CommandHandler('cancel', admin.on_admin_cancel),
             ],
             enums.ADMIN_WAREHOUSE_PRODUCT: [
                 CallbackQueryHandler(admin.on_admin_warehouse_products, pass_user_data=True)
@@ -232,8 +295,27 @@ def main():
                 CallbackQueryHandler(admin.on_admin_warehouse_courier_credits, pass_user_data=True),
                 MessageHandler(Filters.text, admin.on_admin_warehouse_courier_credits, pass_user_data=True)
             ],
+            enums.ADMIN_CATEGORIES: [
+                CallbackQueryHandler(admin.on_admin_categories, pass_user_data=True),
+            ],
+            enums.ADMIN_CATEGORY_ADD: [
+                CallbackQueryHandler(admin.on_admin_category_add, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_category_add, pass_user_data=True)
+            ],
+            enums.ADMIN_CATEGORY_PRODUCTS_SELECT: [
+                CallbackQueryHandler(admin.on_admin_category_products_select, pass_user_data=True)
+            ],
+            enums.ADMIN_CATEGORY_PRODUCTS_ADD: [
+                CallbackQueryHandler(admin.on_admin_category_products_add, pass_user_data=True)
+            ],
+            enums.ADMIN_CATEGORY_REMOVE_SELECT: [
+                CallbackQueryHandler(admin.on_admin_category_remove, pass_user_data=True)
+            ],
             enums.ADMIN_CHANNELS: [
                 CallbackQueryHandler(triggers.on_admin_channels, pattern='^bot_channels')
+            ],
+            enums.ADMIN_CHANNELS_LANGUAGE: [
+                CallbackQueryHandler(triggers.on_admin_channels_language)
             ],
             enums.ADMIN_CHANNELS_SELECT_TYPE: [
                 CallbackQueryHandler(
@@ -301,19 +383,26 @@ def main():
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
-            enums.ADMIN_EDIT_IDENTIFICATION: [
-                CallbackQueryHandler(
-                    admin.on_admin_edit_identification, pass_user_data=True),
-                MessageHandler(Filters.text, admin.on_admin_edit_identification,
-                               pass_user_data=True),
-                CommandHandler('cancel', admin.on_admin_cancel),
+            enums.ADMIN_EDIT_IDENTIFICATION_STAGES: [
+                CallbackQueryHandler(admin.on_admin_edit_identification_stages, pass_user_data=True)
+            ],
+            enums.ADMIN_EDIT_IDENTIFICATION_QUESTION_TYPE: [
+                CallbackQueryHandler(admin.on_admin_edit_identification_question_type, pass_user_data=True)
+            ],
+            enums.ADMIN_EDIT_IDENTIFICATION_QUESTION: [
+                CallbackQueryHandler(admin.on_admin_edit_identification_question, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_edit_identification_question, pass_user_data=True)
             ],
             enums.ADMIN_EDIT_RESTRICTION: [
                 CallbackQueryHandler(
                     admin.on_admin_edit_restriction, pass_user_data=True),
-                MessageHandler(Filters.text, admin.on_admin_edit_restriction,
-                               pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
+            ],
+            enums.ADMIN_DELIVERY_FEE: [
+                CallbackQueryHandler(admin.on_admin_delivery_fee)
+            ],
+            enums.ADMIN_DELIVERY_FEE_VIP: [
+                CallbackQueryHandler(admin.on_admin_delivery_fee_vip)
             ],
             enums.ADMIN_ADD_DELIVERY_FEE: [
                 CallbackQueryHandler(
@@ -366,17 +455,11 @@ def main():
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
             enums.ADMIN_TXT_PRODUCT_PHOTO: [
-                MessageHandler(Filters.photo, admin.on_admin_txt_product_photo,
+                # CallbackQueryHandler(admin.on_admin_txt_product_photo, pass_user_data=True),
+                MessageHandler((Filters.text | Filters.photo), admin.on_admin_txt_product_photo,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
-            # ADMIN_TXT_DELETE_PRODUCT: [
-            #     CallbackQueryHandler(
-            #         on_admin_txt_delete_product, pass_user_data=True),
-            #     MessageHandler(Filters.text, on_admin_txt_delete_product,
-            #                    pass_user_data=True),
-            #     CommandHandler('cancel', on_admin_cancel),
-            # ],
             enums.ADMIN_DELETE_PRODUCT: [
                 CallbackQueryHandler(admin.on_admin_delete_product, pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel)
@@ -466,6 +549,10 @@ def main():
     #                                pattern='^ping')
     #
     # updater.dispatcher.add_handler()
+    updater.dispatcher.add_handler((
+        CallbackQueryHandler(triggers.delete_message,
+                             pattern='delete_msg')
+    ))
     updater.dispatcher.add_error_handler(on_error)
     updater.start_polling()
     updater.idle()

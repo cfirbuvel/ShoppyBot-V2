@@ -1,4 +1,4 @@
-from telegram import ParseMode, TelegramError
+from telegram import ParseMode, TelegramError, InputMediaPhoto
 import io
 import datetime
 import operator
@@ -48,12 +48,15 @@ def make_confirm(bot, update, user_data):
 def make_unconfirm(bot, update, user_data):
     query = update.callback_query
     data = query.data
-    label, order_id, courier_name, photo_msg_id, assigned_msg_id = data.split('|')
+    label, order_id, courier_name, answers_ids, assigned_msg_id = data.split('|')
     bot.delete_message(config.get_service_channel(),
                        message_id=query.message.message_id)
     couriers_channel = config.get_couriers_channel()
-    bot.delete_message(couriers_channel,
-                       message_id=photo_msg_id)
+    for answer_id in answers_ids.split(','):
+        bot.delete_message(couriers_channel,
+                           message_id=answer_id)
+    # bot.delete_message(couriers_channel,
+    #                    message_id=photo_msg_id)
     bot.delete_message(couriers_channel,
                        message_id=assigned_msg_id)
     try:
@@ -71,18 +74,20 @@ def make_unconfirm(bot, update, user_data):
                          text='The admin did not confirm. Please retake '
                               'responsibility for order №{}'.format(order_id),
                          )
-        photo_msg_id = ''
-        if order_data.photo_id:
-            photo_id, msg_id = order_data.photo_id.split('|')
-            photo_msg = bot.send_photo(couriers_channel,
-                                       photo=photo_id,
-                                       caption=_('Stage 1 Identification - Selfie'),
-                                       parse_mode=ParseMode.MARKDOWN, )
-            photo_msg_id = photo_msg['message_id']
+        # photo_msg_id = ''
+        # if order_data.photo_id:
+        #     photo_id, msg_id = order_data.photo_id.split('|')
+        #     photo_msg = bot.send_photo(couriers_channel,
+        #                                photo=photo_id,
+        #                                caption=_('Stage 1 Identification - Selfie'),
+        #                                parse_mode=ParseMode.MARKDOWN, )
+        #     photo_msg_id = photo_msg['message_id']
+        answers_ids = send_order_idenification_answers(bot, couriers_channel, order)
+        answers_ids = ','.join(answers_ids)
 
         bot.send_message(chat_id=couriers_channel,
                          text=order_data.order_text,
-                         reply_markup=keyboards.create_service_notice_keyboard(order_id, _, photo_msg_id),
+                         reply_markup=keyboards.create_service_notice_keyboard(order_id, _, answers_ids),
                          parse_mode=ParseMode.HTML,
                          )
 
@@ -105,20 +110,22 @@ def resend_responsibility_keyboard(bot, update):
     _ = get_channel_trans()
     bot.delete_message(query.message.chat_id,
                        message_id=query.message.message_id)
-    order = OrderPhotos.get(order_id=order_id)
+    order_data = OrderPhotos.get(order_id=order_id)
     bot.send_message(chat_id=couriers_channel,
                      text='Order №{} was dropped by courier'.format(order_id))
-    photo_msg_id = ''
-    if order.photo_id:
-        photo_id, msg_id = order.photo_id.split('|')
-        photo_msg = bot.send_photo(couriers_channel,
-                       photo=photo_id,
-                       caption=_('Stage 1 Identification - Selfie'),
-                       parse_mode=ParseMode.MARKDOWN, )
-        photo_msg_id = photo_msg['message_id']
+    answers_ids = send_order_idenification_answers(bot, couriers_channel, order)
+    answers_ids = ','.join(answers_ids)
+    # photo_msg_id = ''
+    # if order.photo_id:
+    #     photo_id, msg_id = order.photo_id.split('|')
+    #     photo_msg = bot.send_photo(couriers_channel,
+    #                    photo=photo_id,
+    #                    caption=_('Stage 1 Identification - Selfie'),
+    #                    parse_mode=ParseMode.MARKDOWN, )
+    #     photo_msg_id = photo_msg['message_id']
     bot.send_message(chat_id=couriers_channel,
-                     text=order.order_text,
-                     reply_markup=keyboards.create_service_notice_keyboard(order_id, _, photo_msg_id),
+                     text=order_data.order_text,
+                     reply_markup=keyboards.create_service_notice_keyboard(order_id, _, answers_ids),
                      parse_mode=ParseMode.HTML,
                      )
 
@@ -126,7 +133,8 @@ def resend_responsibility_keyboard(bot, update):
 
 def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=None):
     if not order_data:
-        order_data = OrderPhotos.get(order_id=order_id)
+        order = Order.get(id=order_id)
+        order_data = OrderPhotos.get(order=order)
     _ = trans_func
     order_msg = bot.send_message(chat_id,
                          text=message,
@@ -136,22 +144,53 @@ def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=N
     order_data.save()
 
 
+def send_order_idenification_answers(bot, chat_id, order):
+    answers = []
+    photos_answers = []
+    photos = []
+    for answer in order.identification_answers:
+        type = answer.stage.type
+        content = answer.content
+        question = answer.question.content
+        if type == 'photo':
+            content = InputMediaPhoto(content, question)
+            photos.append(content)
+            photos_answers.append(answer)
+        else:
+            content = '_{}:_\n' \
+                  '{}'.format(question, content)
+            answers.append((content, answer))
+    photo_msgs = bot.send_media_group(chat_id, photos)
+    msgs_ids = [msg['message_id'] for msg in photo_msgs]
+    for ph_id, answer in zip(msgs_ids, photos_answers):
+        answer.msg_id = ph_id
+        answer.save()
+    for content, answer in answers:
+        msg = bot.send_message(chat_id, content, parse_mode=ParseMode.MARKDOWN)
+        sent_msg_id = msg['message_id']
+        answer.msg_id = sent_msg_id
+        answer.save()
+        msgs_ids.append(str(sent_msg_id))
+    return msgs_ids
+
+
 def send_product_info(bot, product, chat_id, trans):
     product_prices = ((obj.count, obj.price) for obj in product.product_counts)
-    image_data = product.image
-    image_stream = io.BytesIO(image_data)
-    bot.send_photo(chat_id,
-                   photo=image_stream)
+    send_product_media(bot, product, chat_id)
     msg = messages.create_admin_product_description(trans, product.title, product_prices)
     bot.send_message(chat_id,
                      text=msg)
+
+
+
+
 
 def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query_id=None):
     _ = trans
     current_date = datetime.date.today()
     year, month = current_date.year, current_date.month
-    if not 'calendar_date' in user_data:
-        user_data['calendar_date'] = year, month
+    #if not 'calendar_date' in user_data:
+    user_data['calendar_date'] = year, month
     user_data['calendar_state'] = state
     msg = _('Pick year, month or day')
     if query_id:
@@ -162,6 +201,7 @@ def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query
     else:
         bot.send_message(text=msg, chat_id=chat_id, reply_markup=keyboards.create_calendar_keyboard(year, month, _),
                          parse_mode=ParseMode.MARKDOWN)
+
 
 def get_order_subquery(action, val, month, year):
     val = int(val)
@@ -177,6 +217,7 @@ def get_order_subquery(action, val, month, year):
         query.append(Order.date_created.day == val)
     return query
 
+
 def get_order_count_and_price(*subqueries):
     orders_count = Order.select().where(*subqueries).count()
     total_price = 0
@@ -184,6 +225,7 @@ def get_order_count_and_price(*subqueries):
     for order_item in orders_items:
         total_price += order_item.count * order_item.total_price
     return orders_count, total_price
+
 
 def check_order_products_credits(order, trans, courier=None):
     msg = ''
@@ -225,6 +267,25 @@ def change_order_products_credits(order, add=False, courier=None):
             product.credits = op(product.credits, order_item.count)
             product.save()
 
+
+# def send_product_media(bot, product, chat_id):
+#     for media in product.product_media:
+#         with open(media.file_path, 'rb') as file:
+#             func = getattr(bot, 'send_{}'.format(media.type))
+#             stream = io.BytesIO(file.read())
+#             func(chat_id, stream)
+
+def send_product_media(bot, product, chat_id):
+    from telegram import InputMediaPhoto
+    media_list = []
+    for media in product.product_media:
+        file = InputMediaPhoto(media=media.file_id)
+        media_list.append(file)
+    bot.send_media_group(chat_id, media_list)
+        # with open(media.file_path, 'rb') as file:
+        #     func = getattr(bot, 'send_{}'.format(media.type))
+        #     stream = io.BytesIO(file.read())
+        #     func(chat_id, stream)
 # def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
 #     _ = trans
 #     # first_iter = True

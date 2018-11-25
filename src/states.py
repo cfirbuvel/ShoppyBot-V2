@@ -6,7 +6,7 @@ from .models import Location, User
 from .keyboards import create_main_keyboard, create_pickup_location_keyboard, \
     create_shipping_keyboard, create_cancel_keyboard, create_time_keyboard, \
     create_confirmation_keyboard, create_phone_number_request_keyboard, create_location_request_keyboard
-from .helpers import cart, config, session_client, get_user_session, get_user_id, get_trans
+from .helpers import cart, config, session_client, get_user_session, get_user_id, get_trans, is_vip_customer
 from .enums import BOT_STATE_CHECKOUT_SHIPPING, BOT_STATE_CHECKOUT_LOCATION_PICKUP, \
     BOT_STATE_CHECKOUT_LOCATION_DELIVERY, BOT_STATE_CHECKOUT_TIME, BOT_STATE_CHECKOUT_TIME_TEXT, \
     BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT, BOT_STATE_CHECKOUT_IDENTIFY_STAGE1, BOT_STATE_CHECKOUT_IDENTIFY_STAGE2, \
@@ -116,10 +116,12 @@ def enter_state_order_confirm(bot, update, user_data):
     total = cart.get_cart_total(user_data)
     delivery_cost = config.get_delivery_fee()
     delivery_min = config.get_delivery_min()
+    delivery_for_vip = config.get_delivery_fee_for_vip()
     product_info = cart.get_products_info(user_data)
+    user_data['shipping']['vip'] = is_vip_customer(bot, user_id)
     update.message.reply_text(
         text=create_confirmation_text(user_id,
-            is_pickup, shipping_data, total, delivery_min, delivery_cost, product_info),
+            is_pickup, shipping_data, total, delivery_min, delivery_cost, delivery_for_vip, product_info),
         reply_markup=create_confirmation_keyboard(_),
         parse_mode=ParseMode.HTML,
     )
