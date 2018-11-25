@@ -742,7 +742,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 couriers_channel = config.get_couriers_channel()
                 order_data = OrderPhotos.get(order_id=order_id)
                 answers_ids = shortcuts.send_order_idenification_answers(bot, couriers_channel, order)
-                answers_ids = ','.join(answers_ids)
+                # answers_ids = ','.join(answers_ids)
             # photo_msg_id = ''
             # if order_data.photo_id:
             #     photo_id, msg_id = order_data.photo_id.split('|')
