@@ -554,7 +554,7 @@ def on_confirm_order(bot, update, user_data):
             OrderIdentificationAnswer.create(stage=stage, question=question, order=order, content=answer)
 
         # ORDER CONFIRMED, send the details to service channel
-        txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
+        txt = _('Order confirmed from\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
         shipping_location = shipping_data.get('location')
