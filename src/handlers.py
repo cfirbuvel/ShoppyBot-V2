@@ -13,7 +13,6 @@ from . import enums
 from .states import is_admin
 from . import shortcuts
 
-
 def on_start(bot, update, user_data):
     user_id = get_user_id(update)
     username = get_username(update)
