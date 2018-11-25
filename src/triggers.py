@@ -554,7 +554,7 @@ def on_confirm_order(bot, update, user_data):
             OrderIdentificationAnswer.create(stage=stage, question=question, order=order, content=answer)
 
         # ORDER CONFIRMED, send the details to service channel
-        txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
+        txt = _('Order confirmed from\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
         shipping_location = shipping_data.get('location')
@@ -899,8 +899,8 @@ def service_channel_courier_query_handler(bot, update, user_data):
                 assigned_msg_id = assigned_msg['message_id']
                 bot.send_message(
                     config.get_service_channel(),
-                    text='Courier: {}, apply for order №{}. '
-                         'Confirm this?'.format(
+                    text=_('Courier: @{}, apply for order №{}.\n'
+                           'Confirm this?').format(
                         courier_nickname, order_id),
                     reply_markup=create_courier_confirmation_keyboard(order_id, courier_nickname, _,
                                                                       answers_ids, assigned_msg_id)
@@ -1613,7 +1613,6 @@ def on_courier_ping_client_soon(bot, update, user_data):
         msg = _('Courier will arrive in {} minutes.').format(time)
         bot.send_message(chat_id=user_id,
                          text=msg)
-        order.client_notified = True
         order.save()
         bot.send_message(chat_id, courier_msg, reply_markup=keyboard)
         del user_data['courier_ping_order_id']
@@ -1636,11 +1635,11 @@ def on_courier_confirm_order(bot, update, user_data):
         order = Order.get(id=order_id)
         order.delivered = True
         order.save()
-        courier_msg = _('Order №{} is completed!'.format(order_id))
+        courier_msg = _('Order №{} is completed!').format(order_id)
         _ = get_channel_trans()
         try:
             courier = Courier.get(telegram_id=user_id)
-            msg = _('Order №{} was delivered by courier {}\n').format(order.id, courier.username)
+            msg = _('Order №{} was delivered by courier @{}\n').format(order.id, courier.username)
         except Courier.DoesNotExist:
             user = User.get(telegram_id=user_id)
             msg = _('Order №{} was delivered by admin {}\n').format(order.id, user.username)
@@ -1649,7 +1648,8 @@ def on_courier_confirm_order(bot, update, user_data):
         bot.delete_message(chat_id, delete_msg_id)
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
-                              text=courier_msg)
+                              text=courier_msg,
+                              parse_mode=ParseMode.MARKDOWN)
         service_channel = config.get_service_channel()
         # _ = get_channel_trans()
         # service_msg = _('Order №{} was delivered by courier {}\n'

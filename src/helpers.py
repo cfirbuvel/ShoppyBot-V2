@@ -397,7 +397,8 @@ def calculate_discount_total(discount, total):
     if discount.endswith('%'):
         discount = discount.replace('%', '').strip()
         discount = round(total / 100 * int(discount))
-    return total - int(discount)
+        total = total - int(discount)
+    return total
 
 
 def is_vip_customer(bot, user_id):

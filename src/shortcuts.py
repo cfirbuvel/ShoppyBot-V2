@@ -129,7 +129,7 @@ def resend_responsibility_keyboard(bot, update):
                      parse_mode=ParseMode.HTML,
                      )
 
-    query.answer(text='Order sent to couriers channel', show_alert=True)
+    query.answer(text=_('Order sent to couriers channel'), show_alert=True)
 
 def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=None):
     if not order_data:
@@ -246,7 +246,7 @@ def check_order_products_credits(order, trans, courier=None):
                 msg += _('Product: `{}`, Count: {}, Courier credits: {}\n').format(product.title, order_item.count, warehouse_count)
             else:
                 if first_msg:
-                    msg += 'There are not enough credits in warehouse to deliver products:\n'
+                    msg += _('There are not enough credits in warehouse to deliver products:\n')
                     first_msg = False
                 msg += _('Product: `{}`, Count: {}, Warehouse credits: {}\n').format(product.title, order_item.count, warehouse_count)
     return msg

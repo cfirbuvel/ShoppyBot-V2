@@ -171,7 +171,7 @@ def create_main_keyboard(trans, review_channel, user, is_admin=None, total_price
                               callback_data='menu_products')],
         [InlineKeyboardButton(_('🛍 Checkout').format(total_price),
                               callback_data='menu_order')],
-        [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
+        # [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
         [InlineKeyboardButton(_('⏰ Working hours'),
                               callback_data='menu_hours')],
         [InlineKeyboardButton(_('☎ Contact info'),
@@ -267,7 +267,7 @@ def create_statistics_keyboard(trans):
     _ = trans
     main_button_list = [
         [InlineKeyboardButton(_('💵 General statistics'), callback_data='statistics_general')],
-        [InlineKeyboardButton(_('🛵 Get statistics by different couriers'), callback_data='statistics_couriers')],
+        [InlineKeyboardButton(_('🚕 Get statistics by different couriers'), callback_data='statistics_couriers')],
         [InlineKeyboardButton(_('🏠 Get statistics by locations'), callback_data='statistics_locations')],
         [InlineKeyboardButton(_('🌝 Get statistics by user'), callback_data='statistics_user')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='statistics_back')]
@@ -338,7 +338,7 @@ def create_bot_settings_keyboard(trans):
 def create_bot_couriers_keyboard(trans):
     _ = trans
     main_button_list = [
-        [InlineKeyboardButton(_('🛵 View couriers'),
+        [InlineKeyboardButton(_('🚕 View couriers'),
                               callback_data='bot_couriers_view')],
         [InlineKeyboardButton(_('➕ Add couriers'),
                               callback_data='bot_couriers_add')],
@@ -447,11 +447,11 @@ def create_bot_order_options_keyboard(trans):
         [InlineKeyboardButton(_('🚕 Delivery fee'), callback_data='bot_order_options_delivery_fee')],
         # [InlineKeyboardButton(_('🚕 Add delivery fee'),
         #                       callback_data='bot_order_options_delivery_fee')],
-        [InlineKeyboardButton(_('🎯 locations'),
+        [InlineKeyboardButton(_('🎯 Locations'),
                               callback_data='bot_order_options_add_locations')],
-        [InlineKeyboardButton(_('👨‍ Edit identify process'),
+        [InlineKeyboardButton(_('👨 Edit identification process'),
                               callback_data='bot_order_options_identify')],
-        [InlineKeyboardButton(_('🔥 Edit Restricted area'),
+        [InlineKeyboardButton(_('🔥 Edit restricted area'),
                               callback_data='bot_order_options_restricted')],
         [InlineKeyboardButton(_('✉ Edit Welcome message'),
                               callback_data='bot_order_options_welcome')],
@@ -755,13 +755,13 @@ def create_edit_identification_type_keyboard(trans):
 
 def create_edit_restriction_keyboard(trans, values):
     _ = trans
-    first, second = (_('Enabled') if val else _('Disabled') for val in values)
+    first, second = (_('Enabled ✅') if val else _('Disabled ❌') for val in values)
     first_text = _('Only for customers option: {}').format(first)
     second_text = _('Vip customers option: {}').format(second)
     buttons = [
         [InlineKeyboardButton(first_text, callback_data='first')],
         [InlineKeyboardButton(second_text, callback_data='second')],
-        [InlineKeyboardButton(_('Save'), callback_data='save')]
+        [InlineKeyboardButton(_('Save Changes'), callback_data='save')]
     ]
     return InlineKeyboardMarkup(buttons)
 
