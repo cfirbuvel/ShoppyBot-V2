@@ -437,6 +437,7 @@ def on_identify_general(bot, update, user_data):
     stages_left = IdentificationStage.select().where(IdentificationStage.active == True & IdentificationStage.id.not_in(passed_stages_ids))
     if is_vip_customer(bot, user_id):
         stages_left = stages_left.filter(vip_required=True)
+        user_data['shipping']['vip'] = True
     session_client.json_set(user_id, user_data)
     if stages_left:
         next_stage = stages_left[0]
