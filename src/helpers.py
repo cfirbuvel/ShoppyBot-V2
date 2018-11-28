@@ -391,13 +391,19 @@ def parse_discount(discount_str):
         else:
             # if discount_num > 0 and discount_min > 0:
             return discount, discount_min
+    else:
+        try:
+            int(discount_str)
+        except ValueError:
+            return
+        return discount_str, 0
 
 
 def calculate_discount_total(discount, total):
     if discount.endswith('%'):
         discount = discount.replace('%', '').strip()
         discount = round(total / 100 * int(discount))
-    return total - int(discount)
+    return int(discount)
 
 
 def is_vip_customer(bot, user_id):

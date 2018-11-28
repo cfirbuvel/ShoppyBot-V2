@@ -649,7 +649,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
         # service_channel = config.get_service_channel()
         _ = get_channel_trans()
         order = Order.get(id=order_id)
-        shortcuts.send_order_idenification_answers(bot, chat_id, order)
+        shortcuts.send_order_identification_answers(bot, chat_id, order)
         # media = []
         # if order.photo_id:
         #     order.photo_id, msg = order.photo_id.split('|')
@@ -741,7 +741,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
             else:
                 couriers_channel = config.get_couriers_channel()
                 order_data = OrderPhotos.get(order_id=order_id)
-                answers_ids = shortcuts.send_order_idenification_answers(bot, couriers_channel, order)
+                answers_ids = shortcuts.send_order_identification_answers(bot, couriers_channel, order, send_one=True)
                 answers_ids = ','.join(answers_ids)
             # photo_msg_id = ''
             # if order_data.photo_id:

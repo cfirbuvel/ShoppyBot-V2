@@ -82,7 +82,7 @@ def make_unconfirm(bot, update, user_data):
         #                                caption=_('Stage 1 Identification - Selfie'),
         #                                parse_mode=ParseMode.MARKDOWN, )
         #     photo_msg_id = photo_msg['message_id']
-        answers_ids = send_order_idenification_answers(bot, couriers_channel, order)
+        answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
         answers_ids = ','.join(answers_ids)
 
         bot.send_message(chat_id=couriers_channel,
@@ -113,7 +113,7 @@ def resend_responsibility_keyboard(bot, update):
     order_data = OrderPhotos.get(order_id=order_id)
     bot.send_message(chat_id=couriers_channel,
                      text='Order №{} was dropped by courier'.format(order_id))
-    answers_ids = send_order_idenification_answers(bot, couriers_channel, order)
+    answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
     answers_ids = ','.join(answers_ids)
     # photo_msg_id = ''
     # if order.photo_id:
@@ -144,7 +144,7 @@ def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=N
     order_data.save()
 
 
-def send_order_idenification_answers(bot, chat_id, order):
+def send_order_identification_answers(bot, chat_id, order, send_one=False):
     answers = []
     photos_answers = []
     photos = []
@@ -160,8 +160,13 @@ def send_order_idenification_answers(bot, chat_id, order):
             content = '_{}:_\n' \
                   '{}'.format(question, content)
             answers.append((content, answer))
-    photo_msgs = bot.send_media_group(chat_id, photos)
-    msgs_ids = [msg['message_id'] for msg in photo_msgs]
+        if send_one:
+            break
+    if photos:
+        photo_msgs = bot.send_media_group(chat_id, photos)
+        msgs_ids = [msg['message_id'] for msg in photo_msgs]
+    else:
+        msgs_ids = []
     for ph_id, answer in zip(msgs_ids, photos_answers):
         answer.msg_id = ph_id
         answer.save()

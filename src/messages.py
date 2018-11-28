@@ -68,25 +68,28 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
 
     is_vip = True if 'vip' in shipping_data else False
 
-
+    delivery_incl = False
     if total < delivery_min or delivery_min == 0:
         if not is_vip or delivery_for_vip:
             if not is_pickup:
+                delivery_incl = True
                 text += '\n\n'
                 text += _('Delivery Fee: {}$').format(delivery_cost)
 
     discount = config.get_discount()
     discount_min = config.get_discount_min()
     if is_vip:
-        if discount_min > 0 and total >= discount_min:
+        discount_num = calculate_discount_total(discount, total)
+        if discount_num and total >= discount_min:
             text += '\n\n'
             if not discount.endswith('%'):
                 discount_str = '{}$'.format(discount)
             else:
                 discount_str = discount
             text += _('Discount: {}').format(discount_str)
-            total = calculate_discount_total(discount, total)
-    total += delivery_cost
+            total = total - discount_num
+    if delivery_incl:
+        total += delivery_cost
     text += '\n\n'
     text += _('Total: ${}').format(total)
     return text
