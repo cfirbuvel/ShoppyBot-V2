@@ -66,7 +66,13 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
         text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
 
-    is_vip = True if 'vip' in shipping_data else False
+    if 'vip' in shipping_data:
+        if shipping_data['vip']:
+            is_vip = True
+        else:
+            is_vip = False
+    else:
+        is_vip = False
 
     delivery_incl = False
     if total < delivery_min or delivery_min == 0:
@@ -112,7 +118,14 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
         text += _('x {} = ${}').format(product_count, price)
         text += '\n'
 
-    is_vip = True if 'vip' in shipping_data else False
+    if 'vip' in shipping_data:
+        if shipping_data['vip']:
+            is_vip = True
+        else:
+            is_vip = False
+    else:
+        is_vip = False
+
     if total < delivery_min or delivery_min == 0:
         if not is_vip or delivery_for_vip:
             if not is_pickup:
