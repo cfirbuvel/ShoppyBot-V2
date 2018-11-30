@@ -317,8 +317,8 @@ msgid "❌Reset all data❌"
 msgstr "❌מחק נתונים❌"
 
 #: shoppybot.py:315
-msgid "🚕 View couriers"
-msgstr "🚕 השליחים שלי"
+msgid "🛵 View couriers"
+msgstr "🛵 השליחים שלי"
 
 #: shoppybot.py:316
 msgid "➕ Add couriers"
@@ -333,12 +333,28 @@ msgid "Select a courier to add"
 msgstr "בחר שליח להוספה"
 
 #: shoppybot.py:317
+msgid "Courier added"
+msgstr "שליח חדש נוסף"
+
+#: shoppybot.py:317
 msgid "Select a courier to delete"
 msgstr "בחר שליח למחיקה"
 
 #: shoppybot.py:317
 msgid "There's no couriers to add"
 msgstr "אין שליח חדש בקבוצת השליחים"
+
+#: shoppybot.py:318
+msgid "📖 Orders"
+msgstr "📖 ההזמנות שלי"
+
+#: shoppybot.py:318
+msgid "📦 Finished orders"
+msgstr "📦 הזמנות שהסתיימו"
+
+#: shoppybot.py:318
+msgid "🚚 Pending orders"
+msgstr "🚚 הזמנות ממתינות"
 
 #: shoppybot.py:318
 msgid "✉️ View channels"
@@ -355,6 +371,10 @@ msgstr "➖ מחק ערוץ"
 #: shoppybot.py:320
 msgid "🈚︎ Change channels language"
 msgstr "🈚︎ שנה שפת הקבוצות"
+
+#: shoppybot.py:320
+msgid "Select a product"
+msgstr "בחר מוצר"
 
 #: shoppybot.py:320
 msgid "➕️ Add new product"
@@ -453,6 +473,10 @@ msgid "➕ Add location"
 msgstr "➕ הוסף איזור"
 
 #: shoppybot.py:318
+msgid "Location added"
+msgstr "נוסף איזור"
+
+#: shoppybot.py:318
 msgid "Enter new location"
 msgstr "הכנס איזור פעילות חדש"
 
@@ -523,6 +547,14 @@ msgstr "✅ בוט פעיל"
 #: shoppybot.py:318
 msgid "BOT OFF"
 msgstr "⛔️ בוט סגור"
+
+#: shoppybot.py:318
+msgid "ON"
+msgstr "✅ פעיל"
+
+#: shoppybot.py:318
+msgid "OFF"
+msgstr "⛔️ סגור"
 
 #: shoppybot.py:318
 msgid "🛵 Send order to courier channel"
@@ -707,10 +739,6 @@ msgstr "ההזמנה בוטלה"
 #: shoppybot.py:768
 msgid "Order confirmed from\n@{}\n"
 msgstr "התקבלה הזמנה חדשה מ\n@{}\n"
-
-#: shoppybot.py:768
-msgid "From {}\n\n"
-msgstr "מאיזור {}\n\n"
 
 #: shoppybot.py:788
 msgid "Stage 1 Identification - Selfie"
@@ -1000,14 +1028,6 @@ msgid "Activate delivery fee for vip customers"
 msgstr "הפעלת דמי משלוח ללקוחות VIP"
 
 #: admin.py:306
-msgid "ON"
-msgstr "בוט פעיל ✅"
-
-#: admin.py:306
-msgid "OFF"
-msgstr "בוט סגור ⛔️"
-
-#: admin.py:306
 msgid "Identification question was changed"
 msgstr "שאלת אימות שונתה בהצלחה"
 
@@ -1197,3 +1217,89 @@ msgstr "לקוח: @{}"
 #: admin.py:306
 msgid "Discount: {}"
 msgstr "הנחת VIP: {}"
+
+#: admin.py:306
+msgid "Select order"
+msgstr "בחר הזמנה"
+
+#: admin.py:306
+msgid "Order №{}"
+msgstr "הזמנה מס׳{}"
+
+#: admin.py:306
+msgid "Order №{} {}"
+msgstr "הזמנה מס׳{} {}"
+
+#: admin.py:306
+msgid "Order №{} was cancelled"
+msgstr "הזמנה מס׳{} בוטלה"
+
+#: admin.py:306
+msgid "Order was cancelled by user"
+msgstr "הזמנה בוטלה ע״י הלקוח"
+
+#: admin.py:306
+msgid "Order №{} was dropped by courier"
+msgstr "הזמנה מס׳{} בוטלה ע״י השליח"
+
+#: admin.py:306
+msgid "Please select an order\nBot will send it to service channel"
+msgstr "בחר הזמנה להצגה\nהבוט ישלח את ההזמנה לערוץ מנהלים"
+
+#: admin.py:306
+msgid "Order has been sent to service channel"
+msgstr "ההזמנה נשלחה לערוץ מנהלים"
+
+#: admin.py:306
+msgid "Add new question"
+msgstr "הוסף שאלת אימות חדשה"
+
+#: admin.py:306
+msgid "Question №{}"
+msgstr "שאלת אימות מס׳ {}"
+
+#: admin.py:196
+msgid ""
+"Enter new question or variants to choose randomly, e.g.:\n"
+"Send identification photo ✌️\n"
+"Send identification photo 🖖"
+msgstr ""
+"הכנס שאלת אימות רגילה או שאלה עם משתנים רנדומליים, לדוגמא:\n"
+"שלח סלפי עם הסימן ✌️\n"
+"שלח סלפי עם הסימן 🖖"
+
+#: admin.py:306
+msgid "Current questions:\n{}\n{}"
+msgstr "שאלה רנדומלית/רגילה נוכחית:\n{}\n{} "
+
+#: admin.py:306
+msgid "Vip: Active"
+msgstr "Vip: פעיל"
+
+#: admin.py:306
+msgid "Vip: Disabled"
+msgstr "Vip: כבוי"
+
+#: admin.py:306
+msgid "Active"
+msgstr "פעיל"
+
+#: admin.py:306
+msgid "Disabled"
+msgstr "כבוי"
+
+#: admin.py:306
+msgid "Delete"
+msgstr "מחק"
+
+#: admin.py:306
+msgid "Select type of identification question"
+msgstr "בחר סוג שאלת אימות"
+
+#: admin.py:306
+msgid "📝 Text"
+msgstr "📝 טקסט"
+
+#: admin.py:306
+msgid "🖼 Photo"
+msgstr "🖼 תמונה"

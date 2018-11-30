@@ -141,7 +141,7 @@ def on_admin_order_options(bot, update, user_data):
         return enums.ADMIN_LOCATIONS
     elif data == 'bot_order_options_identify':
         questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
-        msg = _('👨 Edit identification process:')
+        msg = _('👨 Edit identification process')
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
@@ -2154,7 +2154,7 @@ def on_admin_edit_identification_stages(bot, update, user_data):
         elif action == 'delete':
             question.delete_instance()
         questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
-        msg = _('👨 Edit identification process:')
+        msg = _('👨 Edit identification process')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
@@ -2176,7 +2176,7 @@ def on_admin_edit_identification_question_type(bot, update, user_data):
     action = query.data
     if action == 'back':
         questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
-        msg = _('👨 Edit identification process:')
+        msg = _('👨 Edit identification process')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
@@ -2186,8 +2186,8 @@ def on_admin_edit_identification_question_type(bot, update, user_data):
         #user_data['admin_edit_identification']['type'] = action
         edit_options['type'] = action
         msg = _('Enter new question or variants to choose randomly, e.g.:\n'
-                '_Send identification photo_ ✌️\n'
-                '_Send identification photo_ 🖖')
+                'Send identification photo ✌️\n'
+                'Send identification photo 🖖')
         if not edit_options['new']:
             questions = IdentificationStage.get(id=edit_options['id']).identification_questions
             q_msg = ''
