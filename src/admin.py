@@ -252,7 +252,6 @@ def on_admin_orders_pending_select(bot, update, user_data):
 
 
 def on_admin_orders_finished_date(bot, update, user_data):
-    print('invoked\n\n')
     query = update.callback_query
     user_id = get_user_id(update)
     _ = get_trans(user_id)
@@ -267,15 +266,13 @@ def on_admin_orders_finished_date(bot, update, user_data):
         query.answer()
         return enums.ADMIN_ORDERS
     elif action in ('day', 'month', 'year'):
-        print('if entered')
         year, month = user_data['calendar_date']
         queries = shortcuts.get_order_subquery(action, val, month, year)
         orders = Order.select().where(*queries)
-        orders = orders.select().where(Order.delivered == True)
+        orders = orders.select().where(Order.delivered == True, Order.canceled == False)
         orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
         orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
         user_data['admin_finished_orders'] = orders
-        print('before edit msg')
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
                               reply_markup=general_select_one_keyboard(_, orders),
                               parse_mode=ParseMode.MARKDOWN)

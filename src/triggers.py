@@ -184,6 +184,7 @@ def on_my_last_order_cancel(bot, update, user_data):
     order = Order.get(id=val)
     if action == 'yes':
         order.delivered = True
+        order.canceled = True
         order.save()
         service_chat = config.get_service_channel()
         channel_trans = get_channel_trans()
