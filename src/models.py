@@ -86,6 +86,7 @@ class Order(BaseModel):
     location = ForeignKeyField(Location, null=True)
     confirmed = BooleanField(default=False)
     delivered = BooleanField(default=False)
+    canceled = BooleanField(default=False)
     client_notified = BooleanField(default=False)
     date_created = DateTimeField(default=datetime.datetime.now)
 

@@ -117,7 +117,6 @@ def on_menu(bot, update, user_data=None):
             elif data == 'menu_order':
                 if cart.is_full(user_data):
                     unfinished_orders = Order.select().where(Order.user == user, Order.delivered == False)
-                    print('debug id', user.id)
                     for order in unfinished_orders:
                         print(order.user, order.delivered)
                     if len(unfinished_orders):
