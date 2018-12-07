@@ -469,6 +469,7 @@ def on_admin_category_products_select(bot, update, user_data):
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_CATEGORY_PRODUCTS_ADD
 
+
 def on_admin_category_remove(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
@@ -544,7 +545,12 @@ def on_admin_category_products_add(bot, update, user_data):
             selected = True
         else:
             selected = False
-        products.append((product.title, product.id, selected))
+        category = product.category
+        if category:
+            product_title = '{} ({})'.format(product.title, category.title)
+        else:
+            product_title = product.title
+        products.append((product_title, product.id, selected))
     products_keyboard = general_select_keyboard(_, products, current_page)
     msg = _('Please select products to add')
     bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
