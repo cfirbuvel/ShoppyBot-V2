@@ -1,4 +1,24 @@
-from .helpers import get_trans, calculate_discount_total, config
+from .helpers import get_trans, calculate_discount_total, config, cart
+
+
+def create_cart_details_msg(user_id, products_info):
+    _ = get_trans(user_id)
+    # products_info = cart.get_products_info(user_data)
+    msg = '▫️◾️◽️◼️◻️⬛️◻️◼️◽️◾️▫️'
+    msg += '\n'
+    msg += _('Products in cart:')
+    msg += '\n\n'
+    total = 0
+    for title, count, price in products_info:
+        msg += '{}:'.format(title)
+        msg += '\n'
+        msg += 'x {} = {}$'.format(count, price)
+        msg += '\n\n'
+        total += price
+    msg += _('Total: {}$').format(total)
+    msg += '\n\n'
+    msg += '▫️◾️◽️◼️◻️⬛️◻️◼️◽️◾️▫️'
+    return msg
 
 
 def create_product_description(user_id, product_title, product_prices, product_count,
@@ -47,6 +67,7 @@ def create_admin_product_description(trans, product_title, product_prices):
         text += _('x {} = ${}').format(q, price)
     text += '\n\n~~\n'
     return text
+
 
 def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_min, delivery_cost,
                              delivery_for_vip, product_info):

@@ -7,7 +7,7 @@ from .helpers import cart, config, session_client, get_user_session, get_user_id
     is_vip_customer, get_locale, get_trans
 from .keyboards import create_main_keyboard, create_admin_keyboard, create_product_keyboard, create_shipping_keyboard, \
     create_bot_language_keyboard, create_my_orders_keyboard, general_select_one_keyboard
-from .messages import create_product_description
+from .messages import create_product_description, create_cart_details_msg
 from .models import User, Product, ProductCategory, Order
 from . import enums
 from .states import is_admin
@@ -27,13 +27,18 @@ def on_start(bot, update, user_data):
     BOT_ON = config.get_bot_on_off() and username not in config.get_banned_users()
     if BOT_ON or is_admin(bot, user_id):
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
-            total = cart.get_cart_total(get_user_session(user_id))
+            user_data = get_user_session(user_id)
+            products_info = cart.get_products_info(user_data)
+            if products_info:
+                msg = create_cart_details_msg(user_id, products_info)
+            else:
+                msg = config.get_welcome_text().format(update.message.from_user.first_name)
+            total = cart.get_cart_total(user_data)
             enums.logger.info('Starting session for user %s, language: %s',
                         update.message.from_user.id,
                         update.message.from_user.language_code)
             update.message.reply_text(
-                text=config.get_welcome_text().format(
-                    update.message.from_user.first_name),
+                text=msg,
                 reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user,
                                                   is_admin(bot, user_id), total),
             )

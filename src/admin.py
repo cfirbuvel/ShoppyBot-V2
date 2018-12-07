@@ -458,7 +458,12 @@ def on_admin_category_products_select(bot, update, user_data):
         user_data['category_products_add'] = {'category_id': val, 'page': 1, 'products_ids': []}
         products = []
         for product in Product.filter(is_active=True):
-            products.append((product.title, product.id, False))
+            category = product.category
+            if category:
+                product_title = '{} ({})'.format(product.title, category.title)
+            else:
+                product_title = product.title
+            products.append((product_title, product.id, False))
         msg = _('Please select products to add')
         bot.edit_message_text(msg, chat_id, message_id, reply_markup=general_select_keyboard(_, products),
                               parse_mode=ParseMode.MARKDOWN)
