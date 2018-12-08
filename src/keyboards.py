@@ -756,7 +756,7 @@ def create_edit_identification_type_keyboard(trans):
 
 def create_edit_restriction_keyboard(trans, values):
     _ = trans
-    first, second = (_('Enabled') if val else _('Disabled') for val in values)
+    first, second = (_('Enabled ✅') if val else _('Disabled ❌') for val in values)
     first_text = _('Only for customers option: {}').format(first)
     second_text = _('Vip customers option: {}').format(second)
     buttons = [
