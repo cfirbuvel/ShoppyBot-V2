@@ -5,7 +5,7 @@ from telegram import ParseMode, InputMediaPhoto, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
 
 from .admin import is_admin
-from .messages import create_service_notice, create_product_description
+from .messages import create_service_notice, create_product_description, create_cart_details_msg
 from .helpers import cart, config, session_client, get_user_session, \
     get_user_id, get_username, is_vip_customer, set_config_session, get_locale, get_trans, get_config_session, \
     get_channel_trans
@@ -41,8 +41,14 @@ def on_my_orders(bot, update, user_data):
     if data == 'back':
         user = User.get(telegram_id=user_id)
         total = cart.get_cart_total(get_user_session(user_id))
+        user_data = get_user_session(user_id)
+        products_info = cart.get_products_info(user_data)
+        if products_info:
+            msg = create_cart_details_msg(user_id, products_info)
+        else:
+            msg = config.get_welcome_text().format(update.message.from_user.first_name)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-                              text=config.get_welcome_text().format(query.from_user.first_name),
+                              text=msg,
                               reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user, is_admin(bot, user_id), total),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.BOT_STATE_INIT
@@ -227,10 +233,15 @@ def on_bot_language_change(bot, update, user_data):
         user.locale = data
         user.save()
         _ = get_trans(user_id)
+        user_data = get_user_session(user_id)
+        products_info = cart.get_products_info(user_data)
+        if products_info:
+            msg = create_cart_details_msg(user_id, products_info)
+        else:
+            msg = config.get_welcome_text().format(update.message.from_user.first_name)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
-                              text=config.get_welcome_text().format(
-                                  query.message.chat.first_name),
+                              text=msg,
                               reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user,
                                                                 is_admin(bot, user_id)),
                               parse_mode=ParseMode.MARKDOWN)
@@ -955,10 +966,15 @@ def on_settings_menu(bot, update):
 
     elif data == 'settings_back':
         user = User.get(telegram_id=user_id)
+        user_data = get_user_session(user_id)
+        products_info = cart.get_products_info(user_data)
+        if products_info:
+            msg = create_cart_details_msg(user_id, products_info)
+        else:
+            msg = config.get_welcome_text().format(update.message.from_user.first_name)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
-                              text=config.get_welcome_text().format(
-                                  update.callback_query.from_user.first_name),
+                              text=msg,
                               reply_markup=create_main_keyboard(_,
                                                                 config.get_reviews_channel(),
                                                                 user,
@@ -1777,15 +1793,27 @@ def on_product_categories(bot, update, user_data):
                              timeout=20, )
         user = User.get(telegram_id=user_id)
         total = cart.get_cart_total(get_user_session(user_id))
+        user_data = get_user_session(user_id)
+        products_info = cart.get_products_info(user_data)
+        if products_info:
+            msg = create_cart_details_msg(user_id, products_info)
+        else:
+            msg = config.get_order_text()
         bot.send_message(chat_id,
-                         text=config.get_order_text(),
+                         text=msg,
                          reply_markup=create_main_keyboard(_,
                                                            config.get_reviews_channel(),
                                                            user,
                                                            is_admin(bot, user_id), total),
                          parse_mode=ParseMode.HTML)
     elif action == 'back':
-        bot.edit_message_text(config.get_order_text(), chat_id, message_id,
+        user_data = get_user_session(user_id)
+        products_info = cart.get_products_info(user_data)
+        if products_info:
+            msg = create_cart_details_msg(user_id, products_info)
+        else:
+            msg = config.get_order_text()
+        bot.edit_message_text(msg, chat_id, message_id,
                               reply_markup=create_main_keyboard(_,
                                                                 config.get_reviews_channel(),
                                                                 user,

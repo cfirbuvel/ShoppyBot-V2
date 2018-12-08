@@ -2152,7 +2152,8 @@ def on_admin_edit_identification_stages(bot, update, user_data):
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_ORDER_OPTIONS
     if action in ('toggle', 'vip_toggle', 'delete'):
-        question = IdentificationStage.get(id=data)
+        stage = IdentificationStage.get(id=data)
+        question = IdentificationQuestion.get(stage=stage)
         if action == 'toggle':
             question.active = not question.active
             question.save()
@@ -2160,7 +2161,8 @@ def on_admin_edit_identification_stages(bot, update, user_data):
             question.vip_required = not question.vip_required
             question.save()
         elif action == 'delete':
-            question.delete_instance()
+            question.delete_instance(recursive=True)
+            stage.delete_instance(recursive=True)
         questions = IdentificationStage.select(IdentificationStage.id, IdentificationStage.active, IdentificationStage.vip_required).tuples()
         msg = _('👨 Edit identification process')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),

@@ -228,7 +228,7 @@ def get_order_count_and_price(*subqueries):
     total_price = 0
     orders_items = OrderItem.select().join(Order).where(*subqueries)
     for order_item in orders_items:
-        total_price += order_item.count * order_item.total_price
+        total_price += order_item.count + order_item.total_price
     return orders_count, total_price
 
 

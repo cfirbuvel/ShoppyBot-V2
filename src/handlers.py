@@ -106,8 +106,14 @@ def on_menu(bot, update, user_data=None):
                                          timeout=20, )
                     user = User.get(telegram_id=user_id)
                     total = cart.get_cart_total(get_user_session(user_id))
+                    user_data = get_user_session(user_id)
+                    products_info = cart.get_products_info(user_data)
+                    if products_info:
+                        msg = create_cart_details_msg(user_id, products_info)
+                    else:
+                        msg = config.get_order_text()
                     bot.send_message(chat_id,
-                                     text=config.get_order_text(),
+                                     text=msg,
                                      reply_markup=create_main_keyboard(_,
                                                                        config.get_reviews_channel(),
                                                                        user,
