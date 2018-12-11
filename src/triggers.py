@@ -971,7 +971,7 @@ def on_settings_menu(bot, update):
         if products_info:
             msg = create_cart_details_msg(user_id, products_info)
         else:
-            msg = config.get_welcome_text().format(update.message.from_user.first_name)
+            msg = config.get_welcome_text().format(update.effective_user.first_name)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
@@ -1754,6 +1754,7 @@ def on_admin_drop_order(bot, update):
 def on_product_categories(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
+    user_data = get_user_session(user_id)
     _ = get_trans(user_id)
     chat_id, message_id = query.message.chat_id, query.message.message_id
     action, val = query.data.split('|')

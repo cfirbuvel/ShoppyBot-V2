@@ -490,7 +490,7 @@ def on_admin_category_remove(bot, update, user_data):
         if cat.title == 'Default' and cat_len > 1:
             msg = _('Cannot delete default category')
         else:
-            default = ProductCategory.get(title='Default')
+            default = ProductCategory.get(title=cat.title)
             if cat_len == 2:
                 default.delete_instance()
             else:

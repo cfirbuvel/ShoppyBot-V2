@@ -1303,3 +1303,7 @@ msgstr "📝 טקסט"
 #: admin.py:306
 msgid "🖼 Photo"
 msgstr "🖼 תמונה"
+
+#: admin.py:306
+msgid "Products in cart:"
+msgstr "מוצרים שהוספו לעגלת הקניות:"
