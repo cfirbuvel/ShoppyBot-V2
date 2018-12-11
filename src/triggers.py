@@ -382,7 +382,7 @@ def on_phone_number_text(bot, update, user_data):
             phone_number_text = update.message.contact.phone_number
         except AttributeError:
             phone_number_text = update.message.text
-            match = re.search(r'\+?\d{8,15}', phone_number_text)
+            match = re.search(r'(\+?\d{1,3})?\d{7,13}', phone_number_text)
             if not match:
                 error_msg = _('✒️ Please enter correct phone number')
                 bot.send_message(update.message.chat_id, error_msg)
