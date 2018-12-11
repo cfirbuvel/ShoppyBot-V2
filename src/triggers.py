@@ -1,5 +1,6 @@
 import datetime
 import random
+import re
 
 from telegram import ParseMode, InputMediaPhoto, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
@@ -381,6 +382,12 @@ def on_phone_number_text(bot, update, user_data):
             phone_number_text = update.message.contact.phone_number
         except AttributeError:
             phone_number_text = update.message.text
+            match = re.search(r'\+?\d{8,15}', phone_number_text)
+            if not match:
+                error_msg = _('✒️ Please enter correct phone number')
+                bot.send_message(update.message.chat_id, error_msg)
+                return enums.BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
+
         user_data['shipping']['phone_number'] = phone_number_text
         session_client.json_set(user_id, user_data)
         user = User.get(telegram_id=user_id)
@@ -1800,13 +1807,15 @@ def on_product_categories(bot, update, user_data):
             msg = create_cart_details_msg(user_id, products_info)
         else:
             msg = config.get_order_text()
-        bot.send_message(chat_id,
+        main_msg = bot.send_message(chat_id,
                          text=msg,
                          reply_markup=create_main_keyboard(_,
                                                            config.get_reviews_channel(),
                                                            user,
                                                            is_admin(bot, user_id), total),
                          parse_mode=ParseMode.HTML)
+        user_data['menu_id'] = main_msg['message_id']
+        session_client.json_set(user_id, user_data)
     elif action == 'back':
         user_data = get_user_session(user_id)
         products_info = cart.get_products_info(user_data)

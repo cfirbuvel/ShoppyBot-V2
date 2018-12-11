@@ -105,20 +105,21 @@ def on_menu(bot, update, user_data=None):
                                          parse_mode=ParseMode.HTML,
                                          timeout=20, )
                     user = User.get(telegram_id=user_id)
-                    total = cart.get_cart_total(get_user_session(user_id))
-                    user_data = get_user_session(user_id)
+                    total = cart.get_cart_total(user_data)
                     products_info = cart.get_products_info(user_data)
                     if products_info:
                         msg = create_cart_details_msg(user_id, products_info)
                     else:
                         msg = config.get_order_text()
-                    bot.send_message(chat_id,
+                    main_msg = bot.send_message(chat_id,
                                      text=msg,
                                      reply_markup=create_main_keyboard(_,
                                                                        config.get_reviews_channel(),
                                                                        user,
                                                                        is_admin(bot, user_id), total),
                                      parse_mode=ParseMode.HTML)
+                    user_data['menu_id'] = main_msg['message_id']
+                    session_client.json_set(user_id, user_data)
                     return enums.BOT_STATE_INIT
             elif data == 'menu_order':
                 if cart.is_full(user_data):
@@ -182,7 +183,8 @@ def on_menu(bot, update, user_data=None):
                 product_title, prices = cart.product_full_info(
                     user_data, product_id)
                 product_count = cart.get_product_count(user_data, product_id)
-
+                products_info = cart.get_products_info(user_data)
+                msg = create_cart_details_msg(user_id, products_info)
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=create_product_description(
@@ -193,6 +195,13 @@ def on_menu(bot, update, user_data=None):
                                       reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
                                       parse_mode=ParseMode.HTML, )
+                bot.edit_message_text(chat_id=query.message.chat_id,
+                                      message_id=user_data['menu_id'],
+                                      text=msg,
+                                      reply_markup=create_main_keyboard(_,
+                                                                       config.get_reviews_channel(),
+                                                                       user,
+                                                                       is_admin(bot, user_id), total))
             elif data.startswith('product_remove'):
                 product_id = int(data.split('|')[1])
                 user_data = cart.remove(user_data, product_id)
@@ -204,7 +213,11 @@ def on_menu(bot, update, user_data=None):
                 product_title, prices = cart.product_full_info(
                     user_data, product_id)
                 product_count = cart.get_product_count(user_data, product_id)
-
+                products_info = cart.get_products_info(user_data)
+                if products_info:
+                    msg = create_cart_details_msg(user_id, products_info)
+                else:
+                    msg = config.get_order_text()
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
                                       text=create_product_description(
@@ -215,6 +228,13 @@ def on_menu(bot, update, user_data=None):
                                       reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
                                       parse_mode=ParseMode.HTML, )
+                bot.edit_message_text(chat_id=query.message.chat_id,
+                                      message_id=user_data['menu_id'],
+                                      text=msg,
+                                      reply_markup=create_main_keyboard(_,
+                                                                        config.get_reviews_channel(),
+                                                                        user,
+                                                                        is_admin(bot, user_id), total))
             elif data == 'menu_settings':
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=query.message.message_id,
