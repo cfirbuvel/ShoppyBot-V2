@@ -1776,7 +1776,7 @@ def on_product_categories(bot, update, user_data):
     total = cart.get_cart_total(get_user_session(user_id))
     if action == 'select':
         cat = ProductCategory.get(id=val)
-        msg = _('{} products:').format(cat.title)
+        msg = _('Category `{}` products:').format(cat.title)
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN)
         # send_products to current chat
         for product in Product.filter(category=cat, is_active=True):
@@ -1797,7 +1797,7 @@ def on_product_categories(bot, update, user_data):
                                  delivery_min, delivery_fee),
                              reply_markup=create_product_keyboard(_,
                                                                   product.id, user_data, cart),
-                             parse_mode=ParseMode.HTML,
+                             parse_mode=ParseMode.MARKDOWN,
                              timeout=20, )
         user = User.get(telegram_id=user_id)
         total = cart.get_cart_total(get_user_session(user_id))

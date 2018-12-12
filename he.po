@@ -1307,3 +1307,7 @@ msgstr "🖼 תמונה"
 #: admin.py:306
 msgid "Products in cart:"
 msgstr "מוצרים שהוספו לעגלת הקניות:"
+
+#: admin.py:306
+msgid "Category `{}` products:"
+msgstr "מוצרים מקטגורית `{}`:"

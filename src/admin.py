@@ -2155,11 +2155,11 @@ def on_admin_edit_identification_stages(bot, update, user_data):
         stage = IdentificationStage.get(id=data)
         question = IdentificationQuestion.get(stage=stage)
         if action == 'toggle':
-            question.active = not question.active
-            question.save()
+            stage.active = not stage.active
+            stage.save()
         elif action == 'vip_toggle':
-            question.vip_required = not question.vip_required
-            question.save()
+            stage.vip_required = not stage.vip_required
+            stage.save()
         elif action == 'delete':
             question.delete_instance(recursive=True)
             stage.delete_instance(recursive=True)
