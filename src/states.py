@@ -157,9 +157,9 @@ def enter_state_init_order_cancelled(bot, update, user_data):
     session_client.json_set(user_id, user_data)
     _ = get_trans(user_id)
     user = User.get(telegram_id=user_id)
-    update.message.reply_text(text=_('<b>Order cancelled</b>'),
+    update.message.reply_text(text=_('Order cancelled'),
                               reply_markup=ReplyKeyboardRemove(),
-                              parse_mode=ParseMode.HTML, )
+                              parse_mode=ParseMode.MARKDOWN, )
     # send menu again as a new message
     bot.send_message(update.message.chat_id,
                      text=config.get_welcome_text().format(

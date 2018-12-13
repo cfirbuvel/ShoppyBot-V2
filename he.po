@@ -184,6 +184,10 @@ msgstr "בחר זמן: "
 msgid "Phone number: "
 msgstr "מספר טלפון: "
 
+#: shoppybot.py:253
+msgid "✒️ Please enter correct phone number"
+msgstr "✒️ הכנס מספר טלפון תקין"
+
 #: shoppybot.py:285
 msgid "➕ Add more"
 msgstr "➕ הוסף/י פריט"
@@ -277,16 +281,20 @@ msgid "💫 Reset all data"
 msgstr "💫️ אפס נתונים"
 
 #: shoppybot.py:920
-msgid "Total confirmed orders\n\ncount: {}\ntotal cost: {}"
-msgstr "סה״כ מכירות כלליות:\n\nכמות: {}\nסה״כ מחיר: {}"
+msgid "Total confirmed orders\n\nCount: {}\nTotal cost: {}$"
+msgstr "סה״כ מכירות כלליות:\n\nכמות הזמנות: {}\nסה״כ מחיר: {}₪"
 
 #: shoppybot.py:920
-msgid "Courier: `@{}`\nOrders: {}, orders cost {}"
-msgstr "שליח: `@{}`\nהזמנות: {}, סה״כ מחיר {}"
+msgid "Courier: @{}\n\nOrders count: {}\nTotal cost: {}$"
+msgstr "שליח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪"
 
 #: shoppybot.py:920
-msgid "Location: {}\nOrders: {}, orders cost {}"
-msgstr "אזור: {}\nהזמנות: {}, סה״כ מחיר {}"
+msgid "Location: `{}`\n\nOrders count: {}\nTotal cost: {}"
+msgstr "איזור: `{}`\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪"
+
+#: shoppybot.py:920
+msgid "User: @{}\n\nOrders count: {}\nTotal cost: {}$"
+msgstr "לקוח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪"
 
 #: keyboards.py:192
 msgid "Orders: {}, orders cost {}"
@@ -339,6 +347,10 @@ msgstr "שליח חדש נוסף"
 #: shoppybot.py:317
 msgid "Select a courier to delete"
 msgstr "בחר שליח למחיקה"
+
+#: shoppybot.py:317
+msgid "Courier `{}` has been deleted"
+msgstr "השליח `{}` נמחק בהצלחה!"
 
 #: shoppybot.py:317
 msgid "There's no couriers to add"
@@ -481,8 +493,16 @@ msgid "Enter new location"
 msgstr "הכנס איזור פעילות חדש"
 
 #: shoppybot.py:318
+msgid "new location added"
+msgstr "איזור פעילות חדש נוצר בהצלחה!"
+
+#: shoppybot.py:318
 msgid "➖ Remove location"
 msgstr "➖ מחק איזור"
+
+#: shoppybot.py:318
+msgid "Location deleted"
+msgstr "איזור פעילות נמחק בהצלחה!"
 
 #: shoppybot.py:318
 msgid "Choose location to delete"
@@ -1311,3 +1331,31 @@ msgstr "מוצרים שהוספו לעגלת הקניות:"
 #: admin.py:306
 msgid "Category `{}` products:"
 msgstr "מוצרים מקטגורית `{}`:"
+
+#: admin.py:306
+msgid "Identification question has been changed"
+msgstr "שאלת אימות נערכה בהצלחה!"
+
+#: admin.py:306
+msgid "Identification question has been created"
+msgstr "שאלת האימות נוצרה בהצלחה!"
+
+#: admin.py:306
+msgid "Courier: {}"
+msgstr "שליח: @{}"
+
+#: admin.py:306
+msgid "Message sent"
+msgstr "ההודעה נשלחה!"
+
+#: admin.py:306
+msgid "Discount was changed"
+msgstr "הנחה עודכנה במערכת!"
+
+#: admin.py:306
+msgid "Delivery fee was changed"
+msgstr "דמי משלוח עודכנו במערכת!"
+
+#: admin.py:306
+msgid "Order sent to couriers channel"
+msgstr "ההזמנה נשלחה לערוץ השליחים"

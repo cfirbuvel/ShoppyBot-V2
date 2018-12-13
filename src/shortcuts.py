@@ -112,7 +112,7 @@ def resend_responsibility_keyboard(bot, update):
                        message_id=query.message.message_id)
     order_data = OrderPhotos.get(order_id=order_id)
     bot.send_message(chat_id=couriers_channel,
-                     text='Order №{} was dropped by courier'.format(order_id))
+                     text=_('Order №{} was dropped by courier').format(order_id))
     answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
     answers_ids = ','.join(answers_ids)
     # photo_msg_id = ''
@@ -228,7 +228,7 @@ def get_order_count_and_price(*subqueries):
     total_price = 0
     orders_items = OrderItem.select().join(Order).where(*subqueries)
     for order_item in orders_items:
-        total_price += order_item.count + order_item.total_price
+        total_price += order_item.total_price
     return orders_count, total_price
 
 

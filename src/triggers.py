@@ -103,7 +103,7 @@ def on_my_order_date(bot, update, user_data):
             return enums.BOT_STATE_MY_LAST_ORDER
         else:
             orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
-            orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
+            orders = [(_('Order №{} {}').format(order_id, order_date), order_id) for order_id, order_date in orders_data]
             user_data['my_orders_by_date'] = orders_data
             bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
                                   reply_markup=general_select_one_keyboard(_, orders),
@@ -123,7 +123,7 @@ def on_my_order_select(bot, update, user_data):
         return state
     elif action == 'page':
         current_page = int(val)
-        orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in user_data['my_orders_by_date']]
+        orders = [(_('Order №{} {}').format(order_id, order_date), order_id) for order_id, order_date in user_data['my_orders_by_date']]
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=_('Select order:'),
                               reply_markup=general_select_one_keyboard(_, orders, current_page),
@@ -655,43 +655,20 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
                      text=order_data.order_text,
                      reply_markup=create_courier_order_status_keyboard(_, order_id),
                      parse_mode=ParseMode.HTML)
-    query.answer(text='Message sent', show_alert=True)
+    query.answer(text=_('Message sent'), show_alert=True)
 
 
 def on_service_send_order_to_courier(bot, update, user_data):
     query = update.callback_query
     data = query.data
     label, order_id = data.split('|')
-    # _ = get_trans(user_id)
     chat_id, msg_id = query.message.chat_id, query.message.message_id
     if label == 'order_show':
         order_data = OrderPhotos.get(order_id=order_id)
-        # service_channel = config.get_service_channel()
         _ = get_channel_trans()
         order = Order.get(id=order_id)
         shortcuts.send_order_identification_answers(bot, chat_id, order)
-        # media = []
-        # if order.photo_id:
-        #     order.photo_id, msg = order.photo_id.split('|')
-        #     media.append(InputMediaPhoto(media=order.photo_id,
-        #                                  caption=_('Stage 1 Identification - Selfie')))
-        #
-        # if order.stage2_id:
-        #     order.stage2_id, msg = order.stage2_id.split('|')
-        #     media.append(InputMediaPhoto(media=order.stage2_id,
-        #                                  caption=_('Stage 2 Identification - FB')))
-        # if media:
-        #     messages = bot.send_media_group(service_channel,
-        #                                     media=media)
-        #     joined = []
-        #     for hash_id, message in zip([order.photo_id, order.stage2_id], messages):
-        #         joined.append('|'.join([hash_id, str(message['message_id'])]))
-        #     order.photo_id = joined[0]
-        #     try:
-        #         order.stage2_id = joined[1]
-        #     except IndexError:
-        #         pass
-            # order.save()
+
         if order_data.coordinates:
             lat, long, msg_id = order_data.coordinates.split('|')
             msg = bot.send_location(
@@ -700,7 +677,6 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 longitude=long,
             )
             order_data.coordinates = lat + '|' + long + '|' + str(msg['message_id'])
-            # order.save()
         bot.delete_message(chat_id, msg_id)
         order_msg = bot.send_message(
             chat_id=chat_id,
@@ -710,7 +686,6 @@ def on_service_send_order_to_courier(bot, update, user_data):
         order_data.order_text_msg_id = str(order_msg['message_id'])
         order_data.save()
     elif label == 'order_hide':
-        # service_channel = config.get_service_channel()
         _ = get_channel_trans()
         order_data = OrderPhotos.get(order_id=order_id)
         txt = order_data.order_hidden_text
@@ -725,14 +700,6 @@ def on_service_send_order_to_courier(bot, update, user_data):
             answer_msg_id = answer.msg_id
             if answer_msg_id:
                 bot.delete_message(chat_id, answer_msg_id)
-        # if order.photo_id:
-        #     ph_id, msg_id = order.photo_id.split('|')
-        #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
-        #                        message_id=msg_id, )
-        # if order.stage2_id:
-        #     st2_id, msg_id = order.stage2_id.split('|')
-        #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
-        #                        message_id=msg_id, )
 
         shortcuts.bot_send_order_msg(bot, update.callback_query.message.chat_id, txt, _, order_id, order)
 
@@ -762,22 +729,15 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 couriers_channel = config.get_couriers_channel()
                 order_data = OrderPhotos.get(order_id=order_id)
                 answers_ids = shortcuts.send_order_identification_answers(bot, couriers_channel, order, send_one=True)
-                answers_ids = ','.join(answers_ids)
-            # photo_msg_id = ''
-            # if order_data.photo_id:
-            #     photo_id, msg_id = order_data.photo_id.split('|')
-            #     photo_msg = bot.send_photo(couriers_channel,
-            #                    photo=photo_id,
-            #                    caption=_('Stage 1 Identification - Selfie'),
-            #                    parse_mode=ParseMode.MARKDOWN, )
-            #     photo_msg_id = photo_msg['message_id']
+                # answers_ids = ','.join(answers_ids)
+
                 bot.send_message(chat_id=couriers_channel,
                                  text=order_data.order_text,
                                  reply_markup=create_service_notice_keyboard(order_id, _, answers_ids),
                                  parse_mode=ParseMode.HTML,
                                  )
 
-                query.answer(text='Order sent to couriers channel', show_alert=True)
+                query.answer(text=_('Order sent to couriers channel'), show_alert=True)
         query.answer(text='You have disabled courier\'s option', show_alert=True)
     elif label == 'order_finished':
         order = Order.get(id=order_id)
@@ -822,7 +782,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
                          text=order_data.order_text,
                          reply_markup=create_admin_order_status_keyboard(_, order_id),
                          parse_mode=ParseMode.HTML)
-        query.answer(text='Message sent', show_alert=True)
+        query.answer(text=_('Message sent'), show_alert=True)
     elif label == 'order_ban_client':
         order = Order.get(id=order_id)
         usr = order.usr
@@ -1020,7 +980,7 @@ def on_statistics_general(bot, update, user_data):
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), *subquery)
-        message = _('Total confirmed orders\n\nCount: {}\nTotal cost: {}').format(
+        message = _('Total confirmed orders\n\nCount: {}\nTotal cost: {}$').format(
                 count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
                               reply_markup=create_statistics_keyboard(_),
@@ -1084,7 +1044,7 @@ def on_statistics_couriers(bot, update, user_data):
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), (Order.courier == courier), *subquery)
 
-        message = _('Courier: `@{}`\n\nOrders count: {}\nTotal cost: {}').format(courier.username, count, price)
+        message = _('Courier: @{}\n\nOrders count: {}\nTotal cost: {}$').format(courier.username, count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -1148,7 +1108,7 @@ def on_statistics_locations(bot, update, user_data):
         count, price = shortcuts.get_order_count_and_price((Order.confirmed == True),
                                                            Order.location == location, *subquery)
 
-        message = _('Location: `@{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
+        message = _('Location: `{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -1207,7 +1167,7 @@ def on_statistics_user(bot, update, user_data):
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         for user in users:
             count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), Order.user == user, *subquery)
-            message = _('User: `@{}`\n\nOrders count: {}\nTotal cost: {}\n\n').format(user.username, count, price)
+            message = _('User: @{}\n\nOrders count: {}\nTotal cost: {}$').format(user.username, count, price)
             text += message
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
                               reply_markup=create_statistics_keyboard(_),

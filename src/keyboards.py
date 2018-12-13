@@ -338,7 +338,7 @@ def create_bot_settings_keyboard(trans):
 def create_bot_couriers_keyboard(trans):
     _ = trans
     main_button_list = [
-        [InlineKeyboardButton(_('🚕 View couriers'),
+        [InlineKeyboardButton(_('🛵 View couriers'),
                               callback_data='bot_couriers_view')],
         [InlineKeyboardButton(_('➕ Add couriers'),
                               callback_data='bot_couriers_add')],
