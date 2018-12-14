@@ -47,7 +47,7 @@ def on_my_orders(bot, update, user_data):
         if products_info:
             msg = create_cart_details_msg(user_id, products_info)
         else:
-            msg = config.get_welcome_text().format(update.message.from_user.first_name)
+            msg = config.get_welcome_text().format(update.effective_user.first_name)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=msg,
                               reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user, is_admin(bot, user_id), total),
@@ -239,7 +239,7 @@ def on_bot_language_change(bot, update, user_data):
         if products_info:
             msg = create_cart_details_msg(user_id, products_info)
         else:
-            msg = config.get_welcome_text().format(update.message.from_user.first_name)
+            msg = config.get_welcome_text().format(update.effective_user.first_name)
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               text=msg,
@@ -729,7 +729,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 couriers_channel = config.get_couriers_channel()
                 order_data = OrderPhotos.get(order_id=order_id)
                 answers_ids = shortcuts.send_order_identification_answers(bot, couriers_channel, order, send_one=True)
-                # answers_ids = ','.join(answers_ids)
+                answers_ids = ','.join(answers_ids)
 
                 bot.send_message(chat_id=couriers_channel,
                                  text=order_data.order_text,
@@ -1378,8 +1378,8 @@ def on_admin_channels(bot, update):
         query.answer()
         return enums.ADMIN_BOT_SETTINGS
     elif data == 'bot_channels_view':
-        # msg = u'Reviews channel: {}'.format(config.get_reviews_channel())
-        msg = _('Service channel ID:\n`{}`\n\n').format(config.get_service_channel())
+        msg = _('Reviews channel:\n`{}`\n\n').format(config.get_reviews_channel())
+        msg += _('Service channel ID:\n`{}`\n\n').format(config.get_service_channel())
         msg += _('Customer channel:\n`@{}`\n\n').format(config.get_customers_channel())
         msg += _('Vip customer channel ID:\n`{}`\n\n').format(
             config.get_vip_customers_channel())
@@ -1393,7 +1393,8 @@ def on_admin_channels(bot, update):
         query.answer()
         return enums.ADMIN_CHANNELS
     elif data == 'bot_channels_add':
-        types = [_('Service Channel'), _('Customer Channel'), _('Vip Customer Channel'), _('Courier Channel')]
+        types = [_('Reviews Channel'), _('Service Channel'), _('Customer Channel'),
+                 _('Vip Customer Channel'), _('Courier Channel')]
         msg = ''
         for i, channel_type in enumerate(types, start=1):
             msg += '\n{} - {}'.format(i, channel_type)
@@ -1407,7 +1408,8 @@ def on_admin_channels(bot, update):
 
         return enums.ADMIN_CHANNELS_SELECT_TYPE
     elif data == 'bot_channels_remove':
-        types = [_('Service Channel'), _('Customer Channel'), _('Vip Customer Channel'), _('Couriers Channel')]
+        types = [_('Reviews Channel'), _('Service Channel'), _('Customer Channel'),
+                 _('Vip Customer Channel'), _('Couriers Channel')]
         msg = ''
         for i, channel_type in enumerate(types, start=1):
             msg += '\n{} - {}'.format(i, channel_type)

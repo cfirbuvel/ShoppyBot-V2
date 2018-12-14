@@ -171,7 +171,7 @@ def create_main_keyboard(trans, review_channel, user, is_admin=None, total_price
                               callback_data='menu_products')],
         [InlineKeyboardButton(_('🛍 Checkout').format(total_price),
                               callback_data='menu_order')],
-        # [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
+        [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
         [InlineKeyboardButton(_('⏰ Working hours'),
                               callback_data='menu_hours')],
         [InlineKeyboardButton(_('☎ Contact info'),

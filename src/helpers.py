@@ -56,7 +56,7 @@ class ConfigHelper:
         value = get_config_session().get('reviews_channel')
         if value is None:
             value = self.config.get(self.section, 'reviews_channel')
-        return value.strip()
+        return value
 
     def get_service_channel(self):
         value = get_config_session().get('service_channel')

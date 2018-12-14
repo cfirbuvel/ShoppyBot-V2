@@ -1853,7 +1853,7 @@ def on_admin_select_channel_type(bot, update, user_data):
         return enums.ADMIN_CHANNELS
 
     channel_type = int(update.message.text)
-    if channel_type in range(1, 5):
+    if channel_type in range(1, 6):
         user_data['add_channel'] = {}
         user_data['add_channel']['channel_type'] = channel_type - 1
         update.message.reply_text(

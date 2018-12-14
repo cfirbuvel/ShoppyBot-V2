@@ -31,7 +31,7 @@ def on_start(bot, update, user_data):
             if products_info:
                 msg = create_cart_details_msg(user_id, products_info)
             else:
-                msg = config.get_welcome_text().format(update.message.from_user.first_name)
+                msg = config.get_welcome_text().format(update.effective_user.first_name)
             total = cart.get_cart_total(user_data)
             enums.logger.info('Starting session for user %s, language: %s',
                         update.message.from_user.id,
