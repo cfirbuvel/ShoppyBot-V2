@@ -190,7 +190,7 @@ def on_my_last_order_cancel(bot, update, user_data):
     chat_id, msg_id = query.message.chat_id, query.message.message_id
     order = Order.get(id=val)
     if action == 'yes':
-        order.delivered = True
+        order.confirmed = True
         order.canceled = True
         order.save()
         service_chat = config.get_service_channel()
@@ -979,7 +979,7 @@ def on_statistics_general(bot, update, user_data):
     else:
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), *subquery)
+        count, price = shortcuts.get_order_count_and_price((Order.delivered == True), *subquery)
         message = _('Total confirmed orders\n\nCount: {}\nTotal cost: {}$').format(
                 count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
@@ -1042,7 +1042,7 @@ def on_statistics_couriers(bot, update, user_data):
         courier = Courier.get(id=courier_id)
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), (Order.courier == courier), *subquery)
+        count, price = shortcuts.get_order_count_and_price((Order.delivered == True), (Order.courier == courier), *subquery)
 
         message = _('Courier: @{}\n\nOrders count: {}\nTotal cost: {}$').format(courier.username, count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
@@ -1105,7 +1105,7 @@ def on_statistics_locations(bot, update, user_data):
         location = Location.get(id=location_id)
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price = shortcuts.get_order_count_and_price((Order.confirmed == True),
+        count, price = shortcuts.get_order_count_and_price((Order.delivered == True),
                                                            Order.location == location, *subquery)
 
         message = _('Location: `{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
@@ -1166,7 +1166,7 @@ def on_statistics_user(bot, update, user_data):
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         for user in users:
-            count, price = shortcuts.get_order_count_and_price((Order.confirmed == True), Order.user == user, *subquery)
+            count, price = shortcuts.get_order_count_and_price((Order.delivered == True), Order.user == user, *subquery)
             message = _('User: @{}\n\nOrders count: {}\nTotal cost: {}$').format(user.username, count, price)
             text += message
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
@@ -1605,9 +1605,6 @@ def on_courier_ping_client_soon(bot, update, user_data):
         del user_data['courier_ping_order_id']
         del user_data['courier_ping_admin']
         return enums.COURIER_STATE_INIT
-
-
-
 
 
 def on_courier_confirm_order(bot, update, user_data):
