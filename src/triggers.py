@@ -58,7 +58,8 @@ def on_my_orders(bot, update, user_data):
         shortcuts.initialize_calendar(bot, user_data, chat_id, message_id, state, _, query.id)
         return state
     elif data == 'last_order':
-        last_order = Order.select().order_by(Order.date_created.desc()).get()
+        user = User.get(telegram_id=user_id)
+        last_order = Order.select().where(Order.user == user).order_by(Order.date_created.desc()).get()
         msg = _('Order №{}').format(last_order.id)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
                               reply_markup=create_my_order_keyboard(last_order.id, not last_order.delivered, _),
@@ -91,6 +92,8 @@ def on_my_order_date(bot, update, user_data):
     elif action in ('day', 'month', 'year'):
         year, month = user_data['calendar_date']
         queries = shortcuts.get_order_subquery(action, val, month, year)
+        user = User.get(telegram_id=user_id)
+        queries.append(Order.user == user)
         orders = Order.select().where(*queries)
         if len(orders) == 1:
             order = orders[0]
