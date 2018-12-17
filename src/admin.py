@@ -206,11 +206,10 @@ def on_admin_orders(bot, update, user_data):
     if action == 'pending':
         orders = Order.select().where(Order.delivered == False)
         orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
-        orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
+        orders = [(_('Order №{} {}').format(order_id, order_date), order_id) for order_id, order_date in orders_data]
         user_data['admin_pending_orders'] = orders
         keyboard = general_select_one_keyboard(_, orders)
-        msg = _('Please select an order\n'
-                'Bot will send it to service channel:')
+        msg = _('Please select an order\nBot will send it to service channel')
         bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
                               reply_markup=keyboard)
         query.answer()
@@ -237,8 +236,7 @@ def on_admin_orders_pending_select(bot, update, user_data):
         #orders = Order.select().where(Order.delivered == False).tuples()
         orders = user_data['admin_pending_orders']
         keyboard = general_select_one_keyboard(_, orders, int(val))
-        msg = _('Please select an order\n'
-                'Bot will send it to service channel:')
+        msg = _('Please select an order\nBot will send it to service channel')
         bot.edit_message_text(msg, chat_id, message_id,
                               reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -271,7 +269,7 @@ def on_admin_orders_finished_date(bot, update, user_data):
         orders = Order.select().where(*queries)
         orders = orders.select().where(Order.delivered == True, Order.canceled == False)
         orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
-        orders = [('Order №{} {}'.format(order_id, order_date), order_id) for order_id, order_date in orders_data]
+        orders = [(_('Order №{} {}').format(order_id, order_date), order_id) for order_id, order_date in orders_data]
         user_data['admin_finished_orders'] = orders
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
                               reply_markup=general_select_one_keyboard(_, orders),
@@ -369,11 +367,6 @@ def on_admin_delivery_fee_vip(bot, update):
     query.answer()
     return enums.ADMIN_DELIVERY_FEE
 
-# bot.send_message(chat_id=update.message.chat_id,
-#                  text='Delivery fee was changed',
-#                  reply_markup=create_bot_order_options_keyboard(_),
-#                  parse_mode=ParseMode.MARKDOWN)
-# return enums.ADMIN_ORDER_OPTIONS
 
 def on_admin_categories(bot, update, user_data):
     query = update.callback_query
@@ -428,7 +421,7 @@ def on_admin_category_add(bot, update, user_data):
                 product.save()
         cat = ProductCategory.create(title=answer)
         msg = _('Category `{}` has been created').format(cat.title)
-    bot.send_message(update.message.chat_id, msg, parse_mode=ParseMode.HTML, reply_markup=create_categories_keyboard(_))
+    bot.send_message(update.message.chat_id, msg, parse_mode=ParseMode.MARKDOWN, reply_markup=create_categories_keyboard(_))
     return enums.ADMIN_CATEGORIES
 
 
@@ -498,7 +491,7 @@ def on_admin_category_remove(bot, update, user_data):
                     product.category = default
                     product.save()
             cat.delete_instance()
-            msg = _('Category "{}" has been deleted').format(cat.title)
+            msg = _('Category `{}` has been deleted').format(cat.title)
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
                               reply_markup=create_categories_keyboard(_))
     query.answer()
@@ -1405,7 +1398,7 @@ def on_admin_show_courier(bot, update, user_data):
         locations = CourierLocation.filter(courier=courier)
         locations = [item.location.title for item in locations]
         msg = ''
-        msg += _('Name:\n`@{}`\n').format(courier.username)
+        msg += _('name:\n`@{}`\n').format(courier.username)
         msg += _('courier ID:\n`{}`\n').format(courier.id)
         msg += _('telegram ID:\n`{}`\n').format(courier.telegram_id)
         msg += _('locations:\n{}\n').format(locations)
@@ -1649,7 +1642,7 @@ def on_admin_btn_courier_location(bot, update, user_data):
         text = 'Location removed'
     else:
         location_ids.append(location_id)
-        text = 'Location added'
+        text = _('Location added')
     user_data['add_courier']['location_ids'] = location_ids
 
     locations = []
@@ -1760,7 +1753,7 @@ def on_admin_txt_delete_location(bot, update, user_data):
 
     query = update.callback_query
     bot.send_message(chat_id=query.message.chat_id,
-                     text='Location deleted',
+                     text=_('Location deleted'),
                      reply_markup=create_bot_locations_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_LOCATIONS
@@ -1860,7 +1853,7 @@ def on_admin_select_channel_type(bot, update, user_data):
         return enums.ADMIN_CHANNELS
 
     channel_type = int(update.message.text)
-    if channel_type in range(1, 5):
+    if channel_type in range(1, 6):
         user_data['add_channel'] = {}
         user_data['add_channel']['channel_type'] = channel_type - 1
         update.message.reply_text(
@@ -2044,12 +2037,6 @@ def on_admin_add_delivery(bot, update, user_data):
                      parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_DELIVERY_FEE
 
-    # bot.send_message(chat_id=update.message.chat_id,
-    #                  text='Delivery fee was changed',
-    #                  reply_markup=create_bot_order_options_keyboard(_),
-    #                  parse_mode=ParseMode.MARKDOWN)
-    # return enums.ADMIN_ORDER_OPTIONS
-
 
 def on_admin_bot_on_off(bot, update, user_data):
     query = update.callback_query
@@ -2155,11 +2142,11 @@ def on_admin_edit_identification_stages(bot, update, user_data):
         stage = IdentificationStage.get(id=data)
         question = IdentificationQuestion.get(stage=stage)
         if action == 'toggle':
-            question.active = not question.active
-            question.save()
+            stage.active = not stage.active
+            stage.save()
         elif action == 'vip_toggle':
-            question.vip_required = not question.vip_required
-            question.save()
+            stage.vip_required = not stage.vip_required
+            stage.save()
         elif action == 'delete':
             question.delete_instance(recursive=True)
             stage.delete_instance(recursive=True)
@@ -2190,10 +2177,8 @@ def on_admin_edit_identification_question_type(bot, update, user_data):
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
-    #new_q = user_data['admin_edit_identification']['new']
     if action in ('photo', 'text'):
         edit_options = user_data['admin_edit_identification']
-        #user_data['admin_edit_identification']['type'] = action
         edit_options['type'] = action
         msg = _('Enter new question or variants to choose randomly, e.g.:\n'
                 'Send identification photo ✌️\n'
@@ -2244,53 +2229,6 @@ def on_admin_edit_identification_question(bot, update, user_data):
                           parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
 
-
-# def on_admin_edit_identification_stages(bot, update, user_data):
-#     user_id = get_user_id(update)
-#     _ = get_trans(user_id)
-#     query = update.callback_query
-#     chat_id = query.message.chat_id
-#     message_id = query.message.message_id
-    # config_session = get_config_session()
-    # stage_one, stage_two = user_data['edit_identification_stages']
-    # if query.data == 'save':
-    #     config_session['identification_required'] = stage_one
-    #     config_session['identification_stage2_required'] = stage_two
-    #     set_config_session(config_session)
-    #     old_question = config.get_identification_stage2_question()
-    #     msg = _('Identification question: {}\n'
-    #             'Enter new identification question:').format(old_question)
-    #     bot.edit_message_text(msg, chat_id, message_id, reply_markup=create_back_button(_),
-    #                           parse_mode=ParseMode.MARKDOWN)
-    #     query.answer()
-    #     return enums.ADMIN_EDIT_IDENTIFICATION_QUESTION
-    # if query.data == 'stage_one':
-    #     stage_one = not stage_one
-    # elif query.data == 'stage_two':
-    #     stage_two = not stage_two
-    # user_data['edit_identification_stages'] = (stage_one, stage_two)
-    # msg = _('👨 Edit identification stages:')
-    # bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
-    #                       reply_markup=create_edit_identification_keyboard(_, (stage_one, stage_two)))
-    # query.answer()
-    # return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
-
-# def on_admin_edit_identification_question(bot, update):
-#     user_id = get_user_id(update)
-#     _ = get_trans(user_id)
-#     if update.callback_query and update.callback_query.data == 'back':
-#         option_back_function(
-#             bot, update, create_bot_order_options_keyboard(_),
-#             'Order options')
-#         return enums.ADMIN_ORDER_OPTIONS
-#     config_session = get_config_session()
-#     config_session['identification_stage2_question'] = update.message.text
-#     set_config_session(config_session)
-#     msg = _('Identification was changed')
-#     bot.send_message(update.message.chat_id, msg,
-#                      reply_markup=create_bot_order_options_keyboard(_),
-#                      parse_mode=ParseMode.MARKDOWN)
-#     return enums.ADMIN_ORDER_OPTIONS
 
 def on_admin_edit_restriction(bot, update, user_data):
     user_id = get_user_id(update)

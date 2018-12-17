@@ -171,7 +171,7 @@ def create_main_keyboard(trans, review_channel, user, is_admin=None, total_price
                               callback_data='menu_products')],
         [InlineKeyboardButton(_('🛍 Checkout').format(total_price),
                               callback_data='menu_order')],
-        # [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
+        [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
         [InlineKeyboardButton(_('⏰ Working hours'),
                               callback_data='menu_hours')],
         [InlineKeyboardButton(_('☎ Contact info'),
@@ -338,7 +338,7 @@ def create_bot_settings_keyboard(trans):
 def create_bot_couriers_keyboard(trans):
     _ = trans
     main_button_list = [
-        [InlineKeyboardButton(_('🚕 View couriers'),
+        [InlineKeyboardButton(_('🛵 View couriers'),
                               callback_data='bot_couriers_view')],
         [InlineKeyboardButton(_('➕ Add couriers'),
                               callback_data='bot_couriers_add')],

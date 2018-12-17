@@ -12,7 +12,7 @@ def create_cart_details_msg(user_id, products_info):
     for title, count, price in products_info:
         msg += '{}:'.format(title)
         msg += '\n'
-        msg += _('x {} = {}$').format(count, price)
+        msg += _('x {} = ${}').format(count, price)
         msg += '\n\n'
         total += price
     msg += _('Total: ${}').format(total)
