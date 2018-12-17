@@ -166,19 +166,19 @@ def create_courier_assigned_keyboard(courier_nickname, order_id, trans):
 
 def create_main_keyboard(trans, review_channel, user, is_admin=None, total_price=0):
     _ = trans
-    main_button_list = [
-        [InlineKeyboardButton(_('🏪 Our products'),
-                              callback_data='menu_products')],
-        [InlineKeyboardButton(_('🛍 Checkout').format(total_price),
-                              callback_data='menu_order')],
-        [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
-        [InlineKeyboardButton(_('⏰ Working hours'),
-                              callback_data='menu_hours')],
-        [InlineKeyboardButton(_('☎ Contact info'),
-                              callback_data='menu_contact')],
-        [InlineKeyboardButton(_('🈚️ Bot Languages'),
-                              callback_data='menu_language')],
-    ]
+    main_button_list = []
+
+    main_button_list.append([
+        InlineKeyboardButton(_('🛍 Checkout').format(total_price), callback_data='menu_order'),
+        InlineKeyboardButton(_('🏪 Our products'), callback_data='menu_products')])
+
+    main_button_list.append([InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)])
+
+    main_button_list.append([
+        InlineKeyboardButton(_('⏰ Working hours'), callback_data='menu_hours'),
+        InlineKeyboardButton(_('☎ Contact info'), callback_data='menu_contact')])
+
+    main_button_list.append([InlineKeyboardButton(_('🈚️ Bot Languages'), callback_data='menu_language')])
     if user.user_orders:
         main_button_list.append([InlineKeyboardButton(_('📖 My Orders'), callback_data='menu_myorders')])
     if is_admin:
