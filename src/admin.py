@@ -245,7 +245,7 @@ def on_admin_orders_pending_select(bot, update, user_data):
         service_trans = get_channel_trans()
         msg = service_trans('Order №{}').format(val)
         shortcuts.bot_send_order_msg(bot, config.get_service_channel(), msg, service_trans, val)
-        query.answer(_('Order has been sent to service channel'), show_alert=True)
+        query.answer(text=_('Order has been sent to service channel'), show_alert=True)
     return enums.ADMIN_ORDERS_PENDING_SELECT
 
 
@@ -319,7 +319,7 @@ def on_admin_delivery_fee(bot, update):
                 'or\n'
                 '50: All deals will have delivery fee of 50\n'
                 'Only works on delivery\n\n'
-                'Current fee: {}').format(config.get_delivery_fee())
+                'Current fee: {}>{}').format(config.get_delivery_fee(),config.get_delivery_min())
         bot.edit_message_text(
             msg, chat_id, msg_id,
             reply_markup=create_back_button(_),

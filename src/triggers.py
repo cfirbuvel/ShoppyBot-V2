@@ -171,7 +171,7 @@ def on_my_last_order(bot, update, user_data):
             return enums.BOT_STATE_MY_LAST_ORDER_CANCEL
         # elif order.fini
         else:
-            query.answer('Cannot cancel - order was delivered')
+            query.answer(text=_('Cannot cancel - order was delivered'), show_alert=True)
             return enums.BOT_STATE_MY_LAST_ORDER
         #     query.answer()
         # return enums.BOT_STATE_MY_LAST_ORDER
@@ -195,6 +195,7 @@ def on_my_last_order_cancel(bot, update, user_data):
     if action == 'yes':
         order.confirmed = True
         order.canceled = True
+        order.delivered = True
         order.save()
         service_chat = config.get_service_channel()
         channel_trans = get_channel_trans()
@@ -680,7 +681,8 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 longitude=long,
             )
             order_data.coordinates = lat + '|' + long + '|' + str(msg['message_id'])
-        bot.delete_message(chat_id, msg_id)
+        if msg_id:
+            bot.delete_message(chat_id, msg_id)
         order_msg = bot.send_message(
             chat_id=chat_id,
             text=order_data.order_text,
@@ -721,7 +723,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
         )
         query.answer()
     elif label == 'order_send_to_couriers':
-
+        _ = get_channel_trans()
         if config.get_has_courier_option():
             order = Order.get(id=order_id)
             _ = get_channel_trans()
@@ -732,16 +734,20 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 couriers_channel = config.get_couriers_channel()
                 order_data = OrderPhotos.get(order_id=order_id)
                 answers_ids = shortcuts.send_order_identification_answers(bot, couriers_channel, order, send_one=True)
-                answers_ids = ','.join(answers_ids)
-
+                # answers_ids = ','.join(answers_ids)
+                order_info = Order.get(id=order_id)
+                order_pickup_state = order_info.shipping_method
+                order_location = order_info.location.title
                 bot.send_message(chat_id=couriers_channel,
                                  text=order_data.order_text,
-                                 reply_markup=create_service_notice_keyboard(order_id, _, answers_ids),
+                                 reply_markup=create_service_notice_keyboard(
+                                     order_id, _, answers_ids, order_location, order_pickup_state),
                                  parse_mode=ParseMode.HTML,
                                  )
 
                 query.answer(text=_('Order sent to couriers channel'), show_alert=True)
-        query.answer(text='You have disabled courier\'s option', show_alert=True)
+
+        query.answer(text=_('You have disabled courier\'s option'), show_alert=True)
     elif label == 'order_finished':
         order = Order.get(id=order_id)
         if not order.delivered:
@@ -796,18 +802,21 @@ def on_service_send_order_to_courier(bot, update, user_data):
         config_session = get_config_session()
         config_session['banned'] = banned
         set_config_session(config_session)
+        usr_id = get_user_id(update)
+        _ = get_trans(usr_id)
         bot.send_message(chat_id=query.message.chat_id,
-                         text='@{} was banned'.format(username),
+                         text=_('@{} was banned').format(username),
                          parse_mode=ParseMode.MARKDOWN)
     elif label == 'order_add_to_vip':
         order = Order.get(id=order_id)
         user_id = order.user.telegram_id
+        _ = get_trans(user_id)
         bul = is_vip_customer(bot, user_id)
         if bul:
-            query.answer(text='Client is already VIP', show_alert=True)
+            query.answer(text=_('Client is already VIP'), show_alert=True)
         else:
-            query.answer(text='You should no manually add this user to VIP, '
-                              'while we working on API to do it via bot', show_alert=True)
+            query.answer(text=_('You should no manually add this user to VIP, '
+                              'while we working on API to do it via bot'), show_alert=True)
     else:
         enums.logger.info('that part is not handled yet')
 
@@ -849,23 +858,25 @@ def service_channel_courier_query_handler(bot, update, user_data):
         try:
             courier = Courier.get(telegram_id=courier_id)
         except Courier.DoesNotExist:
-            enums.logger.info('Courier {} not found'.format(courier_id))
+            query.answer(text=_('Courier {} not found').format(courier_id), show_alert=True)
         else:
             try:
                 CourierLocation.get(courier=courier, location=order.location)
             except CourierLocation.DoesNotExist:
-                bot.send_message(
-                    config.get_couriers_channel(),
-                    text='{} your location and customer locations are '
-                         'different'.format(courier_nickname),
-                    parse_mode=ParseMode.HTML
-                )
+                # bot.send_message(
+                #     config.get_couriers_channel(),
+                #     text='{} your location and customer locations are '
+                #          'different'.format(courier_nickname),
+                #     parse_mode=ParseMode.HTML
+                # )
+                query.answer(text=_('{}\n your location and customer locations are '
+                         'different').format(courier_nickname), show_alert=True)
             else:
                 courier_trans = get_trans(courier_id)
                 msg = shortcuts.check_order_products_credits(order, courier_trans, courier)
                 if msg:
                     bot.send_message(courier_id, msg, parse_mode=ParseMode.HTML)
-                    query.answer(_('Can\'t take responsibility for order'))
+                    query.answer(text=_('Can\'t take responsibility for order'), show_alert=True)
                     return
                 order.courier = courier
                 order.save()

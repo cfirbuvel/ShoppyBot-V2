@@ -44,8 +44,12 @@ msgid "❌ Cancel"
 msgstr "❌ בטל"
 
 #: shoppybot.py:66
-msgid "Take Responsibility"
-msgstr "✅ קבל משלוח/איסוף"
+msgid "🚚 Take delivery from {}"
+msgstr "🚚 קבל משלוח מאיזור {}"
+
+#: shoppybot.py:66
+msgid "🏪 Take pickup from {}"
+msgstr "🏪 קבל איסוף עצמי מאיזור {}"
 
 #: shoppybot.py:66
 msgid "Drop responsibility"
@@ -78,6 +82,10 @@ msgstr "הזמנה מס׳{} נשלחה ע״י המנהל {}\n"
 #: shoppybot.py:66
 msgid "Order can be finished now."
 msgstr "ניתן לסיים את ההזמנה כעת"
+
+#: shoppybot.py:66
+msgid "Order cannot be finished because it was not delivered yet"
+msgstr "לא ניתן לסיים הזמנה עד לקבלת אישור מסירה"
 
 #: shoppybot.py:66
 msgid "Order №{} is completed!"
@@ -657,6 +665,10 @@ msgid "Courier has arrived to deliver your order."
 msgstr "השליח הגיע עם המשלוח"
 
 #: shoppybot.py:318
+msgid "Client was notified already"
+msgstr "כבר הודעת ללקוח"
+
+#: shoppybot.py:318
 msgid "✅ Yes"
 msgstr "✅ כן"
 
@@ -1071,14 +1083,14 @@ msgid ""
 "50: All deals will have delivery fee of 50\n"
 "Only works on delivery\n"
 "\n"
-"Current fee: {}"
+"Current fee: {}>{}"
 msgstr ""
 "הכנס דמי משלוח בסדר הנ״ל:\n"
-"50 < 500: דמי המשלוח יהיו 50 ש״ח על כל משלוח מתחת ל500 ש״ח\n"
+"50 > 500: דמי המשלוח יהיו 50₪ על כל משלוח מתחת ל500₪\n"
 "או\n"
-"50: כל משלוח יעלה 50 ש״ח\n"
+"50: כל משלוח יעלה 50₪\n"
 "\n"
-"דמי משלוח המוגדרים כעת: {}"
+"דמי משלוח המוגדרים כעת: {}>{}"
 
 #: admin.py:196
 msgid ""
@@ -1088,8 +1100,8 @@ msgid ""
 "Current discount: {} > {}"
 msgstr ""
 "הכנס הנחה בסדר הנ״ל:\n"
-"50 < 500: תהיה הנחה של 50 ש״ח על כל עסקה מתחת ל500 ש״ח\n"
-"10% > 500: על כל עסקה מעלה 500 ש״ח יהיה 10% הנחה\n"
+"50 < 500: תהיה הנחה של 50₪ על כל עסקה מתחת ל500₪\n"
+"10% > 500: על כל עסקה מעלה 500₪ יהיה 10% הנחה\n"
 "הנחה המוגדרת כעת: {} > {}"
 
 #: admin.py:196

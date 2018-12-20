@@ -127,20 +127,28 @@ def create_locations_keyboard(location_names, trans):
     return InlineKeyboardMarkup(button_row)
 
 
-def create_service_notice_keyboard(order_id, trans, answers_ids):
+def create_service_notice_keyboard(order_id, trans, answers_ids, order_location, order_pickup_state=1):
     _ = trans
-    buttons = [
-        [
-            InlineKeyboardButton(
-                _('Take Responsibility'),
-                callback_data='courier|{}|{}'.format(order_id, answers_ids))
+    if order_pickup_state == 2:
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    _('🚚 Take delivery from {}').format(order_location),
+                    callback_data='courier|{}|{}'.format(order_id, answers_ids))
+            ]
         ]
-    ]
+    else:
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    _('🏪 Take pickup from {}').format(order_location),
+                    callback_data='courier|{}|{}'.format(order_id, answers_ids))
+            ]
+        ]
     return InlineKeyboardMarkup(buttons)
 
 
 def create_courier_confirmation_keyboard(order_id, courier_name, trans, photo_msg_id, assigned_msg_id):
-    #_ = get_trans(user_id)
     _ = trans
     buttons = [
         InlineKeyboardButton(_('Yes'),
@@ -158,8 +166,6 @@ def create_courier_assigned_keyboard(courier_nickname, order_id, trans):
     buttons = [
         [InlineKeyboardButton(_('Assigned to @{}').format(courier_nickname),
                               url='https://t.me/{}'.format(courier_nickname))],
-        # [InlineKeyboardButton(_('Drop responsibility'),
-        #                       callback_data='dropped|{}'.format(order_id))],
     ]
     return InlineKeyboardMarkup(buttons)
 

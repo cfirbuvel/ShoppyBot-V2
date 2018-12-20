@@ -84,10 +84,13 @@ def make_unconfirm(bot, update, user_data):
         #     photo_msg_id = photo_msg['message_id']
         answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
         answers_ids = ','.join(answers_ids)
-
+        order_info = Order.get(id=order_id)
+        order_pickup_state = order_info.shipping_method
+        order_location = order_info.location.title
         bot.send_message(chat_id=couriers_channel,
                          text=order_data.order_text,
-                         reply_markup=keyboards.create_service_notice_keyboard(order_id, _, answers_ids),
+                         reply_markup=keyboards.create_service_notice_keyboard(
+                             order_id, _, answers_ids, order_location, order_pickup_state),
                          parse_mode=ParseMode.HTML,
                          )
 
@@ -114,18 +117,15 @@ def resend_responsibility_keyboard(bot, update):
     bot.send_message(chat_id=couriers_channel,
                      text=_('Order №{} was dropped by courier').format(order_id))
     answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
-    answers_ids = ','.join(answers_ids)
-    # photo_msg_id = ''
-    # if order.photo_id:
-    #     photo_id, msg_id = order.photo_id.split('|')
-    #     photo_msg = bot.send_photo(couriers_channel,
-    #                    photo=photo_id,
-    #                    caption=_('Stage 1 Identification - Selfie'),
-    #                    parse_mode=ParseMode.MARKDOWN, )
-    #     photo_msg_id = photo_msg['message_id']
+    # answers_ids = ','.join(answers_ids)
+
+    order_info = Order.get(id=order_id)
+    order_pickup_state = order_info.shipping_method
+    order_location = order_info.location.title
     bot.send_message(chat_id=couriers_channel,
                      text=order_data.order_text,
-                     reply_markup=keyboards.create_service_notice_keyboard(order_id, _, answers_ids),
+                     reply_markup=keyboards.create_service_notice_keyboard(
+                         order_id, _, answers_ids, order_location, order_pickup_state),
                      parse_mode=ParseMode.HTML,
                      )
 
