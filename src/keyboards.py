@@ -46,7 +46,7 @@ def create_phone_number_request_keyboard(trans):
         [KeyboardButton(_('❌ Cancel'))],
     ]
 
-    return ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
 
 
 def create_location_request_keyboard(trans):
@@ -62,7 +62,7 @@ def create_location_request_keyboard(trans):
         [KeyboardButton(_('❌ Cancel'))],
     ]
 
-    return ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
 
 # def create_back_keyboard(trans):
 #     _ = trans

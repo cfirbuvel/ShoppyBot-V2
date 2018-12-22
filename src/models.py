@@ -27,11 +27,6 @@ class User(BaseModel):
     telegram_id = IntegerField()
     locale = CharField(max_length=4, default='iw')
     phone_number = CharField(null=True)
-    # Already set constraint which checks if locale is iw or en
-    # def save(self, force_insert=False, only=None):
-    #     if self.locale not in (self.HEBREW, self.ENGLISH):
-    #         self.locale = self.HEBREW
-    #     return super().save(force_insert=force_insert, only=only)
 
 
 class Courier(User):
@@ -60,8 +55,6 @@ class ProductMedia(BaseModel):
     product = ForeignKeyField(Product, related_name='product_media')
     file_id = CharField()
     file_type = CharField(null=True)
-    #file_path = CharField()
-    #type = CharField()
 
 
 class ProductCount(BaseModel):
@@ -71,7 +64,6 @@ class ProductCount(BaseModel):
 
 
 class ProductWarehouse(BaseModel):
-    # user = ForeignKeyField(User, related_name='user_warehouses', null=True)
     courier = ForeignKeyField(Courier, related_name='courier_warehouses', null=True)
     product = ForeignKeyField(Product, related_name='product_warehouses')
     count = IntegerField(default=0)
@@ -110,10 +102,10 @@ class OrderPhotos(BaseModel):
 
 
 class IdentificationStage(BaseModel):
-    # content = CharField()
     active = BooleanField(default=True)
     vip_required = BooleanField(default=False)
     type = CharField()
+
 
 class IdentificationQuestion(BaseModel):
     content = CharField()
@@ -141,14 +133,6 @@ def create_tables():
             OrderIdentificationAnswer, IdentificationQuestion
         ], safe=True
     )
-    # try:
-    #     def_cat = ProductCategory.get(title='Default')
-    # except ProductCategory.DoesNotExist:
-    #     def_cat = ProductCategory.create(title='Default')
-    # for product in Product:
-    #     if not product.category:
-    #         product.category = def_cat
-    #         product.save()
 
 
 def close_db():

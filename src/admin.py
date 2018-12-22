@@ -259,8 +259,9 @@ def on_admin_orders_finished_date(bot, update, user_data):
     if action == 'ignore':
         return enums.ADMIN_ORDERS_FINISHED_DATE
     elif action == 'back':
-        bot.edit_message_text(_('📖 Orders'), chat_id, message_id, reply_markup=create_bot_orders_keyboard(_),
-                             parse_mode=ParseMode.MARKDOWN)
+        bot.edit_message_text(_('📖 Orders'), chat_id, message_id,
+                              reply_markup=create_bot_orders_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_ORDERS
     elif action in ('day', 'month', 'year'):
