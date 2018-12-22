@@ -49,14 +49,14 @@ def on_start(bot, update, user_data):
                 text=_('Sorry {}\nYou are not authorized to use '
                        'this bot').format(update.message.from_user.first_name),
                 reply_markup=None,
-                parse_mode=ParseMode.HTML,
+                parse_mode=ParseMode.MARKDOWN,
             )
             return ConversationHandler.END
     else:
         update.message.reply_text(
             text=_('Sorry {}, the bot is currently switched off').format(
                 update.message.from_user.first_name),
-            parse_mode=ParseMode.HTML,
+            parse_mode=ParseMode.MARKDOWN,
         )
         return ConversationHandler.END
 
@@ -102,7 +102,7 @@ def on_menu(bot, update, user_data=None):
                                              delivery_min, delivery_fee),
                                          reply_markup=create_product_keyboard(_,
                                                                               product.id, user_data, cart),
-                                         parse_mode=ParseMode.HTML,
+                                         parse_mode=ParseMode.MARKDOWN,
                                          timeout=20, )
                     user = User.get(telegram_id=user_id)
                     total = cart.get_cart_total(user_data)
@@ -117,7 +117,7 @@ def on_menu(bot, update, user_data=None):
                                                                        config.get_reviews_channel(),
                                                                        user,
                                                                        is_admin(bot, user_id), total),
-                                     parse_mode=ParseMode.HTML)
+                                     parse_mode=ParseMode.MARKDOWN)
                     user_data['menu_id'] = main_msg['message_id']
                     session_client.json_set(user_id, user_data)
                     return enums.BOT_STATE_INIT
@@ -192,7 +192,7 @@ def on_menu(bot, update, user_data=None):
                                           delivery_min, delivery_fee),
                                       reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
-                                      parse_mode=ParseMode.HTML, )
+                                      parse_mode=ParseMode.MARKDOWN, )
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=user_data['menu_id'],
                                       text=msg,
@@ -225,7 +225,7 @@ def on_menu(bot, update, user_data=None):
                                           delivery_min, delivery_fee),
                                       reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
-                                      parse_mode=ParseMode.HTML, )
+                                      parse_mode=ParseMode.MARKDOWN, )
                 bot.edit_message_text(chat_id=query.message.chat_id,
                                       message_id=user_data['menu_id'],
                                       text=msg,
@@ -258,7 +258,7 @@ def on_menu(bot, update, user_data=None):
                 text=_('Sorry {}\nYou are not authorized '
                        'to use this bot').format(query.from_user.first_name),
                 reply_markup=None,
-                parse_mode=ParseMode.HTML,
+                parse_mode=ParseMode.MARKDOWN,
             )
             return ConversationHandler.END
     else:
@@ -267,7 +267,7 @@ def on_menu(bot, update, user_data=None):
             text=_('Sorry, the bot is currently switched off').format(
                 query.from_user.first_name),
             reply_markup=None,
-            parse_mode=ParseMode.HTML,
+            parse_mode=ParseMode.MARKDOWN,
         )
         return ConversationHandler.END
     query.answer()

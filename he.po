@@ -164,17 +164,13 @@ msgstr "לקוח VIP"
 msgid "Shipping details:"
 msgstr "פרטי משלוח/איסוף:"
 
-#: shoppybot.py:235
-msgid "Photo question: "
-msgstr "שאלת סלפי: "
-
 #: shoppybot.py:238
 msgid "Pickup/Delivery: "
 msgstr "משלוח/איסוף עצמי: "
 
 #: shoppybot.py:241
-msgid "Pickup location: "
-msgstr "איזור איסוף: "
+msgid "From location: "
+msgstr "מאיזור: "
 
 #: shoppybot.py:244
 msgid "Address: "

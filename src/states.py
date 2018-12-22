@@ -123,7 +123,7 @@ def enter_state_order_confirm(bot, update, user_data):
         text=create_confirmation_text(user_id,
             is_pickup, shipping_data, total, delivery_min, delivery_cost, delivery_for_vip, product_info),
         reply_markup=create_confirmation_keyboard(_),
-        parse_mode=ParseMode.HTML,
+        parse_mode=ParseMode.MARKDOWN,
     )
 
     return BOT_STATE_ORDER_CONFIRMATION

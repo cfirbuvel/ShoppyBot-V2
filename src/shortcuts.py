@@ -30,7 +30,7 @@ def make_confirm(bot, update, user_data):
         bot.send_message(
             user_id,
             text=_('Courier @{} assigned to your order').format(courier_name),
-            parse_mode=ParseMode.HTML,
+            parse_mode=ParseMode.MARKDOWN,
         )
         courier_id = order.courier.telegram_id
         user_data = get_user_session(courier_id)
@@ -41,7 +41,7 @@ def make_confirm(bot, update, user_data):
         bot.send_message(courier_id,
                          text=order_data.order_text,
                          reply_markup=keyboards.create_courier_order_status_keyboard(_, order_id),
-                         parse_mode=ParseMode.HTML)
+                         parse_mode=ParseMode.MARKDOWN)
 
 
 
@@ -91,7 +91,7 @@ def make_unconfirm(bot, update, user_data):
                          text=order_data.order_text,
                          reply_markup=keyboards.create_service_notice_keyboard(
                              order_id, _, answers_ids, order_location, order_pickup_state),
-                         parse_mode=ParseMode.HTML,
+                         parse_mode=ParseMode.MARKDOWN,
                          )
 
 
@@ -126,7 +126,7 @@ def resend_responsibility_keyboard(bot, update):
                      text=order_data.order_text,
                      reply_markup=keyboards.create_service_notice_keyboard(
                          order_id, _, answers_ids, order_location, order_pickup_state),
-                     parse_mode=ParseMode.HTML,
+                     parse_mode=ParseMode.MARKDOWN,
                      )
 
     query.answer(text=_('Order sent to couriers channel'), show_alert=True)

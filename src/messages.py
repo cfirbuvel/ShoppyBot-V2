@@ -190,7 +190,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
     text += _('Customer: @{}').format(username)
     text += '\n'
     text += _('Vip Customer') + '\n' if is_vip else ''
-    text += '\n\n'
+    text += '\n'
     text += _('Shipping details:')
     text += '\n'
     for key, value in shipping_data.items():
@@ -200,11 +200,14 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
             text += value
             text += '\n'
         if key == 'method':
-            text += _('Pickup/Delivery: ')
             text += value
             text += '\n'
         if key == 'pickup_location':
-            text += _('Pickup location: ')
+            text += _('From location: ')
+            text += value
+            text += '\n'
+        if key == 'location':
+            text += _('Address: ')
             text += value
             text += '\n'
         if key == 'time':

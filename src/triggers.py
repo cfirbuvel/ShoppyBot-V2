@@ -258,7 +258,7 @@ def on_bot_language_change(bot, update, user_data):
             query.message.chat_id,
             text='Unknown command',
             reply_markup=None,
-            parse_mode=ParseMode.HTML,
+            parse_mode=ParseMode.MARKDOWN,
         )
         return ConversationHandler.END
 
@@ -641,7 +641,7 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
     courier = Courier.get(telegram_id=telegram_id)
     msg = shortcuts.check_order_products_credits(order, _, courier)
     if msg:
-        bot.send_message(user_id, msg, parse_mode=ParseMode.HTML)
+        bot.send_message(user_id, msg, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return
     order.confirmed = True
@@ -658,7 +658,7 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
     bot.send_message(chat_id=telegram_id,
                      text=order_data.order_text,
                      reply_markup=create_courier_order_status_keyboard(_, order_id),
-                     parse_mode=ParseMode.HTML)
+                     parse_mode=ParseMode.MARKDOWN)
     query.answer(text=_('Message sent'), show_alert=True)
 
 
@@ -686,7 +686,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
         order_msg = bot.send_message(
             chat_id=chat_id,
             text=order_data.order_text,
-            parse_mode=ParseMode.HTML,
+            parse_mode=ParseMode.MARKDOWN,
             reply_markup=create_service_channel_keyboard(_, order_id))
         order_data.order_text_msg_id = str(order_msg['message_id'])
         order_data.save()
@@ -742,7 +742,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
                                  text=order_data.order_text,
                                  reply_markup=create_service_notice_keyboard(
                                      order_id, _, answers_ids, order_location, order_pickup_state),
-                                 parse_mode=ParseMode.HTML,
+                                 parse_mode=ParseMode.MARKDOWN,
                                  )
 
                 query.answer(text=_('Order sent to couriers channel'), show_alert=True)
@@ -790,7 +790,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
         bot.send_message(chat_id=usr_id,
                          text=order_data.order_text,
                          reply_markup=create_admin_order_status_keyboard(_, order_id),
-                         parse_mode=ParseMode.HTML)
+                         parse_mode=ParseMode.MARKDOWN)
         query.answer(text=_('Message sent'), show_alert=True)
     elif label == 'order_ban_client':
         order = Order.get(id=order_id)
@@ -875,7 +875,7 @@ def service_channel_courier_query_handler(bot, update, user_data):
                 courier_trans = get_trans(courier_id)
                 msg = shortcuts.check_order_products_credits(order, courier_trans, courier)
                 if msg:
-                    bot.send_message(courier_id, msg, parse_mode=ParseMode.HTML)
+                    bot.send_message(courier_id, msg, parse_mode=ParseMode.MARKDOWN)
                     query.answer(text=_('Can\'t take responsibility for order'), show_alert=True)
                     return
                 order.courier = courier
@@ -887,7 +887,7 @@ def service_channel_courier_query_handler(bot, update, user_data):
                 assigned_msg = bot.send_message(
                     config.get_couriers_channel(),
                     text=query.message.text,
-                    parse_mode=ParseMode.HTML,
+                    parse_mode=ParseMode.MARKDOWN,
                     reply_markup=create_courier_assigned_keyboard(courier_nickname, order_id, _),
                 )
                 assigned_msg_id = assigned_msg['message_id']
@@ -969,7 +969,7 @@ def on_settings_menu(bot, update):
             query.message.chat_id,
             text=_('Unknown command'),
             reply_markup=None,
-            parse_mode=ParseMode.HTML,
+            parse_mode=ParseMode.MARKDOWN,
         )
         return ConversationHandler.END
 
@@ -1696,7 +1696,7 @@ def on_courier_enter_reason(bot, update):
     bot.send_message(chat_id=chat_id,
                      text=order_data.order_text,
                      reply_markup=create_courier_order_status_keyboard(_, order_id),
-                     parse_mode=ParseMode.HTML)
+                     parse_mode=ParseMode.MARKDOWN)
     reported_username = Order.get(id=order_id).user.username
     courier_username = Courier.get(telegram_id=user_id).username
     _ = get_channel_trans()
@@ -1786,7 +1786,7 @@ def on_product_categories(bot, update, user_data):
                                                            config.get_reviews_channel(),
                                                            user,
                                                            is_admin(bot, user_id), total),
-                         parse_mode=ParseMode.HTML)
+                         parse_mode=ParseMode.MARKDOWN)
         user_data['menu_id'] = main_msg['message_id']
         session_client.json_set(user_id, user_data)
     elif action == 'back':
@@ -1801,7 +1801,7 @@ def on_product_categories(bot, update, user_data):
                                                                 config.get_reviews_channel(),
                                                                 user,
                                                                 is_admin(bot, user_id), total),
-                              parse_mode=ParseMode.HTML
+                              parse_mode=ParseMode.MARKDOWN
                               )
     query.answer()
     return enums.BOT_STATE_INIT

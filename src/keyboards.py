@@ -4,6 +4,7 @@ import math
 import calendar
 import datetime
 
+
 def create_time_keyboard(trans):
     _ = trans
     button_row = [
@@ -64,6 +65,7 @@ def create_location_request_keyboard(trans):
 
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
 
+
 # def create_back_keyboard(trans):
 #     _ = trans
 #     buttons = [
@@ -114,6 +116,7 @@ def create_warehouse_keyboard(trans):
         [InlineKeyboardButton(_('↩ Back'), callback_data='warehouse_back')]
     ]
     return InlineKeyboardMarkup(buttons)
+
 
 def create_locations_keyboard(location_names, trans):
     _ = trans
@@ -172,19 +175,14 @@ def create_courier_assigned_keyboard(courier_nickname, order_id, trans):
 
 def create_main_keyboard(trans, review_channel, user, is_admin=None, total_price=0):
     _ = trans
-    main_button_list = []
-
-    main_button_list.append([
+    main_button_list = [[
         InlineKeyboardButton(_('🛍 Checkout').format(total_price), callback_data='menu_order'),
-        InlineKeyboardButton(_('🏪 Our products'), callback_data='menu_products')])
+        InlineKeyboardButton(_('🏪 Our products'), callback_data='menu_products')],
+        [InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)],
+        [InlineKeyboardButton(_('⏰ Working hours'), callback_data='menu_hours'),
+         InlineKeyboardButton(_('☎ Contact info'), callback_data='menu_contact')],
+        [InlineKeyboardButton(_('🈚️ Bot Languages'), callback_data='menu_language')]]
 
-    main_button_list.append([InlineKeyboardButton(_('⭐ Reviews'), url=review_channel)])
-
-    main_button_list.append([
-        InlineKeyboardButton(_('⏰ Working hours'), callback_data='menu_hours'),
-        InlineKeyboardButton(_('☎ Contact info'), callback_data='menu_contact')])
-
-    main_button_list.append([InlineKeyboardButton(_('🈚️ Bot Languages'), callback_data='menu_language')])
     if user.user_orders:
         main_button_list.append([InlineKeyboardButton(_('📖 My Orders'), callback_data='menu_myorders')])
     if is_admin:
@@ -203,6 +201,7 @@ def create_my_orders_keyboard(trans):
     ]
     return InlineKeyboardMarkup(buttons)
 
+
 def create_my_order_keyboard(order_id, cancel, trans):
     _ = trans
     buttons = [
@@ -212,6 +211,7 @@ def create_my_order_keyboard(order_id, cancel, trans):
         buttons.append([InlineKeyboardButton(_('❌ Cancel order'), callback_data='cancel|{}'.format(order_id))])
     buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data='back|')])
     return InlineKeyboardMarkup(buttons)
+
 
 def create_bot_language_keyboard(trans):
     _ = trans
@@ -374,6 +374,7 @@ def create_bot_channels_keyboard(trans):
 
     return InlineKeyboardMarkup(main_button_list)
 
+
 def create_bot_products_keyboard(trans):
     _ = trans
     buttons = [
@@ -420,7 +421,6 @@ def create_select_products_chunk_keyboard(trans, chunk, selected_command, back_c
     return InlineKeyboardMarkup(buttons)
 
 
-
 def create_bot_locations_keyboard(trans):
     _ = trans
     main_button_list = [
@@ -439,25 +439,23 @@ def create_bot_locations_keyboard(trans):
 
 def create_bot_order_options_keyboard(trans):
     _ = trans
-    main_button_list = [
-        [InlineKeyboardButton(_('📖 Orders'),
-                              callback_data='bot_order_options_orders')],
-        [InlineKeyboardButton(_('🏪 My Products'),
+    main_button_list = [[
+         InlineKeyboardButton(_('📖 Orders'),
+                              callback_data='bot_order_options_orders'),
+         InlineKeyboardButton(_('🏪 My Products'),
                               callback_data='bot_order_options_product')],
         [InlineKeyboardButton(_('🛍 Categories'),
-                              callback_data='bot_order_options_categories')],
-        [InlineKeyboardButton(_('🏗 Warehouse'),
+                              callback_data='bot_order_options_categories'),
+         InlineKeyboardButton(_('🏗 Warehouse'),
                               callback_data='bot_order_options_warehouse')],
         [InlineKeyboardButton(_('💲 Add discount'),
-                              callback_data='bot_order_options_discount')],
-        [InlineKeyboardButton(_('🚕 Delivery fee'), callback_data='bot_order_options_delivery_fee')],
-        # [InlineKeyboardButton(_('🚕 Add delivery fee'),
-        #                       callback_data='bot_order_options_delivery_fee')],
+                              callback_data='bot_order_options_discount'),
+         InlineKeyboardButton(_('🚕 Delivery fee'), callback_data='bot_order_options_delivery_fee')],
         [InlineKeyboardButton(_('🎯 Locations'),
                               callback_data='bot_order_options_add_locations')],
         [InlineKeyboardButton(_('👨 Edit identification process'),
-                              callback_data='bot_order_options_identify')],
-        [InlineKeyboardButton(_('🔥 Edit restricted area'),
+                              callback_data='bot_order_options_identify'),
+         InlineKeyboardButton(_('🔥 Edit restricted area'),
                               callback_data='bot_order_options_restricted')],
         [InlineKeyboardButton(_('✉ Edit Welcome message'),
                               callback_data='bot_order_options_welcome')],
@@ -466,8 +464,7 @@ def create_bot_order_options_keyboard(trans):
         [InlineKeyboardButton(_('✉ Edit Final message'),
                               callback_data='bot_order_options_final')],
         [InlineKeyboardButton(_('↩ Back'),
-                              callback_data='bot_order_options_back')],
-    ]
+                              callback_data='bot_order_options_back')], ]
 
     return InlineKeyboardMarkup(main_button_list)
 
@@ -534,7 +531,7 @@ def create_ban_list_keyboard(trans):
     return InlineKeyboardMarkup(main_button_list)
 
 
-def general_select_keyboard(trans, objects, cmd_prefix= '', page_num=1, page_len=15):
+def general_select_keyboard(trans, objects, cmd_prefix='', page_num=1, page_len=15):
     _ = trans
     buttons = []
     prev_page = None
@@ -673,7 +670,8 @@ def create_courier_order_status_keyboard(trans, order_id):
     _ = trans
     buttons = [
         [InlineKeyboardButton(_('✅ Order Done'), callback_data='confirm_courier_order_delivered|{}'.format(order_id))],
-        [InlineKeyboardButton(_('🔥 Report client to admin'), callback_data='confirm_courier_report_client|{}'.format(order_id))],
+        [InlineKeyboardButton(_('🔥 Report client to admin'),
+                              callback_data='confirm_courier_report_client|{}'.format(order_id))],
         [InlineKeyboardButton(_('📞 Ping Client'), callback_data='ping_client|{}'.format(order_id))],
         [InlineKeyboardButton(_('❌ Drop responsibility'), callback_data='dropped|{}'.format(order_id))]
     ]
@@ -740,7 +738,8 @@ def create_edit_identification_keyboard(trans, questions):
         btn = [InlineKeyboardButton(_('Question №{}').format(count), callback_data='edit|{}'.format(q_id))]
         buttons.append(btn)
         btn = [
-            InlineKeyboardButton(_('Vip: Active') if q_vip else _('Vip: Disabled'), callback_data='vip_toggle|{}'.format(q_id)),
+            InlineKeyboardButton(_('Vip: Active') if q_vip else _('Vip: Disabled'),
+                                 callback_data='vip_toggle|{}'.format(q_id)),
             InlineKeyboardButton(_('Active') if q_active else _('Disabled'), callback_data='toggle|{}'.format(q_id)),
             InlineKeyboardButton(_('Delete'), callback_data='delete|{}'.format(q_id))
         ]
