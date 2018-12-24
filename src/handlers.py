@@ -126,7 +126,7 @@ def on_menu(bot, update, user_data=None):
                     unfinished_orders = Order.select().where(Order.user == user, Order.delivered == False)
                     if len(unfinished_orders):
                         msg = _('You cannot make new order if previous order is not finished')
-                        query.answer(msg)
+                        query.answer(msg, show_alert=True)
                         return enums.BOT_STATE_INIT
                     bot.send_message(query.message.chat_id,
                                      text=_('Please choose pickup or delivery'),

@@ -1367,3 +1367,7 @@ msgstr "דמי משלוח עודכנו במערכת!"
 #: admin.py:306
 msgid "Order sent to couriers channel"
 msgstr "ההזמנה נשלחה לערוץ השליחים"
+
+#: admin.py:306
+msgid "You cannot make new order if previous order is not finished"
+msgstr "לא ניתן להזמין עד סיום ההזמנה האחרונה.\n\nבמידה ותרצה לבטל לחץ הזמנות שלי -> הזמנה אחרונה -> בטל הזמנה"

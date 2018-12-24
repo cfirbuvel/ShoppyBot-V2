@@ -133,7 +133,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
     _ = trans
     active_delivery = False
     text = _('Order №{} notice:').format(order_id)
-    text += '\n\n'
+    text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
     text += '\n'
     text += _('Items in cart:')
@@ -181,7 +181,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
     if active_delivery:
         total += delivery_cost
 
-    text += '\n\n'
+    text += '\n'
     text += _('Total: ${}').format(total)
 
     text += '\n'
@@ -190,8 +190,6 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
     text += _('Customer: @{}').format(username)
     text += '\n'
     text += _('Vip Customer') + '\n' if is_vip else ''
-    text += '\n'
-    text += _('Shipping details:')
     text += '\n'
     for key, value in shipping_data.items():
 

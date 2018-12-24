@@ -302,9 +302,10 @@ def on_shipping_delivery_address(bot, update, user_data):
             location = update.message.location
             loc = {'latitude': location['latitude'], 'longitude': location['longitude']}
             location = loc
-        except:
+            user_data['shipping']['geo_location'] = location
+        except TypeError:
             location = update.message.text
-        user_data['shipping']['location'] = location
+            user_data['shipping']['location'] = location
         session_client.json_set(user_id, user_data)
         return enter_state_shipping_time(bot, update, user_data)
 
@@ -563,30 +564,30 @@ def on_confirm_order(bot, update, user_data):
                              if shipping_data['method'] == _('🚚 Delivery') else Order.shipping_method.default,
                              shipping_time=shipping_data['time'],
                              )
-        order_id = order.id
-        cart.fill_order(user_data, order)
-
         _ = get_channel_trans()
-
         customer_username = user.username
-
+        order_id = order.id
         text = create_service_notice(_, is_pickup, order_id, customer_username, product_info, shipping_data,
                                      total, delivery_min, delivery_cost, delivery_for_vip)
-        for stage_id, q_id, answer in user_data['order_identification']['answers']:
-            stage = IdentificationStage.get(id=stage_id)
-            question = IdentificationQuestion.get(id=q_id)
-            OrderIdentificationAnswer.create(stage=stage, question=question, order=order, content=answer)
+        if 'order_identification' in user_data:
+            for stage_id, q_id, answer in user_data['order_identification']['answers']:
+                stage = IdentificationStage.get(id=stage_id)
+                question = IdentificationQuestion.get(id=q_id)
+                OrderIdentificationAnswer.create(stage=stage, question=question, order=order, content=answer)
 
         # ORDER CONFIRMED, send the details to service channel
         txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
         shipping_location = shipping_data.get('location')
+        shipping_geo_location = shipping_data.get('geo_location')
         coordinates = None
-        if shipping_location and 'latitude' in shipping_location:
-            coordinates = '|'.join(map(str, shipping_data['location'].values())) + '|'
-        else:
+        if shipping_location:
             txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
+        else:
+            coordinates = '|'.join(map(str, shipping_geo_location.values())) + '|'
+
+        cart.fill_order(user_data, order)
         order_data = OrderPhotos(order=order, coordinates=coordinates, order_text=text)
         shortcuts.bot_send_order_msg(bot, service_channel, txt, _, order_id, order_data)
         user_data['cart'] = {}
@@ -672,7 +673,10 @@ def on_service_send_order_to_courier(bot, update, user_data):
         _ = get_channel_trans()
         order = Order.get(id=order_id)
         shortcuts.send_order_identification_answers(bot, chat_id, order)
-
+        try:
+            bot.delete_message(chat_id, msg_id)
+        except:
+            enums.logger.error("Failed to delete message")
         if order_data.coordinates:
             lat, long, msg_id = order_data.coordinates.split('|')
             msg = bot.send_location(
@@ -681,8 +685,6 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 longitude=long,
             )
             order_data.coordinates = lat + '|' + long + '|' + str(msg['message_id'])
-        if msg_id:
-            bot.delete_message(chat_id, msg_id)
         order_msg = bot.send_message(
             chat_id=chat_id,
             text=order_data.order_text,
@@ -1342,7 +1344,7 @@ def on_admin_couriers(bot, update):
     elif data == 'bot_couriers_view':
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
         if not couriers:
-            query.answer(_('You don\'t have couriers'))
+            query.answer(_('You don\'t have couriers'), show_alert=True)
             return enums.ADMIN_COURIERS
         msg = _('Select a courier:')
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
@@ -1353,7 +1355,7 @@ def on_admin_couriers(bot, update):
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
         if not couriers:
             msg = _('There\'s no couriers to add')
-            query.answer(msg)
+            query.answer(msg, show_alert=True)
             return enums.ADMIN_COURIERS
         bot.edit_message_text(chat_id=chat_id, message_id=message_id,
                               text=_('Select a courier to add'),
@@ -1364,7 +1366,7 @@ def on_admin_couriers(bot, update):
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == True).tuples()
         if not couriers:
             msg = _('There\'s not couriers to delete')
-            query.answer(msg)
+            query.answer(msg, show_alert=True)
             return enums.ADMIN_COURIERS
         bot.edit_message_text(chat_id=query.message.chat_id,
                               message_id=query.message.message_id,

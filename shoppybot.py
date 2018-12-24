@@ -134,18 +134,6 @@ def main():
             enums.BOT_STATE_CHECKOUT_IDENTIFY: [
                 MessageHandler(Filters.text | Filters.photo, triggers.on_identify_general, pass_user_data=True)
             ],
-            # enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE1: [
-            #     CallbackQueryHandler(triggers.checkout_fallback_command_handler,
-            #                          pass_user_data=True),
-            #     MessageHandler(Filters.all, triggers.on_shipping_identify_photo,
-            #                    pass_user_data=True),
-            # ],
-            # enums.BOT_STATE_CHECKOUT_IDENTIFY_STAGE2: [
-            #     CallbackQueryHandler(triggers.checkout_fallback_command_handler,
-            #                          pass_user_data=True),
-            #     MessageHandler(Filters.all, triggers.on_shipping_identify_stage2,
-            #                    pass_user_data=True),
-            # ],
             enums.BOT_STATE_ORDER_CONFIRMATION: [
                 CallbackQueryHandler(triggers.checkout_fallback_command_handler,
                                      pass_user_data=True),
@@ -175,6 +163,7 @@ def main():
             enums.PRODUCT_CATEGORIES: [
                 CallbackQueryHandler(triggers.on_product_categories, pass_user_data=True)
             ],
+
             #
             # admin states
             #
@@ -220,14 +209,6 @@ def main():
             enums.ADMIN_COURIER_ADD: [
                 CallbackQueryHandler(admin.on_admin_add_courier, pass_user_data=True)
             ],
-            # enums.ADMIN_COURIER_ADD_ID: [
-            #     CallbackQueryHandler()
-            # ],
-            # enums.ADMIN_COURIER_ADD_USERNAME: [],
-            #
-            # enums.ADMIN_COURIER_ADD_SELECT: [
-            #     CallbackQueryHandler()
-            # ],
             enums.ADMIN_COURIER_DELETE: [
                 CallbackQueryHandler(admin.on_admin_delete_courier)
             ],
@@ -455,7 +436,6 @@ def main():
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
             enums.ADMIN_TXT_PRODUCT_PHOTO: [
-                # CallbackQueryHandler(admin.on_admin_txt_product_photo, pass_user_data=True),
                 MessageHandler((Filters.text | Filters.photo), admin.on_admin_txt_product_photo,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
@@ -508,17 +488,10 @@ def main():
         ])
 
     updater = Updater(config.get_api_token(), user_sig_handler=close_db_on_signal)
-    # updater.dispatcher.add_handler(CallbackQueryHandler(on_chat_update_handler))
     updater.dispatcher.add_handler(MessageHandler(
         Filters.status_update.new_chat_members, triggers.send_welcome_message))
-    # updater.dispatcher.add_handler(MessageHandler(
-    #     Filters.text, triggers.get_channel_id
-    # ))
-    # updater.dispatcher.add_handler(MessageHandler(
-    #     Filters.status_update.left_chat_member, on_courier_left))
     updater.dispatcher.add_handler(user_conversation_handler)
     updater.dispatcher.add_handler(courier_conversation_handler)
-    # updater.dispatcher.add_handler(CallbackQueryHandler(on_calendar_change, pattern='^calendar', pass_user_data=True))
     updater.dispatcher.add_handler(
         CallbackQueryHandler(triggers.service_channel_courier_query_handler,
                              pattern='^courier',
@@ -531,10 +504,6 @@ def main():
         CallbackQueryHandler(triggers.on_service_send_order_to_courier,
                              pattern='^order',
                              pass_user_data=True))
-    # updater.dispatcher.add_handler(
-        # CallbackQueryHandler(resend_responsibility_keyboard,
-        #                      pattern='^dropped',
-        #                      pass_user_data=True))
     updater.dispatcher.add_handler(
         CallbackQueryHandler(make_confirm,
                              pattern='^confirmed',
@@ -543,12 +512,6 @@ def main():
         CallbackQueryHandler(make_unconfirm,
                              pattern='^notconfirmed',
                              pass_user_data=True))
-    # updater.dispatcher.add_handler(on_courier_action_to_confirm,
-    #                                pattern='^confirm_courier')
-    # updater.dispatcher.add_handler(on_courier_ping_client,
-    #                                pattern='^ping')
-    #
-    # updater.dispatcher.add_handler()
     updater.dispatcher.add_handler((
         CallbackQueryHandler(triggers.delete_message,
                              pattern='delete_msg')

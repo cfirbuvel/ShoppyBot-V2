@@ -450,7 +450,8 @@ def create_bot_order_options_keyboard(trans):
                               callback_data='bot_order_options_warehouse')],
         [InlineKeyboardButton(_('💲 Add discount'),
                               callback_data='bot_order_options_discount'),
-         InlineKeyboardButton(_('🚕 Delivery fee'), callback_data='bot_order_options_delivery_fee')],
+         InlineKeyboardButton(_('🚕 Delivery fee'),
+                              callback_data='bot_order_options_delivery_fee')],
         [InlineKeyboardButton(_('🎯 Locations'),
                               callback_data='bot_order_options_add_locations')],
         [InlineKeyboardButton(_('👨 Edit identification process'),
@@ -715,19 +716,6 @@ def create_are_you_sure_keyboard(trans, callback_mapping):
         InlineKeyboardButton(_('❌ No'), callback_data=callback_mapping['no'])
     ]
     return InlineKeyboardMarkup([buttons])
-
-
-# def create_edit_identification_keyboard(trans, values):
-#     _ = trans
-#     stage_one_text, stage_two_text = (_('Enabled') if val else _('Disabled') for val in values)
-#     stage_one_text = _('First stage: {}').format(stage_one_text)
-#     stage_two_text = _('Second stage: {}').format(stage_two_text)
-#     buttons = [
-#         [InlineKeyboardButton(stage_one_text, callback_data='stage_one')],
-#         [InlineKeyboardButton(stage_two_text, callback_data='stage_two')],
-#         [InlineKeyboardButton(_('Save'), callback_data='save')]
-#     ]
-#     return InlineKeyboardMarkup(buttons)
 
 
 def create_edit_identification_keyboard(trans, questions):

@@ -243,7 +243,10 @@ def on_admin_orders_pending_select(bot, update, user_data):
     elif action == 'select':
         # order = Order.get(id=val)
         service_trans = get_channel_trans()
-        msg = service_trans('Order №{}').format(val)
+        order = Order.get(id=val)
+        user_name = order.user.username
+        location = order.location.title
+        msg = service_trans('Order №{}, Location {}\nUser @{}').format(val, location, user_name)
         shortcuts.bot_send_order_msg(bot, config.get_service_channel(), msg, service_trans, val)
         query.answer(text=_('Order has been sent to service channel'), show_alert=True)
     return enums.ADMIN_ORDERS_PENDING_SELECT
