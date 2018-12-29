@@ -576,15 +576,15 @@ def on_confirm_order(bot, update, user_data):
                 OrderIdentificationAnswer.create(stage=stage, question=question, order=order, content=answer)
 
         # ORDER CONFIRMED, send the details to service channel
-        txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
+        user_name = order.user.username
+        location = order.location.title
+        txt = _('Order №{}, Location {}\nUser @{}').format(order_id, location, user_name)
+        # txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
 
-        shipping_location = shipping_data.get('location')
         shipping_geo_location = shipping_data.get('geo_location')
         coordinates = None
-        if shipping_location:
-            txt += 'From {}\n\n'.format(shipping_data['pickup_location'])
-        else:
+        if shipping_geo_location:
             coordinates = '|'.join(map(str, shipping_geo_location.values())) + '|'
 
         cart.fill_order(user_data, order)
@@ -675,8 +675,8 @@ def on_service_send_order_to_courier(bot, update, user_data):
         shortcuts.send_order_identification_answers(bot, chat_id, order)
         try:
             bot.delete_message(chat_id, msg_id)
-        except:
-            enums.logger.error("Failed to delete message")
+        except Exception as e:
+            enums.logger.exception("Failed to delete message\nException: " + str(e))
         if order_data.coordinates:
             lat, long, msg_id = order_data.coordinates.split('|')
             msg = bot.send_location(
@@ -695,7 +695,10 @@ def on_service_send_order_to_courier(bot, update, user_data):
     elif label == 'order_hide':
         _ = get_channel_trans()
         order_data = OrderPhotos.get(order_id=order_id)
-        txt = order_data.order_hidden_text
+        if order_data.order.canceled is True:
+            txt = _('Order №{} was cancelled by the client @{}').format(order_data.order_id, order_data.order.user.username)
+        else:
+            txt = order_data.order_hidden_text
         order = Order.get(id=order_id)
         bot.delete_message(chat_id=chat_id,
                            message_id=msg_id, )
@@ -703,12 +706,12 @@ def on_service_send_order_to_courier(bot, update, user_data):
             coord1, coord2, msg_id = order_data.coordinates.split('|')
             bot.delete_message(chat_id=chat_id,
                                message_id=msg_id, )
-        for answer in order.identification_answers:
+        for answer in order_data.order.identification_answers:
             answer_msg_id = answer.msg_id
             if answer_msg_id:
                 bot.delete_message(chat_id, answer_msg_id)
 
-        shortcuts.bot_send_order_msg(bot, update.callback_query.message.chat_id, txt, _, order_id, order)
+        shortcuts.bot_send_order_msg(bot, update.callback_query.message.chat_id, txt, _, order_id, order_data.order)
 
     elif label == 'order_send_to_specific_courier':
         _ = get_channel_trans()
@@ -761,16 +764,10 @@ def on_service_send_order_to_courier(bot, update, user_data):
             bot.delete_message(chat_id=update.callback_query.message.chat_id,
                                message_id=update.callback_query.message.message_id, )
             for answer in order.identification_answers:
-                if answer.msg_id:
+                try:
                     bot.delete_message(chat_id, answer.msg_id)
-            # if order.photo_id:
-            #     id, msg_id = order.photo_id.split('|')
-            #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
-            #                        message_id=msg_id, )
-            # if order.stage2_id:
-            #     id, msg_id = order.stage2_id.split('|')
-            #     bot.delete_message(chat_id=update.callback_query.message.chat_id,
-            #                        message_id=msg_id, )
+                except Exception as e:
+                    enums.logger.exception("Failed to delete message\nException: " + str(e))
             if order_data.coordinates:
                 lat, long, msg_id = order_data.coordinates.split('|')
                 bot.delete_message(chat_id=update.callback_query.message.chat_id,

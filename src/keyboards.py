@@ -564,7 +564,7 @@ def general_select_keyboard(trans, objects, cmd_prefix='', page_num=1, page_len=
     return InlineKeyboardMarkup(buttons)
 
 
-def general_select_one_keyboard(trans, objects, page_num=1, page_len=10):
+def general_select_one_keyboard(trans, objects, page_num=1, page_len=90):
     _ = trans
     buttons = []
     prev_page = None

@@ -272,8 +272,8 @@ def on_admin_orders_finished_date(bot, update, user_data):
         queries = shortcuts.get_order_subquery(action, val, month, year)
         orders = Order.select().where(*queries)
         orders = orders.select().where(Order.delivered == True, Order.canceled == False)
-        orders_data = [(order.id, order.date_created.strftime('%d/%m/%Y')) for order in orders]
-        orders = [(_('Order №{} {}').format(order_id, order_date), order_id) for order_id, order_date in orders_data]
+        orders_data = [(order.id, order.user.username, order.date_created.strftime('%d/%m/%Y')) for order in orders]
+        orders = [(_('Order №{} @{} {}').format(order_id, user_name, order_date), order_id) for order_id, user_name, order_date in orders_data]
         user_data['admin_finished_orders'] = orders
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=_('Select order'),
                               reply_markup=general_select_one_keyboard(_, orders),
