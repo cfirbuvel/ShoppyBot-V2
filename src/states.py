@@ -137,7 +137,7 @@ def enter_state_init_order_confirmed(bot, update, user_data):
     bot.send_message(
         update.message.chat_id,
         text=config.get_order_complete_text().format(
-            update.message.from_user.first_name),
+            update.effective_user.first_name),
         reply_markup=ReplyKeyboardRemove(),
     )
     bot.send_message(

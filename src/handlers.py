@@ -33,9 +33,10 @@ def on_start(bot, update, user_data):
             else:
                 msg = config.get_welcome_text().format(update.effective_user.first_name)
             total = cart.get_cart_total(user_data)
-            enums.logger.info('Starting session for user %s, language: %s',
-                        update.message.from_user.id,
-                        update.message.from_user.language_code)
+            enums.logger.info('Starting session for user_id %s, username: @%s, language: %s',
+                              update.effective_user.id,
+                              update.effective_user.username,
+                              update.effective_user.language_code)
             update.message.reply_text(
                 text=msg,
                 reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user,
@@ -44,10 +45,10 @@ def on_start(bot, update, user_data):
             return enums.BOT_STATE_INIT
         else:
             enums.logger.info('User %s rejected (not a customer)',
-                        update.message.from_user.id)
+                              update.effective_user.id)
             update.message.reply_text(
                 text=_('Sorry {}\nYou are not authorized to use '
-                       'this bot').format(update.message.from_user.first_name),
+                       'this bot').format(update.effective_user.first_name),
                 reply_markup=None,
                 parse_mode=ParseMode.MARKDOWN,
             )
@@ -55,7 +56,7 @@ def on_start(bot, update, user_data):
     else:
         update.message.reply_text(
             text=_('Sorry {}, the bot is currently switched off').format(
-                update.message.from_user.first_name),
+                update.effective_user.first_name),
             parse_mode=ParseMode.MARKDOWN,
         )
         return ConversationHandler.END

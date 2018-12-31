@@ -46,11 +46,11 @@ def on_start_admin(bot, update):
     if not is_admin(bot, user_id):
         _ = get_trans(user_id)
         enums.logger.info(_('User %s, @%s rejected (not admin)'),
-                    update.message.from_user.id,
-                    update.message.from_user.username)
+                    update.effective_user.id,
+                    update.effective_user.username)
         update.message.reply_text(text=_(
             'Sorry {}, you are not authorized to administrate this bot').format(
-            update.message.from_user.first_name))
+            update.effective_user.first_name))
         return enums.BOT_STATE_INIT
 
 

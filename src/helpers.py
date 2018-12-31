@@ -477,7 +477,7 @@ def get_username(update):
     if update.callback_query is not None:
         username = update.callback_query.from_user.username
     else:
-        username = update.message.from_user.username
+        username = update.effective_user.username
 
     return username
 
@@ -486,7 +486,7 @@ def get_locale(update):
     if update.callback_query is not None:
         language = update.callback_query.from_user.language_code
     else:
-        language = update.message.from_user.language_code
+        language = update.effective_user.language_code
     if language is None:
         language = 'en-US'
 
@@ -497,7 +497,7 @@ def get_user_id(update):
     if update.callback_query is not None:
         user_id = update.callback_query.from_user.id
     else:
-        user_id = update.message.from_user.id
+        user_id = update.effective_user.id
 
     return user_id
 
