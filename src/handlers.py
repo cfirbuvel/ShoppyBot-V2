@@ -140,7 +140,7 @@ def on_menu(bot, update, user_data=None):
                         query.id,
                         text=_('Your cart is empty. '
                                'Please add something to the cart.'),
-                        parse_mode=ParseMode.MARKDOWN, )
+                        parse_mode=ParseMode.MARKDOWN, show_alert=True)
                     return enums.BOT_STATE_INIT
 
             elif data == 'menu_language':

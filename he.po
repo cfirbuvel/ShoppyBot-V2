@@ -1139,12 +1139,12 @@ msgid "✅ You have given {} credits to courier `{}`"
 msgstr "✅נוספו {} קרדיט, לשליח `{}`"
 
 #: admin.py:306
-msgid "Product: `{}`, Count: {}, Courier credits: {}\n"
-msgstr "מוצר: `{}`, כמות: {}, כמות קרדיט לשליח: {}\n"
+msgid "Product: `{}`\nCount: {}\nCourier credits: {}\n"
+msgstr "מוצר: `{}`\nכמות: {}\nכמות קרדיט לשליח: {}\n"
 
 #: admin.py:306
-msgid "Product: `{}`, Count: {}, Warehouse credits: {}\n"
-msgstr "מוצר: `{}`, כמות: {}, כמות קרדיט במחסן: {}\n"
+msgid "Product: `{}`\nCount: {}\nWarehouse credits: {}\n"
+msgstr "מוצר: `{}`\nכמות: {}\nכמות קרדיט במחסן: {}\n"
 
 #: admin.py:306
 msgid "There are not enough credits in warehouse to deliver products:\n"
@@ -1371,3 +1371,15 @@ msgstr "ההזמנה נשלחה לערוץ השליחים"
 #: admin.py:306
 msgid "You cannot make new order if previous order is not finished"
 msgstr "לא ניתן להזמין עד סיום ההזמנה האחרונה.\n\nבמידה ותרצה לבטל לחץ הזמנות שלי -> הזמנה אחרונה -> בטל הזמנה"
+
+#: admin.py:306
+msgid "Courier {}, ID {} not found, please contact admin"
+msgstr "שגיאה!\n\nשליח: {}\nמס׳ מזהה: {}\nאין לך אישור לשלחויות, אנא פנה למנהל שיוסיף אותך"
+
+#: admin.py:306
+msgid "Can't take responsibility for order"
+msgstr "לא ניתן לקבל אחריות על השליחות!"
+
+#: admin.py:306
+msgid "Courier: {}\nID: {}\nCourier not found, please contact admin"
+msgstr "שגיאה - שליח לא נמצא!\n\nשם שליח: {}\nמס׳ מזהה: {}\n\nאנא פנה למנהל"

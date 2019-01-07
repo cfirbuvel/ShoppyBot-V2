@@ -699,7 +699,6 @@ def on_service_send_order_to_courier(bot, update, user_data):
             txt = _('Order №{} was cancelled by the client @{}').format(order_data.order_id, order_data.order.user.username)
         else:
             txt = order_data.order_hidden_text
-        order = Order.get(id=order_id)
         bot.delete_message(chat_id=chat_id,
                            message_id=msg_id, )
         if order_data.coordinates:
@@ -835,8 +834,9 @@ def checkout_fallback_command_handler(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    bot.answer_callback_query(query.id, text=_(
-        'Cannot process commands when checking out'))
+    bot.answer_callback_query(query.id,
+                              text=_('Cannot process commands when checking out'),
+                              show_alert=True)
 
 
 def service_channel_courier_query_handler(bot, update, user_data):
@@ -857,7 +857,9 @@ def service_channel_courier_query_handler(bot, update, user_data):
         try:
             courier = Courier.get(telegram_id=courier_id)
         except Courier.DoesNotExist:
-            query.answer(text=_('Courier {} not found').format(courier_id), show_alert=True)
+            query.answer(
+                text=_('Courier: {}\nID: {}\nCourier not found, please contact admin').format(courier_nickname, courier_id),
+                show_alert=True)
         else:
             try:
                 CourierLocation.get(courier=courier, location=order.location)
@@ -868,18 +870,19 @@ def service_channel_courier_query_handler(bot, update, user_data):
                 #          'different'.format(courier_nickname),
                 #     parse_mode=ParseMode.HTML
                 # )
-                query.answer(text=_('{}\n your location and customer locations are '
-                         'different').format(courier_nickname), show_alert=True)
+                query.answer(text=_('{}\n your location and customer locations are different').format(courier_nickname),
+                             show_alert=True)
             else:
                 courier_trans = get_trans(courier_id)
                 msg = shortcuts.check_order_products_credits(order, courier_trans, courier)
-                if msg:
+                if msg is str:
                     bot.send_message(courier_id, msg, parse_mode=ParseMode.MARKDOWN)
                     query.answer(text=_('Can\'t take responsibility for order'), show_alert=True)
                     return
                 order.courier = courier
                 order.save()
-                shortcuts.change_order_products_credits(order, courier=courier)
+                if not msg:
+                    shortcuts.change_order_products_credits(order, courier=courier)
                 couriers_channel = config.get_couriers_channel()
                 bot.delete_message(chat_id=couriers_channel,
                                    message_id=query.message.message_id)
@@ -900,7 +903,7 @@ def service_channel_courier_query_handler(bot, update, user_data):
                 )
                 bot.answer_callback_query(
                     query.id,
-                    text=_('Courier {} assigned').format(courier_nickname))
+                    text=_('Courier {} assigned').format(courier_nickname), show_alert=True)
 
 
 def send_welcome_message(bot, update):
@@ -1842,5 +1845,4 @@ def on_calendar_change(bot, update, user_data):
                               text=msg, reply_markup=create_calendar_keyboard(year, month, _))
         query.answer()
         return calendar_state
-
 

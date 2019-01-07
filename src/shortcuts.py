@@ -44,7 +44,6 @@ def make_confirm(bot, update, user_data):
                          parse_mode=ParseMode.MARKDOWN)
 
 
-
 def make_unconfirm(bot, update, user_data):
     query = update.callback_query
     data = query.data
@@ -131,14 +130,15 @@ def resend_responsibility_keyboard(bot, update):
 
     query.answer(text=_('Order sent to couriers channel'), show_alert=True)
 
+
 def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=None):
     if not order_data:
         order = Order.get(id=order_id)
         order_data = OrderPhotos.get(order=order)
     _ = trans_func
     order_msg = bot.send_message(chat_id,
-                         text=message,
-                         reply_markup=keyboards.create_show_order_keyboard(_, order_id))
+                                 text=message,
+                                 reply_markup=keyboards.create_show_order_keyboard(_, order_id))
     order_data.order_hidden_text = message
     order_data.order_text_msg_id = str(order_msg['message_id'])
     order_data.save()
@@ -158,7 +158,7 @@ def send_order_identification_answers(bot, chat_id, order, send_one=False):
             photos_answers.append(answer)
         else:
             content = '_{}:_\n' \
-                  '{}'.format(question, content)
+                      '{}'.format(question, content)
             answers.append((content, answer))
         if send_one:
             break
@@ -187,14 +187,11 @@ def send_product_info(bot, product, chat_id, trans):
                      text=msg)
 
 
-
-
-
 def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query_id=None):
     _ = trans
     current_date = datetime.date.today()
     year, month = current_date.year, current_date.month
-    #if not 'calendar_date' in user_data:
+    # if not 'calendar_date' in user_data:
     user_data['calendar_date'] = year, month
     user_data['calendar_state'] = state
     msg = _('Pick year, month or day')
@@ -216,7 +213,7 @@ def get_order_subquery(action, val, month, year):
     query.append(subquery)
     if action == 'year':
         return query
-    #if action == 'month':
+    # if action == 'month':
     query.append(Order.date_created.month == month)
     if action == 'day':
         query.append(Order.date_created.day == val)
@@ -235,6 +232,7 @@ def get_order_count_and_price(*subqueries):
 def check_order_products_credits(order, trans, courier=None):
     msg = ''
     first_msg = True
+    not_defined = False
     for order_item in order.order_items:
         product = order_item.product
         if courier:
@@ -242,18 +240,27 @@ def check_order_products_credits(order, trans, courier=None):
             warehouse_count = warehouse.count
         else:
             warehouse_count = product.credits
+        product_warehouse = ProductWarehouse.get(product=product)
+        product_warehouse_count = product_warehouse.count
+        if product_warehouse_count <= 0:
+            not_defined = True
+            return not_defined
         if order_item.count > warehouse_count:
             _ = trans
             if courier:
                 if first_msg:
                     msg += _('You don\'t have enough credits to deliver products:\n')
                     first_msg = False
-                msg += _('Product: `{}`, Count: {}, Courier credits: {}\n').format(product.title, order_item.count, warehouse_count)
+                msg += _('Product: `{}`\nCount: {}\nCourier credits: {}\n').format(product.title,
+                                                                                   order_item.count,
+                                                                                   warehouse_count)
             else:
                 if first_msg:
                     msg += _('There are not enough credits in warehouse to deliver products:\n')
                     first_msg = False
-                msg += _('Product: `{}`, Count: {}, Warehouse credits: {}\n').format(product.title, order_item.count, warehouse_count)
+                msg += _('Product: `{}`\nCount: {}\nWarehouse credits: {}\n').format(product.title,
+                                                                                     order_item.count,
+                                                                                     warehouse_count)
     return msg
 
 
@@ -287,10 +294,10 @@ def send_product_media(bot, product, chat_id):
         file = InputMediaPhoto(media=media.file_id)
         media_list.append(file)
     bot.send_media_group(chat_id, media_list)
-        # with open(media.file_path, 'rb') as file:
-        #     func = getattr(bot, 'send_{}'.format(media.type))
-        #     stream = io.BytesIO(file.read())
-        #     func(chat_id, stream)
+    # with open(media.file_path, 'rb') as file:
+    #     func = getattr(bot, 'send_{}'.format(media.type))
+    #     stream = io.BytesIO(file.read())
+    #     func(chat_id, stream)
 # def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
 #     _ = trans
 #     # first_iter = True
