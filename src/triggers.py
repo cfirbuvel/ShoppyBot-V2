@@ -32,6 +32,12 @@ from . import enums
 from . import shortcuts
 
 
+def cancel_process(update):
+    enums.logger.info('Cancel - Order process for user_id: %s, username: @%s',
+                      update.effective_user.id,
+                      update.effective_user.username)
+
+
 def on_my_orders(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
@@ -217,6 +223,7 @@ def on_shipping_method(bot, update, user_data):
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
     if key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('🏪 Pickup') or key == _('🚚 Delivery'):
         user_data['shipping']['method'] = key
@@ -273,6 +280,7 @@ def on_shipping_pickup_location(bot, update, user_data):
     if key == _('↩ Back'):
         return enter_state_shipping_method(bot, update, user_data)
     elif key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif any(key in s for s in location_names):
         user_data['shipping']['pickup_location'] = key
@@ -294,6 +302,7 @@ def on_shipping_delivery_address(bot, update, user_data):
     if key == _('↩ Back'):
         return enter_state_shipping_method(bot, update, user_data)
     elif key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('✒️Enter location manually'):
         return enums.BOT_STATE_CHECKOUT_LOCATION_DELIVERY
@@ -318,6 +327,7 @@ def on_checkout_time(bot, update, user_data):
     if key == _('↩ Back'):
         return enter_state_shipping_method(bot, update, user_data)
     elif key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('⏰ Now'):
         user_data['shipping']['time'] = key
@@ -364,6 +374,7 @@ def on_shipping_time_text(bot, update, user_data):
     if key == _('↩ Back'):
         return enter_state_shipping_time(bot, update, user_data)
     elif key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     else:
         user_data['shipping']['time_text'] = key
@@ -377,6 +388,7 @@ def on_phone_number_text(bot, update, user_data):
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
     if key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
         return enter_state_shipping_time(bot, update, user_data)
@@ -424,6 +436,7 @@ def on_identify_general(bot, update, user_data):
     _ = get_trans(user_id)
     data = user_data['order_identification']
     if key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
         passed_ids = data['passed_ids']
@@ -484,6 +497,7 @@ def on_shipping_identify_photo(bot, update, user_data):
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
     if key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
         if config.get_phone_number_required():
@@ -515,6 +529,7 @@ def on_shipping_identify_stage2(bot, update, user_data):
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
     if key == _('❌ Cancel'):
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
         return enter_state_identify_photo(bot, update, user_data)
@@ -548,7 +563,9 @@ def on_confirm_order(bot, update, user_data):
         delivery_cost = config.get_delivery_fee()
         delivery_min = config.get_delivery_min()
         delivery_for_vip = config.get_delivery_fee_for_vip()
-
+        enums.logger.info('New order confirmed  - From user_id %s, username: @%s',
+                          update.effective_user.id,
+                          update.effective_user.username)
         try:
             user = User.get(telegram_id=user_id)
         except User.DoesNotExist:
@@ -604,7 +621,7 @@ def on_confirm_order(bot, update, user_data):
         except KeyError:
             pass
         session_client.json_set(user_id, user_data)
-
+        cancel_process(update)
         return enter_state_init_order_cancelled(bot, update, user_data)
     elif key == _('↩ Back'):
         identification_stages = IdentificationStage.filter(active=True)
@@ -1739,7 +1756,10 @@ def on_product_categories(bot, update, user_data):
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
     chat_id, message_id = query.message.chat_id, query.message.message_id
-    action, val = query.data.split('|')
+    try:
+        action, val = query.data.split('|')
+    except ValueError:
+        action = query.data
     if action == 'page':
         categories = ProductCategory.select(ProductCategory.title, ProductCategory.id).tuples()
         keyboard = general_select_one_keyboard(_, categories, int(val))

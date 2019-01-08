@@ -33,7 +33,7 @@ def on_start(bot, update, user_data):
             else:
                 msg = config.get_welcome_text().format(update.effective_user.first_name)
             total = cart.get_cart_total(user_data)
-            enums.logger.info('Starting session for user_id %s, username: @%s, language: %s',
+            enums.logger.info('Starting - Session for user_id: %s, username: @%s, language: %s',
                               update.effective_user.id,
                               update.effective_user.username,
                               update.effective_user.language_code)
@@ -133,6 +133,9 @@ def on_menu(bot, update, user_data=None):
                                      text=_('Please choose pickup or delivery'),
                                      reply_markup=create_shipping_keyboard(_),
                                      parse_mode=ParseMode.MARKDOWN, )
+                    enums.logger.info('Starting - Order process for user_id: %s, username: @%s',
+                                      update.effective_user.id,
+                                      update.effective_user.username)
                     query.answer()
                     return enums.BOT_STATE_CHECKOUT_SHIPPING
                 else:
