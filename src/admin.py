@@ -240,6 +240,7 @@ def on_admin_orders_pending_select(bot, update, user_data):
         bot.edit_message_text(msg, chat_id, message_id,
                               reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
+        return enums.ADMIN_ORDERS_PENDING_SELECT
     elif action == 'select':
         # order = Order.get(id=val)
         service_trans = get_channel_trans()
@@ -248,8 +249,11 @@ def on_admin_orders_pending_select(bot, update, user_data):
         location = order.location.title
         msg = service_trans('Order №{}, Location {}\nUser @{}').format(val, location, user_name)
         shortcuts.bot_send_order_msg(bot, config.get_service_channel(), msg, service_trans, val)
+        msg = _('💳 Order options')
+        bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
+                          reply_markup=create_bot_order_options_keyboard(_))
         query.answer(text=_('Order has been sent to service channel'), show_alert=True)
-    return enums.ADMIN_ORDERS_PENDING_SELECT
+    return enums.ADMIN_ORDER_OPTIONS
 
 
 def on_admin_orders_finished_date(bot, update, user_data):
