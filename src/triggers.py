@@ -33,7 +33,7 @@ from . import shortcuts
 
 
 def cancel_process(update):
-    enums.logger.info('Cancel - Order process for user_id: %s, username: @%s',
+    enums.logger.info('Cancel order process - From user_id: %s, username: @%s',
                       update.effective_user.id,
                       update.effective_user.username)
 
@@ -563,9 +563,6 @@ def on_confirm_order(bot, update, user_data):
         delivery_cost = config.get_delivery_fee()
         delivery_min = config.get_delivery_min()
         delivery_for_vip = config.get_delivery_fee_for_vip()
-        enums.logger.info('New order confirmed  - From user_id %s, username: @%s',
-                          update.effective_user.id,
-                          update.effective_user.username)
         try:
             user = User.get(telegram_id=user_id)
         except User.DoesNotExist:
@@ -584,6 +581,10 @@ def on_confirm_order(bot, update, user_data):
         _ = get_channel_trans()
         customer_username = user.username
         order_id = order.id
+        enums.logger.info('New order confirmed  - Order №%s, From user_id %s, username: @%s',
+                          order_id,
+                          update.effective_user.id,
+                          update.effective_user.username)
         text = create_service_notice(_, is_pickup, order_id, customer_username, product_info, shipping_data,
                                      total, delivery_min, delivery_cost, delivery_for_vip)
         if 'order_identification' in user_data:
