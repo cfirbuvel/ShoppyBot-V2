@@ -22,8 +22,10 @@ def fallback_query_handler(bot, update, user_data):
     user_data = get_user_session(user_id)
     return on_menu(bot, update, user_data)
 
+
 def close_db_on_signal(signum, frame):
     close_db()
+
 
 def error_callback(bot, update, error):
     raise error
@@ -85,7 +87,8 @@ def main():
                       CommandHandler('admin', admin.on_start_admin),
                       CallbackQueryHandler(fallback_query_handler,
                                            pattern='^(menu|product)',
-                                           pass_user_data=True)],
+                                           pass_user_data=True),
+                      ],
         states={
             enums.BOT_STATE_INIT: [
                 CommandHandler('start', on_start, pass_user_data=True),
@@ -216,7 +219,7 @@ def main():
                 CallbackQueryHandler(
                     admin.on_admin_locations, pattern='^bot_locations')],
             enums.ADMIN_ORDERS: [
-                CallbackQueryHandler(admin.on_admin_orders, pass_user_data=True)
+                CallbackQueryHandler(admin.on_admin_orders, pattern='(^finished|^pending|^back)', pass_user_data=True)
             ],
             enums.ADMIN_ORDERS_PENDING_SELECT: [
                 CallbackQueryHandler(admin.on_admin_orders_pending_select, pass_user_data=True)
@@ -480,7 +483,7 @@ def main():
                     admin.on_admin_txt_delete_location, pass_user_data=True),
                 MessageHandler(Filters.text, admin.on_admin_txt_delete_location,
                                pass_user_data=True),
-                CommandHandler('cancel', admin.on_admin_cancel), ]
+                CommandHandler('cancel', admin.on_admin_cancel), ],
         },
         fallbacks=[
             CommandHandler('cancel', triggers.on_cancel, pass_user_data=True),

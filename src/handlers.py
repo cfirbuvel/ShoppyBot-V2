@@ -13,6 +13,7 @@ from . import enums
 from .states import is_admin
 from . import shortcuts
 
+
 def on_start(bot, update, user_data):
     user_id = get_user_id(update)
     username = get_username(update)
@@ -66,11 +67,17 @@ def on_menu(bot, update, user_data=None):
     query = update.callback_query
     data = query.data
     user_id = get_user_id(update)
+    try:
+        user = User.get(telegram_id=user_id)
+    except User.DoesNotExist:
+        username = get_username(update)
+        locale = get_locale(update)
+        user = User(telegram_id=user_id, username=username, locale=locale)
+        user.save()
     user_data = get_user_session(user_id)
     _ = get_trans(user_id)
     BOT_ON = config.get_bot_on_off()
     total = cart.get_cart_total(get_user_session(user_id))
-    user = User.get(telegram_id=user_id)
     chat_id = query.message.chat_id
     if BOT_ON or is_admin(bot, user_id):
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
