@@ -653,8 +653,21 @@ def create_service_channel_keyboard(trans, order_id):
                               callback_data='order_ban_client|{}'.format(order_id))],
         [InlineKeyboardButton(_('✅ Order Finished'),
                               callback_data='order_finished|{}'.format(order_id))],
+        [InlineKeyboardButton(_('❌ Cancel Order'), callback_data='order_cancel|{}'.format(order_id))],
         [InlineKeyboardButton(_('💳 Hide Order'),
                               callback_data='order_hide|{}'.format(order_id))],
+    ]
+    return InlineKeyboardMarkup(main_button_list)
+
+
+def create_cancel_order_confirm(trans, order_id):
+    _ = trans
+    main_button_list = [
+        [
+            InlineKeyboardButton(_('✅ Yes'), callback_data='cancel_order_yes|{}'.format(order_id)),
+            InlineKeyboardButton(_('❌ No'), callback_data='cancel_order_no|{}'.format(order_id))
+        ],
+        [InlineKeyboardButton(_('Yes and delete'), callback_data='cancel_order_delete|{}'.format(order_id))]
     ]
     return InlineKeyboardMarkup(main_button_list)
 

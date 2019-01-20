@@ -139,7 +139,7 @@ def on_menu(bot, update, user_data=None):
                     return enums.BOT_STATE_INIT
             elif data == 'menu_order':
                 if cart.is_full(user_data):
-                    unfinished_orders = Order.select().where(Order.user == user, Order.delivered == False)
+                    unfinished_orders = Order.select().where(Order.user == user, Order.delivered == False, Order.canceled == False)
                     if len(unfinished_orders):
                         msg = _('You cannot make new order if previous order is not finished')
                         query.answer(msg, show_alert=True)

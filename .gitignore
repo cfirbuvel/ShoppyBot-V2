@@ -6,3 +6,5 @@ shoppybot.conf
 src/__pycache__/
 src/locales.py
 venv/
+env/
+media/

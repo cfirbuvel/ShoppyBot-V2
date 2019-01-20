@@ -19,7 +19,8 @@ from .keyboards import create_courier_assigned_keyboard, \
     create_service_channel_keyboard, couriers_choose_keyboard, create_are_you_sure_keyboard, \
     create_courier_order_status_keyboard, create_admin_order_status_keyboard, general_select_one_keyboard, \
     create_calendar_keyboard, create_my_orders_keyboard, create_my_order_keyboard, create_bot_language_keyboard, \
-    create_product_keyboard, create_ping_client_keyboard, create_add_courier_keyboard, create_cancel_keyboard
+    create_product_keyboard, create_ping_client_keyboard, create_add_courier_keyboard, create_cancel_keyboard, \
+    create_cancel_order_confirm
 from .models import User, Courier, Order, OrderItem, Location, CourierLocation, DeliveryMethod, OrderPhotos, \
     ProductCategory, Product, IdentificationStage, OrderIdentificationAnswer, IdentificationQuestion
 from .states import enter_state_init_order_cancelled, enter_state_courier_location, enter_state_shipping_method, \
@@ -75,9 +76,9 @@ def on_my_orders(bot, update, user_data):
         user = User.get(telegram_id=user_id)
         last_order = Order.select().where(Order.user == user).order_by(Order.date_created.desc()).get()
         msg = _('Order №{}').format(last_order.id)
+        keyboard = create_my_order_keyboard(last_order.id, not last_order.delivered and not last_order.canceled, _)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
-                              reply_markup=create_my_order_keyboard(last_order.id, not last_order.delivered, _),
-                              parse_mode=ParseMode.MARKDOWN)
+                              reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.BOT_STATE_MY_LAST_ORDER
 
@@ -112,9 +113,9 @@ def on_my_order_date(bot, update, user_data):
         if len(orders) == 1:
             order = orders[0]
             msg = _('Order №{}').format(order.id)
+            keyboard = create_my_order_keyboard(order.id, not order.delivered and not order.canceled, _)
             bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
-                                  reply_markup=create_my_order_keyboard(order, not order.delivered, _),
-                                  parse_mode=ParseMode.MARKDOWN)
+                                  reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
             query.answer()
             # return enums.BOT_STATE_MY_ORDER_BY_DATE
             return enums.BOT_STATE_MY_LAST_ORDER
@@ -150,9 +151,9 @@ def on_my_order_select(bot, update, user_data):
     else:
         order = Order.get(id=val)
         msg = _('Order №{}').format(order.id)
+        keyboard = create_my_order_keyboard(order.id, not order.delivered and not order.canceled, _)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=msg,
-                              reply_markup=create_my_order_keyboard(order.id, not order.delivered, _),
-                              parse_mode=ParseMode.MARKDOWN)
+                              reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         # return enums.BOT_STATE_MY_ORDER_BY_DATE
         return enums.BOT_STATE_MY_LAST_ORDER
@@ -176,7 +177,7 @@ def on_my_last_order(bot, update, user_data):
     order_id = int(val)
     order = Order.get(id=order_id)
     if action == 'cancel':
-        if not order.delivered:
+        if not order.delivered and not order.canceled:
             msg = _('Are you sure?')
             mapping = {'yes': 'yes|{}'.format(order_id), 'no': 'no|{}'.format(order_id)}
             bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
@@ -799,6 +800,17 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 lat, long, msg_id = order_data.coordinates.split('|')
                 bot.delete_message(chat_id=update.callback_query.message.chat_id,
                                    message_id=msg_id, )
+    elif label == 'order_cancel':
+        order = Order.get(id=order_id)
+        _ = get_channel_trans()
+        if order.canceled:
+            msg = _('Order is cancelled already')
+            query.answer(text=msg, show_alert=True)
+        else:
+            msg = _('Are you sure?')
+            keyboard = create_cancel_order_confirm(_, order_id)
+            bot.send_message(update.callback_query.message.chat_id, msg, reply_markup=keyboard)
+            query.answer()
     elif label == 'order_send_to_self':
         order = Order.get(id=order_id)
         _ = get_channel_trans()
@@ -845,6 +857,34 @@ def on_service_send_order_to_courier(bot, update, user_data):
                               'while we working on API to do it via bot'), show_alert=True)
     else:
         enums.logger.info('that part is not handled yet')
+
+
+def cancel_order_confirm(bot, update):
+    query = update.callback_query
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    _ = get_channel_trans()
+    action, order_id = query.data.split('|')
+    if action == 'cancel_order_no':
+        bot.delete_message(chat_id, msg_id)
+    if action in ('cancel_order_yes', 'cancel_order_delete'):
+        order = Order.get(Order.id == order_id)
+        order.canceled = True
+        order.confirmed = True
+        order.delivered = True
+        order.save()
+        bot.delete_message(chat_id, msg_id)
+    if action == 'cancel_order_delete':
+        order_data = OrderPhotos.get(order_id=order_id)
+        bot.delete_message(chat_id, order_data.order_text_msg_id)
+        for answer in order.identification_answers:
+            try:
+                bot.delete_message(chat_id, answer.msg_id)
+            except Exception as e:
+                enums.logger.exception("Failed to delete message\nException: " + str(e))
+        if order_data.coordinates:
+            lat, long, msg_id = order_data.coordinates.split('|')
+            bot.delete_message(chat_id=update.callback_query.message.chat_id,
+                               message_id=msg_id)
 
 
 def delete_message(bot, update):

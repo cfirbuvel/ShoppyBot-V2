@@ -508,6 +508,9 @@ def main():
                              pattern='^order',
                              pass_user_data=True))
     updater.dispatcher.add_handler(
+        CallbackQueryHandler(triggers.cancel_order_confirm, pattern='^cancel_order')
+    )
+    updater.dispatcher.add_handler(
         CallbackQueryHandler(make_confirm,
                              pattern='^confirmed',
                              pass_user_data=True))
