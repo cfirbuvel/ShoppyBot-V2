@@ -12,10 +12,10 @@ def create_cart_details_msg(user_id, products_info):
     for title, count, price in products_info:
         msg += '{}:'.format(title)
         msg += '\n'
-        msg += _('x {} = ${}').format(count, price)
+        msg += _('x {} = {}₪').format(count, price)
         msg += '\n\n'
         total += price
-    msg += _('Total: ${}').format(total)
+    msg += _('Total: {}₪').format(total)
     msg += '\n\n'
     msg += '▫️◾️◽️◼️◻️⬛️◻️◼️◽️◾️▫️'
     return msg
@@ -29,13 +29,13 @@ def create_product_description(user_id, product_title, product_prices, product_c
     text += '〰️'
     text += '\n'
     if delivery_fee > 0 and delivery_min > 0:
-        text += _('Delivery Fee: {}$').format(delivery_fee)
+        text += _('Delivery Fee: {}₪').format(delivery_fee)
         text += '\n'
-        text += _('for orders below {}$').format(delivery_min)
+        text += _('for orders below {}₪').format(delivery_min)
         text += '\n'
         text += '〰️'
     else:
-        text += _('Delivery Fee: {}$').format(delivery_fee)
+        text += _('Delivery Fee: {}₪').format(delivery_fee)
         text += '\n'
     text += '\n'
     text += _('Price:')
@@ -43,14 +43,14 @@ def create_product_description(user_id, product_title, product_prices, product_c
 
     for q, price in product_prices:
         text += '\n'
-        text += _('x {} = ${}').format(q, int(price))
+        text += _('x {} = {}₪').format(q, int(price))
 
     q = product_count
     if q > 0:
         text += '\n\n〰️\n\n'
         text += _('Count: {}').format(q)
         text += '\n'
-        text += _('Subtotal: ${}').format(int(subtotal))
+        text += _('Subtotal: {}₪').format(int(subtotal))
         text += '\n'
 
     return text
@@ -64,7 +64,7 @@ def create_admin_product_description(trans, product_title, product_prices):
              'Price:\n').format(product_title)
     for q, price in product_prices:
         text += '\n'
-        text += _('x {} = ${}').format(q, price)
+        text += _('x {} = {}₪').format(q, price)
     text += '\n\n~~\n'
     return text
 
@@ -84,7 +84,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
         text += '\n'
         text += _('Product:\n{}').format(title)
         text += '\n'
-        text += _('x {} = ${}').format(product_count, price)
+        text += _('x {} = {}₪').format(product_count, price)
         text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'
 
@@ -101,7 +101,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
             if not is_pickup:
                 active_delivery = True
                 text += '\n'
-                text += _('Delivery Fee: {}$').format(delivery_cost)
+                text += _('Delivery Fee: {}₪').format(delivery_cost)
 
     discount = config.get_discount()
     discount_min = config.get_discount_min()
@@ -112,7 +112,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
                 if not discount.endswith('%'):
                     text += '\n'
                     discount_str = '{}'.format(discount)
-                    discount_str += _('$')
+                    discount_str += _('₪')
                     total -= int(discount)
                 else:
                     text += '\n'
@@ -124,7 +124,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total, delivery_
         total += delivery_cost
 
     text += '\n\n'
-    text += _('Total: ${}').format(total)
+    text += _('Total: {}₪').format(total)
     return text
 
 
@@ -143,7 +143,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
         text += '\n'
         text += _('Product:\n{}').format(title)
         text += '\n'
-        text += _('x {} = ${}').format(product_count, price)
+        text += _('x {} = {}₪').format(product_count, price)
         text += '\n'
 
     if 'vip' in shipping_data:
@@ -159,7 +159,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
             if not is_pickup:
                 active_delivery = True
                 text += '\n'
-                text += _('Delivery Fee: {}$').format(delivery_cost)
+                text += _('Delivery Fee: {}₪').format(delivery_cost)
 
     discount = config.get_discount()
     discount_min = config.get_discount_min()
@@ -170,7 +170,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
                 if not discount.endswith('%'):
                     text += '\n'
                     discount_str = '{}'.format(discount)
-                    discount_str += _('$')
+                    discount_str += _('₪')
                     total -= int(discount)
                 else:
                     text += '\n'
@@ -182,7 +182,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
         total += delivery_cost
 
     text += '\n'
-    text += _('Total: ${}').format(total)
+    text += _('Total: {}₪').format(total)
 
     text += '\n'
     text += '〰〰〰〰〰〰〰〰〰〰〰〰️'

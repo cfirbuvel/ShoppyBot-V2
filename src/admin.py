@@ -35,7 +35,6 @@ def is_admin(bot, user_id):
         if member.status == 'left':
             return False
         else:
-            enums.logger.info('Starting for Admin - Session for admin_id: %s, username: @%s, language: %s')
             return True
     except TelegramError as e:
         enums.logger.error("Failed to check admin id: %s", e)

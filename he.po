@@ -116,11 +116,11 @@ msgid "$"
 msgstr "₪"
 
 #: shoppybot.py:127 shoppybot.py:181 shoppybot.py:217
-msgid "Delivery Fee: {}$"
+msgid "Delivery Fee: {}₪"
 msgstr "דמי משלוח: {}₪"
 
 #: shoppybot.py:129
-msgid "for orders below {}$"
+msgid "for orders below {}₪"
 msgstr "להזמנות מתחת ל{}₪"
 
 #: shoppybot.py:133
@@ -128,7 +128,7 @@ msgid "Price:"
 msgstr "מחירון:"
 
 #: shoppybot.py:139 shoppybot.py:169 shoppybot.py:207
-msgid "x {} = ${}"
+msgid "x {} = {}₪"
 msgstr "x {} = {}₪"
 
 #: shoppybot.py:145
@@ -136,7 +136,7 @@ msgid "Count: {}"
 msgstr "כמות: {}"
 
 #: shoppybot.py:147
-msgid "Subtotal: ${}"
+msgid "Subtotal: {}₪"
 msgstr "סיכום ביניים: {}₪"
 
 #: shoppybot.py:157
@@ -149,7 +149,7 @@ msgstr "מוצרים בסל:"
 
 #: shoppybot.py:178 shoppybot.py:183 shoppybot.py:186 shoppybot.py:214
 #: shoppybot.py:219 shoppybot.py:222
-msgid "Total: ${}"
+msgid "Total: {}₪"
 msgstr "סה״כ: {}₪"
 
 #: shoppybot.py:196
@@ -358,7 +358,7 @@ msgstr "השליח `{}` נמחק בהצלחה!"
 
 #: shoppybot.py:317
 msgid "There's no couriers to add"
-msgstr "אין שליח חדש בקבוצת השליחים"
+msgstr "אין שליח חדש בקבוצת השליחים\n\nאנא הכנס שליח חדש לערוץ השליחים ונסה שנית"
 
 #: shoppybot.py:318
 msgid "📖 Orders"
@@ -798,7 +798,7 @@ msgstr "השליח, @{} בדרך!"
 msgid "Courier {} assigned"
 msgstr "@{} קיבל את המשלוח"
 
-#~ msgid "{} x {} = ${}"
+#~ msgid "{} x {} = {}₪"
 #~ msgstr "₪{} = {} x {}"
 
 #~ msgid ""
@@ -1383,3 +1383,7 @@ msgstr "לא ניתן לקבל אחריות על השליחות!"
 #: admin.py:306
 msgid "Courier: {}\nID: {}\nCourier not found, please contact admin"
 msgstr "שגיאה - שליח לא נמצא!\n\nשם שליח: {}\nמס׳ מזהה: {}\n\nאנא פנה למנהל"
+
+#: admin.py:306
+msgid "You don't have couriers"
+msgstr "אין שליחים להצגה\n\nאנא הגדר שליח ונסה שנית"

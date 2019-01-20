@@ -26,6 +26,18 @@ def on_start(bot, update, user_data):
     _ = get_trans(user_id)
     BOT_ON = config.get_bot_on_off() and username not in config.get_banned_users()
     if BOT_ON or is_admin(bot, user_id):
+        if is_admin(bot, user_id):
+            enums.logger.info('Starting session for Admin - From admin_id: %s, username: @%s, language: %s',
+                              update.effective_user.id,
+                              update.effective_user.username,
+                              update.effective_user.language_code
+                              )
+        else:
+            enums.logger.info('Starting - Session for user_id: %s, username: @%s, language: %s',
+                              update.effective_user.id,
+                              update.effective_user.username,
+                              update.effective_user.language_code)
+
         if is_customer(bot, user_id) or is_vip_customer(bot, user_id):
             user_data = get_user_session(user_id)
             products_info = cart.get_products_info(user_data)
@@ -34,10 +46,6 @@ def on_start(bot, update, user_data):
             else:
                 msg = config.get_welcome_text().format(update.effective_user.first_name)
             total = cart.get_cart_total(user_data)
-            enums.logger.info('Starting - Session for user_id: %s, username: @%s, language: %s',
-                              update.effective_user.id,
-                              update.effective_user.username,
-                              update.effective_user.language_code)
             update.message.reply_text(
                 text=msg,
                 reply_markup=create_main_keyboard(_, config.get_reviews_channel(), user,
@@ -140,9 +148,14 @@ def on_menu(bot, update, user_data=None):
                                      text=_('Please choose pickup or delivery'),
                                      reply_markup=create_shipping_keyboard(_),
                                      parse_mode=ParseMode.MARKDOWN, )
-                    enums.logger.info('Starting order process - From user_id: %s, username: @%s',
-                                      update.effective_user.id,
-                                      update.effective_user.username)
+                    if is_admin(bot, user_id):
+                        enums.logger.info('Starting order process for Admin - From admin_id: %s, username: @%s',
+                                          update.effective_user.id,
+                                          update.effective_user.username)
+                    else:
+                        enums.logger.info('Starting order process - From user_id: %s, username: @%s',
+                                          update.effective_user.id,
+                                          update.effective_user.username)
                     query.answer()
                     return enums.BOT_STATE_CHECKOUT_SHIPPING
                 else:
