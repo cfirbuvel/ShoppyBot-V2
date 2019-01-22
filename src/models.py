@@ -20,6 +20,8 @@ class BaseModel(Model):
 
 class Location(BaseModel):
     title = CharField()
+    delivery_min = IntegerField(null=True)
+    delivery_fee = IntegerField(null=True)
 
 
 class User(BaseModel):
@@ -76,6 +78,7 @@ class Order(BaseModel):
                                    choices=DeliveryMethod)
     shipping_time = DateTimeField(default=datetime.datetime.now)
     location = ForeignKeyField(Location, null=True)
+    # address = CharField(null=True)
     confirmed = BooleanField(default=False)
     delivered = BooleanField(default=False)
     canceled = BooleanField(default=False)

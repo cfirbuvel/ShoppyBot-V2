@@ -105,8 +105,8 @@ def on_menu(bot, update, user_data=None):
                             user_data, product.id)
                         subtotal = cart.get_product_subtotal(
                             user_data, product.id)
-                        delivery_fee = config.get_delivery_fee()
-                        delivery_min = config.get_delivery_min()
+                        # delivery_fee = config.get_delivery_fee()
+                        # delivery_min = config.get_delivery_min()
                         product_title, prices = cart.product_full_info(
                             user_data, product.id)
                         shortcuts.send_product_media(bot, product, chat_id)
@@ -114,8 +114,7 @@ def on_menu(bot, update, user_data=None):
                                          text=create_product_description(
                                              user_id,
                                              product_title, prices,
-                                             product_count, subtotal,
-                                             delivery_min, delivery_fee),
+                                             product_count, subtotal),
                                          reply_markup=create_product_keyboard(_,
                                                                               product.id, user_data, cart),
                                          parse_mode=ParseMode.MARKDOWN,
@@ -200,8 +199,8 @@ def on_menu(bot, update, user_data=None):
                 session_client.json_set(user_id, user_data)
 
                 subtotal = cart.get_product_subtotal(user_data, product_id)
-                delivery_fee = config.get_delivery_fee()
-                delivery_min = config.get_delivery_min()
+                # delivery_fee = config.get_delivery_fee()
+                # delivery_min = config.get_delivery_min()
                 product_title, prices = cart.product_full_info(
                     user_data, product_id)
                 product_count = cart.get_product_count(user_data, product_id)
@@ -212,8 +211,7 @@ def on_menu(bot, update, user_data=None):
                                       text=create_product_description(
                                           user_id,
                                           product_title, prices,
-                                          product_count, subtotal,
-                                          delivery_min, delivery_fee),
+                                          product_count, subtotal),
                                       reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
                                       parse_mode=ParseMode.MARKDOWN, )
@@ -230,8 +228,8 @@ def on_menu(bot, update, user_data=None):
                 session_client.json_set(user_id, user_data)
 
                 subtotal = cart.get_product_subtotal(user_data, product_id)
-                delivery_fee = config.get_delivery_fee()
-                delivery_min = config.get_delivery_min()
+                # delivery_fee = config.get_delivery_fee()
+                # delivery_min = config.get_delivery_min()
                 product_title, prices = cart.product_full_info(
                     user_data, product_id)
                 product_count = cart.get_product_count(user_data, product_id)
@@ -245,8 +243,7 @@ def on_menu(bot, update, user_data=None):
                                       text=create_product_description(
                                           user_id,
                                           product_title, prices,
-                                          product_count, subtotal,
-                                          delivery_min, delivery_fee),
+                                          product_count, subtotal),
                                       reply_markup=create_product_keyboard(_,
                                                                            product_id, user_data, cart),
                                       parse_mode=ParseMode.MARKDOWN, )
