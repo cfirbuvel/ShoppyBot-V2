@@ -275,7 +275,7 @@ def on_admin_orders_finished_date(bot, update, user_data):
         year, month = user_data['calendar_date']
         queries = shortcuts.get_order_subquery(action, val, month, year)
         orders = Order.select().where(*queries)
-        orders = orders.select().where(Order.delivered == True, Order.canceled == False)
+        orders = orders.select().where((Order.delivered == True), (Order.canceled == False))
         orders_data = [(order.id, order.user.username, order.date_created.strftime('%d/%m/%Y')) for order in orders]
         orders = [(_('Order №{} @{} {}').format(order_id, user_name, order_date), order_id) for order_id, user_name, order_date in orders_data]
         user_data['admin_finished_orders'] = orders
