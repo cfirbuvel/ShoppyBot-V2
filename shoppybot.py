@@ -388,6 +388,9 @@ def main():
             enums.ADMIN_DELIVERY_FEE_VIP: [
                 CallbackQueryHandler(admin.on_admin_delivery_fee_vip)
             ],
+            enums.ADMIN_ADD_DELIVERY_FEE_FOR_LOCATION: [
+                CallbackQueryHandler(admin.on_admin_add_delivery_for_location, pass_user_data=True)
+            ],
             enums.ADMIN_ADD_DELIVERY_FEE: [
                 CallbackQueryHandler(
                     admin.on_admin_add_delivery, pass_user_data=True),

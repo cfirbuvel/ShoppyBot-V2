@@ -46,7 +46,6 @@ def cancel_process(bot, update):
                           update.effective_user.username)
 
 
-
 def on_my_orders(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
@@ -81,6 +80,7 @@ def on_my_orders(bot, update, user_data):
                               reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.BOT_STATE_MY_LAST_ORDER
+
 
 def on_my_order_date(bot, update, user_data):
     query = update.callback_query
@@ -129,6 +129,7 @@ def on_my_order_date(bot, update, user_data):
             query.answer()
             return enums.BOT_STATE_MY_ORDER_SELECT
 
+
 def on_my_order_select(bot, update, user_data):
     query = update.callback_query
     user_id = get_user_id(update)
@@ -157,6 +158,7 @@ def on_my_order_select(bot, update, user_data):
         query.answer()
         # return enums.BOT_STATE_MY_ORDER_BY_DATE
         return enums.BOT_STATE_MY_LAST_ORDER
+
 
 def on_my_last_order(bot, update, user_data):
     query = update.callback_query
@@ -239,6 +241,9 @@ def on_shipping_method(bot, update, user_data):
     elif key == _('🏪 Pickup') or key == _('🚚 Delivery'):
         user_data['shipping']['method'] = key
         session_client.json_set(user_id, user_data)
+        if key == ('🚚 Delivery'):
+            if not Location.select().exists():
+                return enter_state_location_delivery(bot, update, user_data)
         return enter_state_courier_location(bot, update, user_data)
     else:
         return enter_state_shipping_method(bot, update, user_data)
@@ -571,8 +576,8 @@ def on_confirm_order(bot, update, user_data):
         is_pickup = shipping_data['method'] == _('🏪 Pickup')
         product_info = cart.get_products_info(user_data)
         total = cart.get_cart_total(user_data)
-        delivery_cost = config.get_delivery_fee()
-        delivery_min = config.get_delivery_min()
+        # delivery_cost = config.get_delivery_fee()
+        # delivery_min = config.get_delivery_min()
         delivery_for_vip = config.get_delivery_fee_for_vip()
         try:
             user = User.get(telegram_id=user_id)
@@ -581,8 +586,12 @@ def on_confirm_order(bot, update, user_data):
                 user = User.create(telegram_id=user_id, locale=locale)
             else:
                 user = User.create(telegram_id=user_id, locale=locale, username=username)
-        location = Location.get(
-            title=shipping_data['pickup_location'])
+        pickup_location = shipping_data.get('pickup_location')
+        if pickup_location:
+            location = Location.get(
+                title=pickup_location)
+        else:
+            location = None
         order = Order.create(user=user,
                              location=location,
                              shipping_method=DeliveryMethod.DELIVERY.value
@@ -597,7 +606,7 @@ def on_confirm_order(bot, update, user_data):
                           update.effective_user.id,
                           update.effective_user.username)
         text = create_service_notice(_, is_pickup, order_id, customer_username, product_info, shipping_data,
-                                     total, delivery_min, delivery_cost, delivery_for_vip)
+                                     total, delivery_for_vip)
         if 'order_identification' in user_data:
             for stage_id, q_id, answer in user_data['order_identification']['answers']:
                 stage = IdentificationStage.get(id=stage_id)
@@ -606,7 +615,11 @@ def on_confirm_order(bot, update, user_data):
 
         # ORDER CONFIRMED, send the details to service channel
         user_name = order.user.username
-        location = order.location.title
+        #location = order.location.title
+        if location:
+            location = location.title
+        else:
+            location = '-'
         txt = _('Order №{}, Location {}\nUser @{}').format(order_id, location, user_name)
         # txt = _('Order confirmed by\n@{}\n').format(update.message.from_user.username)
         service_channel = config.get_service_channel()
@@ -767,10 +780,13 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 couriers_channel = config.get_couriers_channel()
                 order_data = OrderPhotos.get(order_id=order_id)
                 answers_ids = shortcuts.send_order_identification_answers(bot, couriers_channel, order, send_one=True)
-                # answers_ids = ','.join(answers_ids)
+                answers_ids = ','.join(answers_ids)
                 order_info = Order.get(id=order_id)
                 order_pickup_state = order_info.shipping_method
-                order_location = order_info.location.title
+                # order_location = order_info.location.title
+                order_location = order_info.location
+                if order_location:
+                    order_location = order_location.title
                 bot.send_message(chat_id=couriers_channel,
                                  text=order_data.order_text,
                                  reply_markup=create_service_notice_keyboard(
@@ -929,49 +945,41 @@ def service_channel_courier_query_handler(bot, update, user_data):
                 text=_('Courier: {}\nID: {}\nCourier not found, please contact admin').format(courier_nickname, courier_id),
                 show_alert=True)
         else:
-            try:
-                CourierLocation.get(courier=courier, location=order.location)
-            except CourierLocation.DoesNotExist:
-                # bot.send_message(
-                #     config.get_couriers_channel(),
-                #     text='{} your location and customer locations are '
-                #          'different'.format(courier_nickname),
-                #     parse_mode=ParseMode.HTML
-                # )
-                query.answer(text=_('{}\n your location and customer locations are different').format(courier_nickname),
-                             show_alert=True)
-            else:
-                courier_trans = get_trans(courier_id)
-                msg = shortcuts.check_order_products_credits(order, courier_trans, courier)
-                if msg is str:
-                    bot.send_message(courier_id, msg, parse_mode=ParseMode.MARKDOWN)
-                    query.answer(text=_('Can\'t take responsibility for order'), show_alert=True)
+            if order.location:
+                try:
+                    CourierLocation.get(courier=courier, location=order.location)
+                except CourierLocation.DoesNotExist:
+                    query.answer(
+                        text=_('{}\n your location and customer locations are different').format(courier_nickname),
+                        show_alert=True)
                     return
-                order.courier = courier
-                order.save()
-                if not msg:
-                    shortcuts.change_order_products_credits(order, courier=courier)
-                couriers_channel = config.get_couriers_channel()
-                bot.delete_message(chat_id=couriers_channel,
-                                   message_id=query.message.message_id)
-                assigned_msg = bot.send_message(
-                    config.get_couriers_channel(),
-                    text=query.message.text,
-                    parse_mode=ParseMode.MARKDOWN,
-                    reply_markup=create_courier_assigned_keyboard(courier_nickname, order_id, _),
-                )
-                assigned_msg_id = assigned_msg['message_id']
-                bot.send_message(
-                    config.get_service_channel(),
-                    text=_('Courier: @{}, apply for order №{}.\n'
-                           'Confirm this?').format(
-                        courier_nickname, order_id),
-                    reply_markup=create_courier_confirmation_keyboard(order_id, courier_nickname, _,
-                                                                      answers_ids, assigned_msg_id)
-                )
-                bot.answer_callback_query(
-                    query.id,
-                    text=_('Courier {} assigned').format(courier_nickname), show_alert=True)
+            courier_trans = get_trans(courier_id)
+            msg = shortcuts.check_order_products_credits(order, courier_trans, courier)
+            if msg is str:
+                bot.send_message(courier_id, msg, parse_mode=ParseMode.MARKDOWN)
+                query.answer(text=_('Can\'t take responsibility for order'), show_alert=True)
+                return
+            order.courier = courier
+            order.save()
+            if not msg:
+                shortcuts.change_order_products_credits(order, courier=courier)
+            couriers_channel = config.get_couriers_channel()
+            bot.delete_message(chat_id=couriers_channel,
+                                message_id=query.message.message_id)
+            assigned_msg = bot.send_message(
+                config.get_couriers_channel(),
+                text=query.message.text,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=create_courier_assigned_keyboard(courier_nickname, order_id, _),
+            )
+            assigned_msg_id = assigned_msg['message_id']
+            bot.send_message(
+                config.get_service_channel(),
+                text=_('Courier: @{}, apply for order №{}.\n'
+                        'Confirm this?').format(courier_nickname, order_id),
+                reply_markup=create_courier_confirmation_keyboard(order_id, courier_nickname, _, answers_ids, assigned_msg_id)
+            )
+            bot.answer_callback_query(query.id, text=_('Courier {} assigned').format(courier_nickname), show_alert=True)
 
 
 def send_welcome_message(bot, update):
@@ -1293,13 +1301,19 @@ def on_statistics_menu(bot, update, user_data):
         query.answer()
         return enums.ADMIN_STATISTICS_COURIERS
     elif data == 'statistics_locations':
-        locations = Location.select(Location.title, Location.id).tuples()
-        msg = _('Select location:')
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-                              text=msg, reply_markup=general_select_one_keyboard(_, locations),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
-        return enums.ADMIN_STATISTICS_LOCATIONS
+        locations = Location.select().exists()
+        if not locations:
+            msg = _('You don\'t have locations')
+            query.answer(text=msg, show_alert=True)
+            return enums.ADMIN_STATISTICS
+        else:
+            locations = Location.select(Location.title, Location.id).tuples()
+            msg = _('Select location:')
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id,
+                                  text=msg, reply_markup=general_select_one_keyboard(_, locations),
+                                  parse_mode=ParseMode.MARKDOWN)
+            query.answer()
+            return enums.ADMIN_STATISTICS_LOCATIONS
     elif data == 'statistics_user':
         msg = _('Enter username:')
         bot.delete_message(chat_id, message_id)
@@ -1835,8 +1849,8 @@ def on_product_categories(bot, update, user_data):
                 user_data, product.id)
             subtotal = cart.get_product_subtotal(
                 user_data, product.id)
-            delivery_fee = config.get_delivery_fee()
-            delivery_min = config.get_delivery_min()
+            # delivery_fee = config.get_delivery_fee()
+            # delivery_min = config.get_delivery_min()
             product_title, prices = cart.product_full_info(
                 user_data, product.id)
             shortcuts.send_product_media(bot, product, chat_id)
@@ -1844,8 +1858,7 @@ def on_product_categories(bot, update, user_data):
                              text=create_product_description(
                                  user_id,
                                  product_title, prices,
-                                 product_count, subtotal,
-                                 delivery_min, delivery_fee),
+                                 product_count, subtotal),
                              reply_markup=create_product_keyboard(_,
                                                                   product.id, user_data, cart),
                              parse_mode=ParseMode.MARKDOWN,

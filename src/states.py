@@ -114,14 +114,14 @@ def enter_state_order_confirm(bot, update, user_data):
     is_pickup = user_data['shipping']['method'] == _('🏪 Pickup')
     shipping_data = user_data['shipping']
     total = cart.get_cart_total(user_data)
-    delivery_cost = config.get_delivery_fee()
-    delivery_min = config.get_delivery_min()
+    # delivery_cost = config.get_delivery_fee()
+    # delivery_min = config.get_delivery_min()
     delivery_for_vip = config.get_delivery_fee_for_vip()
     product_info = cart.get_products_info(user_data)
     user_data['shipping']['vip'] = is_vip_customer(bot, user_id)
     update.message.reply_text(
         text=create_confirmation_text(user_id,
-            is_pickup, shipping_data, total, delivery_min, delivery_cost, delivery_for_vip, product_info),
+            is_pickup, shipping_data, total, delivery_for_vip, product_info),
         reply_markup=create_confirmation_keyboard(_),
         parse_mode=ParseMode.MARKDOWN,
     )

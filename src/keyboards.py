@@ -130,23 +130,34 @@ def create_locations_keyboard(location_names, trans):
     return InlineKeyboardMarkup(button_row)
 
 
+def create_locations_with_all_btn_keyboard(locations, trans):
+    _ = trans
+    button_row = []
+    for loc in locations:
+        button_row.append([InlineKeyboardButton(_(loc.title), callback_data=str(loc.id))])
+    button_row.append([InlineKeyboardButton(_('All locations'), callback_data='all_locs')])
+    button_row.append([InlineKeyboardButton(_('↩ Back'), callback_data='back')])
+    return InlineKeyboardMarkup(button_row)
+
+
+
 def create_service_notice_keyboard(order_id, trans, answers_ids, order_location, order_pickup_state=1):
     _ = trans
     if order_pickup_state == 2:
+        if order_location:
+            button_msg = _('Take delivery from {}').format(order_location)
+        else:
+            button_msg = _('Take delivery')
         buttons = [
-            [
-                InlineKeyboardButton(
-                    _('🚚 Take delivery from {}').format(order_location),
-                    callback_data='courier|{}|{}'.format(order_id, answers_ids))
-            ]
+            [InlineKeyboardButton(button_msg, callback_data='courier|{}|{}'.format(order_id, answers_ids))]
         ]
     else:
+        if order_location:
+            button_msg = _('🏪 Take pickup from {}').format(order_location)
+        else:
+            button_msg = _('🏪 Take pickup')
         buttons = [
-            [
-                InlineKeyboardButton(
-                    _('🏪 Take pickup from {}').format(order_location),
-                    callback_data='courier|{}|{}'.format(order_id, answers_ids))
-            ]
+            [InlineKeyboardButton(button_msg, callback_data='courier|{}|{}'.format(order_id, answers_ids))]
         ]
     return InlineKeyboardMarkup(buttons)
 

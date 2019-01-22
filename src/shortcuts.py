@@ -85,7 +85,9 @@ def make_unconfirm(bot, update, user_data):
         answers_ids = ','.join(answers_ids)
         order_info = Order.get(id=order_id)
         order_pickup_state = order_info.shipping_method
-        order_location = order_info.location.title
+        order_location = order_info.location
+        if order_location:
+            order_location = order_location.title
         bot.send_message(chat_id=couriers_channel,
                          text=order_data.order_text,
                          reply_markup=keyboards.create_service_notice_keyboard(
@@ -116,11 +118,13 @@ def resend_responsibility_keyboard(bot, update):
     bot.send_message(chat_id=couriers_channel,
                      text=_('Order №{} was dropped by courier').format(order_id))
     answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
-    # answers_ids = ','.join(answers_ids)
+    answers_ids = ','.join(answers_ids)
 
     order_info = Order.get(id=order_id)
     order_pickup_state = order_info.shipping_method
-    order_location = order_info.location.title
+    order_location = order_info.location
+    if order_location:
+        order_location = order_location.title
     bot.send_message(chat_id=couriers_channel,
                      text=order_data.order_text,
                      reply_markup=keyboards.create_service_notice_keyboard(

@@ -20,7 +20,7 @@ from .keyboards import create_back_button, create_bot_couriers_keyboard, create_
     create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
     create_categories_keyboard, create_add_courier_keyboard, create_delivery_fee_keyboard, \
     create_general_on_off_keyboard, create_bot_product_edit_keyboard, create_product_edit_media_keyboard, \
-    create_edit_identification_type_keyboard, create_bot_orders_keyboard
+    create_edit_identification_type_keyboard, create_bot_orders_keyboard, create_locations_with_all_btn_keyboard
 
 from . import shortcuts
 
@@ -246,7 +246,10 @@ def on_admin_orders_pending_select(bot, update, user_data):
         service_trans = get_channel_trans()
         order = Order.get(id=val)
         user_name = order.user.username
-        location = order.location.title
+        if order.location:
+            location = order.location.title
+        else:
+            location = '-'
         msg = service_trans('Order №{}, Location {}\nUser @{}').format(val, location, user_name)
         shortcuts.bot_send_order_msg(bot, config.get_service_channel(), msg, service_trans, val)
         msg = _('💳 Order options')
@@ -322,19 +325,23 @@ def on_admin_delivery_fee(bot, update):
     msg_id = query.message.message_id
     action = query.data
     if action == 'add':
-        msg = _('Enter delivery fee like:\n'
-                '50 > 500: Deals below 500 will have delivery fee of 50\n'
-                'or\n'
-                '50: All deals will have delivery fee of 50\n'
-                'Only works on delivery\n\n'
-                'Current fee: {}>{}').format(config.get_delivery_fee(),config.get_delivery_min())
+        locations = Location.select().exists()
+        if locations:
+            locations = Location.select()
+            msg = _('Select location:')
+            keyboard = create_locations_with_all_btn_keyboard(locations, _)
+            state = enums.ADMIN_ADD_DELIVERY_FEE_FOR_LOCATION
+        else:
+            msg = messages.create_delivery_fee_msg(_)
+            keyboard = create_back_button(_)
+            state = enums.ADMIN_ADD_DELIVERY_FEE
         bot.edit_message_text(
             msg, chat_id, msg_id,
-            reply_markup=create_back_button(_),
+            reply_markup=keyboard,
             parse_mode=ParseMode.MARKDOWN,
         )
         query.answer()
-        return enums.ADMIN_ADD_DELIVERY_FEE
+        return state
     elif action == 'back':
         msg = _('💳 Order options')
         bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
@@ -346,6 +353,83 @@ def on_admin_delivery_fee(bot, update):
                               reply_markup=create_general_on_off_keyboard(_))
         query.answer()
         return enums.ADMIN_DELIVERY_FEE_VIP
+
+
+def on_admin_add_delivery_for_location(bot, update, user_data):
+    query = update.callback_query
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    action = query.data
+    if action == 'back':
+        msg = _('🚕 Delivery fee')
+        bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_delivery_fee_keyboard(_))
+        query.answer()
+        return enums.ADMIN_DELIVERY_FEE
+    if action == 'all_locs':
+        user_data['delivery_fee_loc'] = 'all'
+        location = None
+    else:
+        user_data['delivery_fee_loc'] = action
+        location = Location.get(id=action)
+    msg = messages.create_delivery_fee_msg(_, location)
+    bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_back_button(_))
+    return enums.ADMIN_ADD_DELIVERY_FEE
+
+
+def on_admin_add_delivery(bot, update, user_data):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    if update.callback_query and update.callback_query.data == 'back':
+        if user_data.get('delivery_fee_loc') is not None:
+            del user_data['delivery_fee_loc']
+            msg = _('Select location:')
+            locations = Location.select()
+            keyboard = create_locations_with_all_btn_keyboard(locations, _)
+            state = enums.ADMIN_ADD_DELIVERY_FEE_FOR_LOCATION
+        else:
+            msg = _('🚕 Delivery fee')
+            keyboard = create_delivery_fee_keyboard(_)
+            state = enums.ADMIN_DELIVERY_FEE
+        upd_msg = update.callback_query.message
+        bot.edit_message_text(msg, upd_msg.chat_id, upd_msg.message_id, parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=keyboard)
+        update.callback_query.answer()
+        return state
+        # option_back_function(
+        #     bot, update, create_bot_order_options_keyboard(_),
+        #     'Order options')
+        # return enums.ADMIN_ORDER_OPTIONS
+    # user_id = get_user_id(update)
+    delivery = update.message.text
+    cleaned_data = [int(i.strip()) for i in delivery.split('>')]
+    delivery_fee = cleaned_data[0]
+    try:
+        delivery_min = cleaned_data[1]
+    except IndexError:
+        delivery_min = 0
+    for_location = user_data.get('delivery_fee_loc')
+    if not for_location or for_location == 'all':
+        config_session = get_config_session()
+        config_session['delivery_fee'] = delivery_fee
+        config_session['delivery_min'] = delivery_min
+        set_config_session(config_session)
+        if for_location:
+            for loc in Location.select():
+                loc.delivery_fee = delivery_fee
+                loc.delivery_min = delivery_min
+                loc.save()
+    else:
+        loc = Location.get(Location.id == for_location)
+        loc.delivery_fee = delivery_fee
+        loc.delivery_min = delivery_min
+        loc.save()
+    bot.send_message(update.message.chat_id,
+                     _('Delivery fee was changed'),
+                     reply_markup=create_delivery_fee_keyboard(_),
+                     parse_mode=ParseMode.MARKDOWN)
+    return enums.ADMIN_DELIVERY_FEE
 
 
 def on_admin_delivery_fee_vip(bot, update):
@@ -1437,16 +1521,37 @@ def on_admin_add_courier(bot, update, user_data):
         query.answer()
         return enums.ADMIN_COURIER_ADD
     elif action == 'select':
-        user_data['add_courier'] = {'location_ids': [], 'courier_id': param}
-        text = _('Choose locations for new courier')
-        locations = []
-        for location in Location:
-            is_picked = False
-            locations.append((location.title, location.id, is_picked))
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
-                              reply_markup=create_courier_locations_keyboard(_, locations))
-        query.answer()
-        return enums.ADMIN_TXT_COURIER_LOCATION
+        locations = Location.select().exists()
+        if locations:
+            user_data['add_courier'] = {'location_ids': [], 'courier_id': param}
+            text = _('Choose locations for new courier')
+            locations = []
+            for location in Location:
+                is_picked = False
+                locations.append((location.title, location.id, is_picked))
+            bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
+                                  reply_markup=create_courier_locations_keyboard(_, locations))
+            query.answer()
+            return enums.ADMIN_TXT_COURIER_LOCATION
+        else:
+            courier = Courier.get(id=param)
+            courier.is_active = True
+            courier.save()
+            for product in Product:
+                try:
+                    ProductWarehouse.get(courier=courier, product=product)
+                except ProductWarehouse.DoesNotExist:
+                    ProductWarehouse.create(courier=courier, product=product)
+            try:
+                del user_data['add_courier']
+            except KeyError:
+                pass
+            bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                                  text=_('Courier added'),
+                                  reply_markup=create_bot_couriers_keyboard(_),
+                                  parse_mode=ParseMode.MARKDOWN)
+            query.answer()
+            return enums.ADMIN_COURIERS
     # query = update.callback_query
     # user_id = get_user_id(update)
     # _ = get_trans(user_id)
@@ -1593,6 +1698,21 @@ def on_admin_txt_courier_id(bot, update, user_data):
     user_data['add_courier']['telegram_id'] = telegram_id
     user_id = get_user_id(update)
     _ = get_trans(user_id)
+    locations = Location.select().exists()
+    if not locations:
+        Courier.create(telegram_id=telegram_id, is_active=True)
+        for product in Product:
+            try:
+                ProductWarehouse.get(courier=courier, product=product)
+            except ProductWarehouse.DoesNotExist:
+                ProductWarehouse.create(courier=courier, product=product)
+        del user_data['add_courier']
+        bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                              text=_('Courier added'),
+                              reply_markup=create_bot_couriers_keyboard(_),
+                              parse_mode=ParseMode.MARKDOWN)
+        query.answer()
+        return enums.ADMIN_COURIERS
     if 'location_ids' not in user_data['add_courier']:
         user_data['add_courier']['location_ids'] = []
     location_ids = user_data['add_courier']['location_ids']
@@ -2014,36 +2134,6 @@ def on_admin_add_discount(bot, update, user_data):
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_ADD_DISCOUNT
 
-def on_admin_add_delivery(bot, update, user_data):
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    if update.callback_query and update.callback_query.data == 'back':
-        msg = _('🚕 Delivery fee')
-        upd_msg = update.callback_query.message
-        bot.edit_message_text(msg, upd_msg.chat_id, upd_msg.message_id, parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_delivery_fee_keyboard(_))
-        update.callback_query.answer()
-        return enums.ADMIN_DELIVERY_FEE
-        # option_back_function(
-        #     bot, update, create_bot_order_options_keyboard(_),
-        #     'Order options')
-        # return enums.ADMIN_ORDER_OPTIONS
-    # user_id = get_user_id(update)
-    delivery = update.message.text
-    cleaned_data = [int(i.strip()) for i in delivery.split('>')]
-    config_session = get_config_session()
-    config_session['delivery_fee'] = cleaned_data[0]
-    if len(cleaned_data) == 2:
-        config_session['delivery_min'] = cleaned_data[1]
-    else:
-        config_session['delivery_min'] = 0
-    set_config_session(config_session)
-
-    bot.send_message(update.message.chat_id,
-                     _('Delivery fee was changed'),
-                     reply_markup=create_delivery_fee_keyboard(_),
-                     parse_mode=ParseMode.MARKDOWN)
-    return enums.ADMIN_DELIVERY_FEE
 
 
 def on_admin_bot_on_off(bot, update, user_data):
