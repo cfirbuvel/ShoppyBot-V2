@@ -1081,7 +1081,7 @@ def on_statistics_general(bot, update, user_data):
     else:
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price = shortcuts.get_order_count_and_price((Order.delivered == True), *subquery)
+        count, price = shortcuts.get_order_count_and_price((Order.delivered == True), (Order.canceled == False), *subquery)
         message = _('Total confirmed orders\n\nCount: {}\nTotal cost: {}$').format(
                 count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
@@ -1144,7 +1144,7 @@ def on_statistics_couriers(bot, update, user_data):
         courier = Courier.get(id=courier_id)
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price = shortcuts.get_order_count_and_price((Order.delivered == True), (Order.courier == courier), *subquery)
+        count, price = shortcuts.get_order_count_and_price((Order.delivered == True),(Order.canceled == False), (Order.courier == courier), *subquery)
 
         message = _('Courier: @{}\n\nOrders count: {}\nTotal cost: {}$').format(courier.username, count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
@@ -1207,8 +1207,8 @@ def on_statistics_locations(bot, update, user_data):
         location = Location.get(id=location_id)
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price = shortcuts.get_order_count_and_price((Order.delivered == True),
-                                                           Order.location == location, *subquery)
+        count, price = shortcuts.get_order_count_and_price((Order.delivered == True),(Order.canceled == False),
+                                                           (Order.location == location), *subquery)
 
         message = _('Location: `{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
@@ -1268,8 +1268,13 @@ def on_statistics_user(bot, update, user_data):
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         for user in users:
-            count, price = shortcuts.get_order_count_and_price((Order.delivered == True), Order.user == user, *subquery)
-            message = _('User: @{}\n\nOrders count: {}\nTotal cost: {}$').format(user.username, count, price)
+            count, price = shortcuts.get_order_count_and_price((Order.delivered == True),
+                                                               (Order.canceled == False),
+                                                               (Order.user == user), *subquery)
+            cancel_count, cancel_price = shortcuts.get_order_count_and_price((Order.canceled == True), *subquery)
+            message = _(
+                'User: @{}\n\nOrders count: {}\nTotal cost: {}$\n\nCanceled orders: {}\ncancel price: {}'
+            ).format(user.username, count, price, cancel_count, cancel_price)
             text += message
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
                               reply_markup=create_statistics_keyboard(_),

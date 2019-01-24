@@ -1387,3 +1387,7 @@ msgstr "שגיאה - שליח לא נמצא!\n\nשם שליח: {}\nמס׳ מזה
 #: admin.py:306
 msgid "You don't have couriers"
 msgstr "אין שליחים להצגה\n\nאנא הגדר שליח ונסה שנית"
+
+#: admin.py:306
+msgid "Yes and delete"
+msgstr "כן ומחק את ההזמנה"

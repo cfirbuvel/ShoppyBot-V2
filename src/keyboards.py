@@ -664,7 +664,7 @@ def create_service_channel_keyboard(trans, order_id):
                               callback_data='order_ban_client|{}'.format(order_id))],
         [InlineKeyboardButton(_('✅ Order Finished'),
                               callback_data='order_finished|{}'.format(order_id))],
-        [InlineKeyboardButton(_('❌ Cancel Order'), callback_data='order_cancel|{}'.format(order_id))],
+        [InlineKeyboardButton(_('❌ Cancel order'), callback_data='order_cancel|{}'.format(order_id))],
         [InlineKeyboardButton(_('💳 Hide Order'),
                               callback_data='order_hide|{}'.format(order_id))],
     ]
