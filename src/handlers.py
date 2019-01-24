@@ -143,6 +143,11 @@ def on_menu(bot, update, user_data=None):
                         msg = _('You cannot make new order if previous order is not finished')
                         query.answer(msg, show_alert=True)
                         return enums.BOT_STATE_INIT
+                    try:
+                        del user_data['order_identification']
+                        session_client.json_set(user_id, user_data)
+                    except KeyError:
+                        pass
                     bot.send_message(query.message.chat_id,
                                      text=_('Please choose pickup or delivery'),
                                      reply_markup=create_shipping_keyboard(_),

@@ -1,4 +1,4 @@
-from telegram import ParseMode, TelegramError, InputMediaPhoto
+from telegram import ParseMode, TelegramError, InputMediaPhoto, InputMediaVideo
 import io
 import datetime
 import operator
@@ -152,12 +152,14 @@ def send_order_identification_answers(bot, chat_id, order, send_one=False):
     answers = []
     photos_answers = []
     photos = []
+    class_map = {'photo': InputMediaPhoto, 'video': InputMediaVideo}
     for answer in order.identification_answers:
         type = answer.stage.type
         content = answer.content
         question = answer.question.content
-        if type == 'photo':
-            content = InputMediaPhoto(content, question)
+        if type in ('photo', 'video'):
+            media_class = class_map[type]
+            content = media_class(content, question)
             photos.append(content)
             photos_answers.append(answer)
         else:
@@ -292,10 +294,11 @@ def change_order_products_credits(order, add=False, courier=None):
 #             func(chat_id, stream)
 
 def send_product_media(bot, product, chat_id):
-    from telegram import InputMediaPhoto
+    class_map = {'photo': InputMediaPhoto, 'video': InputMediaVideo}
     media_list = []
     for media in product.product_media:
-        file = InputMediaPhoto(media=media.file_id)
+        media_class = class_map[media.file_type]
+        file = media_class(media=media.file_id)
         media_list.append(file)
     bot.send_media_group(chat_id, media_list)
     # with open(media.file_path, 'rb') as file:

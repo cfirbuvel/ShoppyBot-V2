@@ -1051,13 +1051,13 @@ def on_admin_product_edit_media(bot, update, user_data):
         try:
             files = user_data['admin_product_edit_files']
         except KeyError:
-            msg = _('Send photos for new product')
+            msg = _('Send photos/videos for new product')
             bot.send_message(chat_id, msg)
             return enums.ADMIN_PRODUCT_EDIT_MEDIA
         for media in product.product_media:
             media.delete_instance()
-        for file_id in files:
-            ProductMedia.create(product=product, file_id=file_id)
+        for file_id, file_type in files:
+            ProductMedia.create(product=product, file_id=file_id, file_type=file_type)
         del user_data['admin_product_edit_files']
         msg = _('Product\'s media has been updated\n✅')
         bot.send_message(chat_id, msg, reply_markup=ReplyKeyboardRemove())
@@ -1071,13 +1071,17 @@ def on_admin_product_edit_media(bot, update, user_data):
         bot.send_message(upd_msg.chat_id, msg, reply_markup=create_bot_product_edit_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCT_EDIT
-    file = upd_msg.photo
+    attr_list = ['photo', 'video']
+    for file_type in attr_list:
+        file = getattr(upd_msg, file_type)
+        if file:
+            break
     if type(file) == list:
         file = file[-1]
     if not user_data.get('admin_product_edit_files'):
-        user_data['admin_product_edit_files'] = [file.file_id]
+        user_data['admin_product_edit_files'] = [(file.file_id, file_type)]
     else:
-        user_data['admin_product_edit_files'].append(file.file_id)
+        user_data['admin_product_edit_files'].append((file.file_id, file_type))
     return enums.ADMIN_PRODUCT_EDIT_MEDIA
 
 
@@ -1265,7 +1269,7 @@ def on_admin_txt_product_prices(bot, update, user_data):
     #     reply_markup=create_back_button(_)
     # )
     update.message.reply_text(
-        text=_('Send photos for new product'),
+        text=_('Send photos/videos for new product'),
         reply_markup=create_product_media_keyboard(_), parse_mode=ParseMode.MARKDOWN,
     )
     return enums.ADMIN_TXT_PRODUCT_PHOTO
@@ -1283,7 +1287,7 @@ def on_admin_txt_product_photo(bot, update, user_data):
         try:
             files = user_data['add_product']['files']
         except KeyError:
-            msg = _('Send photos for new product')
+            msg = _('Send photos/videos for new product')
             bot.send_message(chat_id, msg)
             return enums.ADMIN_TXT_PRODUCT_PHOTO
         try:
@@ -1294,8 +1298,8 @@ def on_admin_txt_product_photo(bot, update, user_data):
             product = Product.create(title=title, category=def_cat)
         for count, price in prices:
             ProductCount.create(product=product, price=price, count=count)
-        for file_id in files:
-            ProductMedia.create(product=product, file_id=file_id)
+        for file_id, file_type in files:
+            ProductMedia.create(product=product, file_id=file_id, file_type=file_type)
         for courier in Courier:
             ProductWarehouse.create(product=product, courier=courier)
         # clear new product data
@@ -1315,13 +1319,17 @@ def on_admin_txt_product_photo(bot, update, user_data):
                          reply_markup=create_bot_products_keyboard(_),
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCTS
-    file = upd_msg.photo
+    attr_list = ['photo', 'video']
+    for file_type in attr_list:
+        file = getattr(upd_msg, file_type)
+        if file:
+            break
     if type(file) == list:
         file = file[-1]
     if not user_data['add_product'].get('files'):
-        user_data['add_product']['files'] = [file.file_id]
+        user_data['add_product']['files'] = [(file.file_id, file_type)]
     else:
-        user_data['add_product']['files'].append(file.file_id)
+        user_data['add_product']['files'].append((file.file_id, file_type))
     return enums.ADMIN_TXT_PRODUCT_PHOTO
 
 # def on_admin_txt_product_photo(bot, update, user_data):
@@ -2275,7 +2283,7 @@ def on_admin_edit_identification_question_type(bot, update, user_data):
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_edit_identification_keyboard(_, questions),
                               parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_EDIT_IDENTIFICATION_STAGES
-    if action in ('photo', 'text'):
+    if action in ('photo', 'text', 'video'):
         edit_options = user_data['admin_edit_identification']
         edit_options['type'] = action
         msg = _('Enter new question or variants to choose randomly, e.g.:\n'

@@ -241,9 +241,14 @@ def on_shipping_method(bot, update, user_data):
     elif key == _('🏪 Pickup') or key == _('🚚 Delivery'):
         user_data['shipping']['method'] = key
         session_client.json_set(user_id, user_data)
-        if key == ('🚚 Delivery'):
-            if not Location.select().exists():
+        if not Location.select().exists():
+            if key == ('🚚 Delivery'):
                 return enter_state_location_delivery(bot, update, user_data)
+            else:
+                cancel_process(bot, update)
+                msg = _('Cannot pickup an order, locations are not specified.\n'
+                        'Order cancelled')
+                return enter_state_init_order_cancelled(bot, update, user_data, msg)
         return enter_state_courier_location(bot, update, user_data)
     else:
         return enter_state_shipping_method(bot, update, user_data)
@@ -471,11 +476,16 @@ def on_identify_general(bot, update, user_data):
             return enter_state_shipping_time(bot, update, user_data)
     current_id = data['current_id']
     current_stage = IdentificationStage.get(id=current_id)
-    if current_stage.type == 'photo':
+    if current_stage.type in ('photo', 'video'):
         try:
-            answer = update.message.photo[-1].file_id
+            if current_stage.type == 'photo':
+                answer = update.message.photo
+                answer = answer[-1].file_id
+            else:
+                answer = update.message.video
+                answer = answer.file_id
         except IndexError:
-            msg = _('_Please upload a photo as an answer_')
+            msg = _('_Please upload a {} as an answer_').format(current_stage.type)
             bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
             return enums.BOT_STATE_CHECKOUT_IDENTIFY

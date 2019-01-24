@@ -135,7 +135,7 @@ def main():
                                triggers.on_phone_number_text, pass_user_data=True),
             ],
             enums.BOT_STATE_CHECKOUT_IDENTIFY: [
-                MessageHandler(Filters.text | Filters.photo, triggers.on_identify_general, pass_user_data=True)
+                MessageHandler(Filters.text | Filters.photo | Filters.video, triggers.on_identify_general, pass_user_data=True)
             ],
             enums.BOT_STATE_ORDER_CONFIRMATION: [
                 CallbackQueryHandler(triggers.checkout_fallback_command_handler,
@@ -258,7 +258,7 @@ def main():
                 MessageHandler(Filters.text, admin.on_admin_product_edit_prices, pass_user_data=True),
             ],
             enums.ADMIN_PRODUCT_EDIT_MEDIA: [
-                MessageHandler((Filters.text | Filters.photo), admin.on_admin_product_edit_media,
+                MessageHandler((Filters.text | Filters.photo | Filters.video), admin.on_admin_product_edit_media,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
@@ -442,7 +442,7 @@ def main():
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
             enums.ADMIN_TXT_PRODUCT_PHOTO: [
-                MessageHandler((Filters.text | Filters.photo), admin.on_admin_txt_product_photo,
+                MessageHandler((Filters.text | Filters.photo | Filters.video), admin.on_admin_txt_product_photo,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],

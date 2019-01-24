@@ -149,7 +149,7 @@ def enter_state_init_order_confirmed(bot, update, user_data):
     return BOT_STATE_INIT
 
 
-def enter_state_init_order_cancelled(bot, update, user_data):
+def enter_state_init_order_cancelled(bot, update, user_data, msg=None):
     user_id = get_user_id(update)
     total = cart.get_cart_total(get_user_session(user_id))
     user_data['cart'] = {}
@@ -157,7 +157,9 @@ def enter_state_init_order_cancelled(bot, update, user_data):
     session_client.json_set(user_id, user_data)
     _ = get_trans(user_id)
     user = User.get(telegram_id=user_id)
-    update.message.reply_text(text=_('Order cancelled'),
+    if not msg:
+        msg = _('Order cancelled')
+    update.message.reply_text(text=msg,
                               reply_markup=ReplyKeyboardRemove(),
                               parse_mode=ParseMode.MARKDOWN, )
     # send menu again as a new message
