@@ -484,7 +484,7 @@ def on_identify_general(bot, update, user_data):
             else:
                 answer = update.message.video
                 answer = answer.file_id
-        except IndexError:
+        except (IndexError, AttributeError):
             msg = _('_Please upload a {} as an answer_').format(current_stage.type)
             bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
