@@ -1701,44 +1701,44 @@ def on_admin_txt_courier_name(bot, update, user_data):
     return enums.ADMIN_TXT_COURIER_ID
 
 
-def on_admin_txt_courier_id(bot, update, user_data):
-    telegram_id = update.message.text
-    user_data['add_courier']['telegram_id'] = telegram_id
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    locations = Location.select().exists()
-    if not locations:
-        Courier.create(telegram_id=telegram_id, is_active=True)
-        for product in Product:
-            try:
-                ProductWarehouse.get(courier=courier, product=product)
-            except ProductWarehouse.DoesNotExist:
-                ProductWarehouse.create(courier=courier, product=product)
-        del user_data['add_courier']
-        bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
-                              text=_('Courier added'),
-                              reply_markup=create_bot_couriers_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
-        return enums.ADMIN_COURIERS
-    if 'location_ids' not in user_data['add_courier']:
-        user_data['add_courier']['location_ids'] = []
-    location_ids = user_data['add_courier']['location_ids']
-
-    text = _('Choose locations for new courier')
-    locations = []
-    for location in Location:
-        is_picked = False
-        if location.id in location_ids:
-            is_picked = True
-        locations.append((location.title, location.id, is_picked))
-
-    update.message.reply_text(
-        text=text,
-        reply_markup=create_courier_locations_keyboard(_, locations)
-    )
-
-    return enums.ADMIN_TXT_COURIER_LOCATION
+# def on_admin_txt_courier_id(bot, update, user_data):
+#     telegram_id = update.message.text
+#     user_data['add_courier']['telegram_id'] = telegram_id
+#     user_id = get_user_id(update)
+#     _ = get_trans(user_id)
+#     locations = Location.select().exists()
+#     if not locations:
+#         Courier.create(telegram_id=telegram_id, is_active=True)
+#         for product in Product:
+#             try:
+#                 ProductWarehouse.get(courier=courier, product=product)
+#             except ProductWarehouse.DoesNotExist:
+#                 ProductWarehouse.create(courier=courier, product=product)
+#         del user_data['add_courier']
+#         bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
+#                               text=_('Courier added'),
+#                               reply_markup=create_bot_couriers_keyboard(_),
+#                               parse_mode=ParseMode.MARKDOWN)
+#         query.answer()
+#         return enums.ADMIN_COURIERS
+#     if 'location_ids' not in user_data['add_courier']:
+#         user_data['add_courier']['location_ids'] = []
+#     location_ids = user_data['add_courier']['location_ids']
+#
+#     text = _('Choose locations for new courier')
+#     locations = []
+#     for location in Location:
+#         is_picked = False
+#         if location.id in location_ids:
+#             is_picked = True
+#         locations.append((location.title, location.id, is_picked))
+#
+#     update.message.reply_text(
+#         text=text,
+#         reply_markup=create_courier_locations_keyboard(_, locations)
+#     )
+#
+#     return enums.ADMIN_TXT_COURIER_LOCATION
 
 
 def on_admin_btn_courier_location(bot, update, user_data):

@@ -285,24 +285,20 @@ msgid "💫 Reset all data"
 msgstr "💫️ אפס נתונים"
 
 #: shoppybot.py:920
-msgid "Total confirmed orders\n\nCount: {}\nTotal cost: {}$"
-msgstr "סה״כ מכירות כלליות:\n\nכמות הזמנות: {}\nסה״כ מחיר: {}₪"
+msgid "Total confirmed orders\nCount: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪"
+msgstr "סה״כ מכירות כלליות:\nכמות הזמנות: {}\nסה״כ מחיר: {}₪\n\nסה״כ הזמנות שבוטלו\nכמות הזמנות שבוטלו: {}\nסה״כ מחיר ביטולים: {}₪"
 
 #: shoppybot.py:920
-msgid "Courier: @{}\n\nOrders count: {}\nTotal cost: {}$"
-msgstr "שליח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪"
+msgid "Courier @{}\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪"
+msgstr "שליח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪\n\nמס׳ ביטולים לפי שליח: {}\nסה״כ מחיר ביטולים: {}₪"
 
 #: shoppybot.py:920
-msgid "Location: `{}`\n\nOrders count: {}\nTotal cost: {}"
-msgstr "איזור: `{}`\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪"
+msgid "Location `{}`\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪"
+msgstr "איזור: `{}`\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪\n\nמס׳ ביטולים לפי איזור: {}\nסה״כ מחיר ביטולים: {}₪"
 
 #: shoppybot.py:920
-msgid "User: @{}\n\nOrders count: {}\nTotal cost: {}$"
-msgstr "לקוח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪"
-
-#: keyboards.py:192
-msgid "Orders: {}, orders cost {}"
-msgstr "הזמנות: {}\nסה״כ מחיר: {}"
+msgid "User @{}\n\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders:\n\nCount: {}\nTotal cost: {}₪"
+msgstr "לקוח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪\n\nמס׳ ביטולים לפי לקוח: {}\nסה״כ מחיר ביטולים: {}₪"
 
 #: keyboards.py:186
 msgid "💵 General statistics"
@@ -511,6 +507,10 @@ msgstr "איזור פעילות נמחק בהצלחה!"
 #: shoppybot.py:318
 msgid "Choose location to delete"
 msgstr "בחר איזור למחיקה"
+
+#: shoppybot.py:318
+msgid "All locations"
+msgstr "כל האיזורים"
 
 #: shoppybot.py:318
 msgid "👨 Edit identification process"
@@ -765,8 +765,8 @@ msgid "Order cancelled"
 msgstr "ההזמנה בוטלה"
 
 #: shoppybot.py:768
-msgid "Order confirmed from\n@{}\n"
-msgstr "התקבלה הזמנה חדשה מ\n@{}\n"
+msgid "Order №{}, Location {}\nUser @{}"
+msgstr "הזמנה מס׳ {}, מאיזור: {}\nלקוח: @{}"
 
 #: shoppybot.py:788
 msgid "Stage 1 Identification - Selfie"
@@ -856,6 +856,10 @@ msgid "locations:\n{}\n"
 msgstr "אחראי על איזורים:\n`{}`\n"
 
 #: shoppybot.py:1210
+msgid "Reviews channel:\n`{}`\n\n"
+msgstr "לינק לערוץ ביקורות:\n`{}`\n\n"
+
+#: shoppybot.py:1210
 msgid "Service channel ID:\n`{}`\n\n"
 msgstr "מספר מזהה של ערוץ מנהלים:\n`{}`\n\n"
 
@@ -912,8 +916,8 @@ msgid "Enter new product prices\none per line in the format\n*COUNT PRICE*, e.g.
 msgstr "הכנס מחיר מוצר\nכמות ומחיר אחד כל שורה\n`כמות מחיר` לדוגמא:\n*1 100*\n*5 500*"
 
 #: admin.py:242
-msgid "Send photos for new product"
-msgstr "שלח תמונה של המוצר"
+msgid "Send photos/videos for new product"
+msgstr "שלח תמונות/סירטונים של המוצר.\nניתן לצרף מס׳ תמונות או סרטונים.\n\nנא להמתין עד לסיום העלאת התמונות/הסרטונים ורק לאחר מכן לחץ על אשר מוצר"
 
 #: admin.py:266
 msgid "New Product Created\n✅"
@@ -1071,6 +1075,14 @@ msgstr ""
 "שאלת אימות: {}\n"
 "הכנס שאלת אימות חדשה:"
 
+#: admin.py:306
+msgid " for all locations"
+msgstr " לכל האיזורים"
+
+#: admin.py:306
+msgid " for {}"
+msgstr " לאיזור {}"
+
 #: admin.py:196
 msgid ""
 "Enter delivery fee like:\n"
@@ -1079,7 +1091,7 @@ msgid ""
 "50: All deals will have delivery fee of 50\n"
 "Only works on delivery\n"
 "\n"
-"Current fee: {}>{}"
+"Current fee{}: {}>{}"
 msgstr ""
 "הכנס דמי משלוח בסדר הנ״ל:\n"
 "50 > 500: דמי המשלוח יהיו 50₪ על כל משלוח מתחת ל500₪\n"
@@ -1259,8 +1271,8 @@ msgid "Order №{} {}"
 msgstr "הזמנה מס׳{} {}"
 
 #: admin.py:306
-msgid "Order №{} was cancelled"
-msgstr "הזמנה מס׳{} בוטלה"
+msgid "Order №{} was cancelled by the client @{}"
+msgstr "הזמנה מס׳{} בוטלה ע״י הלקוח: @{}"
 
 #: admin.py:306
 msgid "Order was cancelled by user"
@@ -1333,6 +1345,10 @@ msgid "🖼 Photo"
 msgstr "🖼 תמונה"
 
 #: admin.py:306
+msgid "📹 Video"
+msgstr "📹 וידאו"
+
+#: admin.py:306
 msgid "Products in cart:"
 msgstr "מוצרים שהוספו לעגלת הקניות:"
 
@@ -1391,3 +1407,23 @@ msgstr "אין שליחים להצגה\n\nאנא הגדר שליח ונסה שנ
 #: admin.py:306
 msgid "Yes and delete"
 msgstr "כן ומחק את ההזמנה"
+
+#: admin.py:306
+msgid "You cannot order without username"
+msgstr "שגיאה!  ⛔️\n\nלא ניתן להזמין ללא שם משתמש.\n\bאנא כנס להגדרות הטלגרם, הקלד שם משתמש ולאחר מכן נסה שנית."
+
+#: admin.py:306
+msgid "_Please upload a {} as an answer_"
+msgstr "ניתן לשלוח רק {} כהודעה"
+
+#: admin.py:306
+msgid "photo"
+msgstr "תמונה"
+
+#: admin.py:306
+msgid "video"
+msgstr "וידאו"
+
+#: admin.py:306
+msgid "Delivery Fee from *{}*: {}₪"
+msgstr "דמי משלוח מאיזור *{}*: {}₪"

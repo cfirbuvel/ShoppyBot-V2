@@ -20,6 +20,9 @@ def on_start(bot, update, user_data):
     locale = get_locale(update)
     try:
         user = User.get(telegram_id=user_id)
+        if username != user.username:
+            user.username = username
+            user.save()
     except User.DoesNotExist:
         user = User(telegram_id=user_id, username=username, locale=locale)
         user.save()
@@ -75,10 +78,13 @@ def on_menu(bot, update, user_data=None):
     query = update.callback_query
     data = query.data
     user_id = get_user_id(update)
+    username = get_username(update)
     try:
         user = User.get(telegram_id=user_id)
+        if username != user.username:
+            user.username = username
+            user.save()
     except User.DoesNotExist:
-        username = get_username(update)
         locale = get_locale(update)
         user = User(telegram_id=user_id, username=username, locale=locale)
         user.save()
@@ -137,6 +143,10 @@ def on_menu(bot, update, user_data=None):
                     session_client.json_set(user_id, user_data)
                     return enums.BOT_STATE_INIT
             elif data == 'menu_order':
+                if update.effective_user.username is None:
+                    msg = _('You cannot order without username')
+                    query.answer(msg, show_alert=True)
+                    return enums.BOT_STATE_INIT
                 if cart.is_full(user_data):
                     unfinished_orders = Order.select().where(Order.user == user, Order.delivered == False, Order.canceled == False)
                     if len(unfinished_orders):

@@ -220,7 +220,7 @@ def on_my_last_order_cancel(bot, update, user_data):
         msg = channel_trans('Order was cancelled by user')
         shortcuts.bot_send_order_msg(bot, service_chat, msg, channel_trans, order.id)
         enums.logger.info('Order № %s was cancelled by user: @%s', order.id, username)
-        msg = _('Order №{} was cancelled').format(order.id)
+        msg = _('Order №{} was cancelled by the client @{}').format(order.id, username)
     elif action == 'no':
         msg = _('Order №{}').format(order.id)
     bot.edit_message_text(chat_id=chat_id, message_id=msg_id, text=msg,
@@ -242,14 +242,9 @@ def on_shipping_method(bot, update, user_data):
         user_data['shipping']['method'] = key
         session_client.json_set(user_id, user_data)
         if not Location.select().exists():
-            if key == ('🚚 Delivery'):
-                return enter_state_location_delivery(bot, update, user_data)
-            else:
-                cancel_process(bot, update)
-                msg = _('Cannot pickup an order, locations are not specified.\n'
-                        'Order cancelled')
-                return enter_state_init_order_cancelled(bot, update, user_data, msg)
-        return enter_state_courier_location(bot, update, user_data)
+            return enter_state_location_delivery(bot, update, user_data)
+        else:
+            return enter_state_courier_location(bot, update, user_data)
     else:
         return enter_state_shipping_method(bot, update, user_data)
 
@@ -485,7 +480,8 @@ def on_identify_general(bot, update, user_data):
                 answer = update.message.video
                 answer = answer.file_id
         except (IndexError, AttributeError):
-            msg = _('_Please upload a {} as an answer_').format(current_stage.type)
+            text = _(current_stage.type)
+            msg = _('_Please upload a {} as an answer_').format(text)
             bot.send_message(update.message.chat_id, msg, reply_markup=create_cancel_keyboard(_),
                              parse_mode=ParseMode.MARKDOWN)
             return enums.BOT_STATE_CHECKOUT_IDENTIFY
@@ -591,6 +587,9 @@ def on_confirm_order(bot, update, user_data):
         delivery_for_vip = config.get_delivery_fee_for_vip()
         try:
             user = User.get(telegram_id=user_id)
+            if username != user.username:
+                user.username = username
+                user.save()
         except User.DoesNotExist:
             if not username:
                 user = User.create(telegram_id=user_id, locale=locale)
@@ -790,7 +789,8 @@ def on_service_send_order_to_courier(bot, update, user_data):
                 couriers_channel = config.get_couriers_channel()
                 order_data = OrderPhotos.get(order_id=order_id)
                 answers_ids = shortcuts.send_order_identification_answers(bot, couriers_channel, order, send_one=True)
-                answers_ids = ','.join(answers_ids)
+                if len(answers_ids) > 1:
+                    answers_ids = ','.join(answers_ids)
                 order_info = Order.get(id=order_id)
                 order_pickup_state = order_info.shipping_method
                 # order_location = order_info.location.title
@@ -1082,8 +1082,10 @@ def on_statistics_general(bot, update, user_data):
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         count, price = shortcuts.get_order_count_and_price((Order.delivered == True), (Order.canceled == False), *subquery)
-        message = _('Total confirmed orders\n\nCount: {}\nTotal cost: {}$').format(
-                count, price)
+        cancel_count, cancel_price = shortcuts.get_order_count_and_price((Order.canceled == True), *subquery)
+        message = _(
+            'Total confirmed orders\nCount: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪'
+        ).format(count, price, cancel_count, cancel_price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -1144,9 +1146,13 @@ def on_statistics_couriers(bot, update, user_data):
         courier = Courier.get(id=courier_id)
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price = shortcuts.get_order_count_and_price((Order.delivered == True),(Order.canceled == False), (Order.courier == courier), *subquery)
-
-        message = _('Courier: @{}\n\nOrders count: {}\nTotal cost: {}$').format(courier.username, count, price)
+        count, price = shortcuts.get_order_count_and_price(
+            (Order.delivered == True), (Order.canceled == False), (Order.courier == courier), *subquery)
+        cancel_count, cancel_price = shortcuts.get_order_count_and_price(
+            (Order.canceled == True), (Order.courier == courier) * subquery)
+        message = _(
+            'Courier @{}\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪'
+        ).format(courier.username, count, price, cancel_count, cancel_price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -1209,8 +1215,11 @@ def on_statistics_locations(bot, update, user_data):
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         count, price = shortcuts.get_order_count_and_price((Order.delivered == True),(Order.canceled == False),
                                                            (Order.location == location), *subquery)
-
-        message = _('Location: `{}`\n\nOrders count: {}\nTotal cost: {}').format(location.title, count, price)
+        cancel_count, cancel_price = shortcuts.get_order_count_and_price(
+            (Order.canceled == True), (Order.location == location) *subquery)
+        message = _(
+            'Location `{}`\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪'
+        ).format(location.title, count, price, cancel_count, cancel_price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -1273,7 +1282,7 @@ def on_statistics_user(bot, update, user_data):
                                                                (Order.user == user), *subquery)
             cancel_count, cancel_price = shortcuts.get_order_count_and_price((Order.canceled == True), *subquery)
             message = _(
-                'User: @{}\n\nOrders count: {}\nTotal cost: {}$\n\nCanceled orders: {}\ncancel price: {}'
+                'User @{}\n\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders:\n\nCount: {}\nTotal cost: {}₪'
             ).format(user.username, count, price, cancel_count, cancel_price)
             text += message
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
@@ -1748,9 +1757,6 @@ def on_courier_confirm_order(bot, update, user_data):
                               text=courier_msg,
                               parse_mode=ParseMode.MARKDOWN)
         service_channel = config.get_service_channel()
-        # _ = get_channel_trans()
-        # service_msg = _('Order №{} was delivered by courier {}\n'
-        #                 'Order can be finished now.').format(order_id, courier.username)
         shortcuts.bot_send_order_msg(bot, service_channel, msg, _, order_id)
         return enums.COURIER_STATE_INIT
     elif action == 'no':

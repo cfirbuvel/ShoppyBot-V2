@@ -766,7 +766,7 @@ def create_edit_identification_type_keyboard(trans):
     buttons = [
         [InlineKeyboardButton(_('📝 Text'), callback_data='text')],
         [InlineKeyboardButton(_('🖼 Photo'), callback_data='photo')],
-        [InlineKeyboardButton(_('📹Video'), callback_data='video')],
+        [InlineKeyboardButton(_('📹 Video'), callback_data='video')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]
     return InlineKeyboardMarkup(buttons)

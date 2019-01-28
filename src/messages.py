@@ -38,23 +38,28 @@ def create_product_description(user_id, product_title, product_prices, product_c
         text += '\n'
         text += '〰️'
         text += '\n'
-    else:
+    elif delivery_fee > 0:
         text += _('Delivery Fee: {}₪').format(delivery_fee)
         text += '\n'
-    for loc in Location.select():
-        delivery_fee = loc.delivery_fee
-        delivery_min = loc.delivery_min
-        if delivery_fee:
-            if delivery_fee > 0 and delivery_min > 0:
-                text += _('Delivery Fee from *{}*: {}₪').format(loc.title, delivery_fee)
-                text += '\n'
-                text += _('for orders below {}₪').format(delivery_min)
-                text += '\n'
-                text += '〰️'
-                text += '\n'
-            else:
-                text += _('Delivery Fee from *{}*: {}₪').format(loc.title, delivery_fee)
-                text += '\n'
+
+    if Location.select().exists():
+        for loc in Location.select():
+            conf_delivery_fee = config.get_delivery_fee()
+            if conf_delivery_fee == loc.delivery_fee:
+                continue
+            delivery_fee = loc.delivery_fee
+            delivery_min = loc.delivery_min
+            if delivery_fee:
+                if delivery_fee > 0 and delivery_min > 0:
+                    text += _('Delivery Fee from *{}*: {}₪').format(loc.title, delivery_fee)
+                    text += '\n'
+                    text += _('for orders below {}₪').format(delivery_min)
+                    text += '\n'
+                    text += '〰️'
+                    text += '\n'
+                else:
+                    text += _('Delivery Fee from *{}*: {}₪').format(loc.title, delivery_fee)
+                    text += '\n'
     text += '\n'
     text += _('Price:')
     text += '\n'
@@ -265,7 +270,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
 def create_delivery_fee_msg(trans, location=None):
     _ = trans
     if location:
-        location_string = ' for {}'.format(location.title)
+        location_string = _(' for {}').format(location.title)
         if location.delivery_fee is None:
             delivery_fee = config.get_delivery_fee()
             delivery_min = config.get_delivery_min()
@@ -273,7 +278,7 @@ def create_delivery_fee_msg(trans, location=None):
             delivery_fee = location.delivery_fee
             delivery_min = location.delivery_min
     else:
-        location_string = ' for all locations'
+        location_string = _(' for all locations')
         delivery_fee = config.get_delivery_fee()
         delivery_min = config.get_delivery_min()
 

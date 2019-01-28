@@ -135,7 +135,7 @@ def main():
                                triggers.on_phone_number_text, pass_user_data=True),
             ],
             enums.BOT_STATE_CHECKOUT_IDENTIFY: [
-                MessageHandler(Filters.text | Filters.photo | Filters.video, triggers.on_identify_general, pass_user_data=True)
+                MessageHandler(Filters.text | Filters.photo | Filters.video | Filters.all, triggers.on_identify_general, pass_user_data=True)
             ],
             enums.BOT_STATE_ORDER_CONFIRMATION: [
                 CallbackQueryHandler(triggers.checkout_fallback_command_handler,
@@ -454,11 +454,6 @@ def main():
                 CallbackQueryHandler(
                     admin.on_admin_txt_courier_name, pass_user_data=True),
                 MessageHandler(Filters.text, admin.on_admin_txt_courier_name,
-                               pass_user_data=True),
-                CommandHandler('cancel', admin.on_admin_cancel),
-            ],
-            enums.ADMIN_TXT_COURIER_ID: [
-                MessageHandler(Filters.text, admin.on_admin_txt_courier_id,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
