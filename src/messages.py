@@ -4,7 +4,6 @@ from .models import Location
 
 def create_cart_details_msg(user_id, products_info):
     _ = get_trans(user_id)
-    # products_info = cart.get_products_info(user_data)
     msg = '▫️◾️◽️◼️◻️⬛️◻️◼️◽️◾️▫️'
     msg += '\n'
     msg += _('Products in cart:')

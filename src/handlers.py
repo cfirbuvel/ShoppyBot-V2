@@ -1,5 +1,3 @@
-import io
-
 from telegram import ParseMode
 from telegram.ext import ConversationHandler
 
@@ -111,8 +109,6 @@ def on_menu(bot, update, user_data=None):
                             user_data, product.id)
                         subtotal = cart.get_product_subtotal(
                             user_data, product.id)
-                        # delivery_fee = config.get_delivery_fee()
-                        # delivery_min = config.get_delivery_min()
                         product_title, prices = cart.product_full_info(
                             user_data, product.id)
                         shortcuts.send_product_media(bot, product, chat_id)
@@ -214,8 +210,6 @@ def on_menu(bot, update, user_data=None):
                 session_client.json_set(user_id, user_data)
 
                 subtotal = cart.get_product_subtotal(user_data, product_id)
-                # delivery_fee = config.get_delivery_fee()
-                # delivery_min = config.get_delivery_min()
                 product_title, prices = cart.product_full_info(
                     user_data, product_id)
                 product_count = cart.get_product_count(user_data, product_id)
@@ -243,8 +237,6 @@ def on_menu(bot, update, user_data=None):
                 session_client.json_set(user_id, user_data)
 
                 subtotal = cart.get_product_subtotal(user_data, product_id)
-                # delivery_fee = config.get_delivery_fee()
-                # delivery_min = config.get_delivery_min()
                 product_title, prices = cart.product_full_info(
                     user_data, product_id)
                 product_count = cart.get_product_count(user_data, product_id)
@@ -314,9 +306,4 @@ def on_menu(bot, update, user_data=None):
 def on_error(bot, update, error):
     enums.logger.error('Error: %s', error)
 
-
-def on_chat_update_handler(bot, update):
-    for val in dir(update):
-        if not val.startswith('_'):
-            print('{}: {}'.format(val, getattr(update, val)))
 

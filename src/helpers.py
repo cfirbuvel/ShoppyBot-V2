@@ -4,10 +4,9 @@ import json
 import gettext
 import os
 
-from telegram import ParseMode, TelegramError
+from telegram import TelegramError
 
-from .models import ProductCount, Product, User, OrderItem, Courier, Order
-# from .keyboards import create_service_notice_keyboard
+from .models import ProductCount, Product, User, OrderItem, Courier
 from .enums import logger
 
 
@@ -31,16 +30,13 @@ class ConfigHelper:
             defaults={'api_token': None, 'reviews_channel': None,
                       'service_channel': None, 'customers_channel': None,
                       'vip_customers_channel': None, 'couriers_channel': None,
-                      'channels_language': 'iw', 'media_path': './media',
+                      'channels_language': 'iw',
                       'welcome_text': 'Welcome text not configured yet',
                       'order_text': 'Order text not configured yet',
                       'order_complete_text': 'Order text not configured yet',
                       'working_hours': 'Working hours not configured yet',
                       'contact_info': 'Contact info not configured yet',
                       'phone_number_required': True,
-                      'identification_required': True,
-                      'identification_stage2_required': False,
-                      'identification_stage2_question': None,
                       'has_courier_option': True,
                       'only_for_customers': False, 'delivery_fee': 0,
                       'delivery_fee_for_vip': False, 'discount': 0,
@@ -88,14 +84,6 @@ class ConfigHelper:
             value = self.config.get(self.section, 'channels_language')
         return value.strip()
 
-    def get_media_path(self):
-        value = self.config.get(self.section, 'media_path')
-        value = value.strip()
-        value = os.path.abspath(value)
-        if not os.path.isdir(value):
-            os.mkdir(value)
-        return value
-
     def get_welcome_text(self):
         value = get_config_session().get('welcome_text')
         if value is None:
@@ -135,37 +123,10 @@ class ConfigHelper:
             value = value == '1' or value == 'yes'
         return value
 
-    def get_identification_required(self):
-        value = get_config_session().get('identification_required')
-        if value is None:
-            value = self.config.getboolean(self.section,
-                                           'identification_required')
-        # else:
-        #     value = value == '1' or value == 'yes'
-        return value
-
-    def get_identification_stage2_required(self):
-        value = get_config_session().get('identification_stage2_required')
-        if value is None:
-            value = self.config.getboolean(self.section,
-                                           'identification_stage2_required')
-        # else:
-        #     value = value == '1' or value == 'yes'
-        return value
-
-    def get_identification_stage2_question(self):
-        value = get_config_session().get('identification_stage2_question')
-        if value is None:
-            value = self.config.get(self.section,
-                                    'identification_stage2_question')
-        return value
-
     def get_only_for_customers(self):
         value = get_config_session().get('only_for_customers')
         if value is None:
             value = self.config.getboolean(self.section, 'only_for_customers')
-        # else:
-        #     value = value == '1' or value == 'yes'
         return value
 
     def get_has_courier_option(self):
@@ -180,8 +141,6 @@ class ConfigHelper:
         value = get_config_session().get('vip_customers')
         if value is None:
             value = self.config.getboolean(self.section, 'vip_customers')
-        # else:
-        #     value = value == '1' or value == 'yes' or value is True
         return value
 
     def get_delivery_fee_for_vip(self):
@@ -239,6 +198,7 @@ class ConfigHelper:
 
 
 class CartHelper:
+
     def __init__(self):
         pass
 
@@ -389,7 +349,6 @@ def parse_discount(discount_str):
         except ValueError:
             pass
         else:
-            # if discount_num > 0 and discount_min > 0:
             return discount, discount_min
     else:
         try:
@@ -409,9 +368,7 @@ def calculate_discount_total(discount, total):
 def is_vip_customer(bot, user_id):
     if not config.get_vip_customers():
         return False
-
     chat_id = config.get_vip_customers_channel()
-
     try:
         member = bot.getChatMember(chat_id, user_id)
         if member.status == 'left':
@@ -426,9 +383,7 @@ def is_vip_customer(bot, user_id):
 def is_customer(bot, user_id):
     if not config.get_only_for_customers():
         return True
-
     chat_id = config.get_customers_channel()
-
     try:
         member = bot.getChatMember(chat_id, user_id)
         if member.status == 'left':
@@ -446,7 +401,6 @@ def is_customer(bot, user_id):
 def get_user_session(user_id):
     user_session = session_client.json_get(user_id)
     updated = False
-
     if not user_session:
         try:
             user = User.get(telegram_id=user_id)
@@ -526,8 +480,6 @@ def get_config_session():
 def set_config_session(session):
     session_client.json_set('git_config', session)
 
-# def get_user_model(update):
-#
 
 session_client = JsonRedis(host='localhost', port=6379, db=0)
 cat = gettext.GNUTranslations(open('he.mo', 'rb'))

@@ -1,8 +1,11 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ParseMode
-from .helpers import get_trans, get_user_id, config
 import math
 import calendar
 import datetime
+import random
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+
+from .helpers import config
 
 
 def create_time_keyboard(trans):
@@ -65,13 +68,6 @@ def create_location_request_keyboard(trans):
 
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
 
-
-# def create_back_keyboard(trans):
-#     _ = trans
-#     buttons = [
-#         [InlineKeyboardButton(_('↩ Back'))]
-#     ]
-#     return InlineKeyboardMarkup(buttons)
 
 def create_cancel_keyboard(trans):
     _ = trans
@@ -138,7 +134,6 @@ def create_locations_with_all_btn_keyboard(locations, trans):
     button_row.append([InlineKeyboardButton(_('All locations'), callback_data='all_locs')])
     button_row.append([InlineKeyboardButton(_('↩ Back'), callback_data='back')])
     return InlineKeyboardMarkup(button_row)
-
 
 
 def create_service_notice_keyboard(order_id, trans, answers_ids, order_location, order_pickup_state=1):
@@ -815,4 +810,22 @@ def create_categories_keyboard(trans):
         [InlineKeyboardButton(_('❌ Remove Category'), callback_data='remove')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_reset_all_data_keyboard(trans):
+    _ = trans
+    names_callbacks = [(_('Yes, reset all data'), 'yes'), (_('Nope, nevermind'), 'no'), (_('No'), 'no')]
+    random.shuffle(names_callbacks)
+    buttons = [[InlineKeyboardButton(name, callback_data=callback)] for name, callback in names_callbacks]
+    buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data='back')])
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_reset_confirm_keyboard(trans):
+    _ = trans
+    names_callbacks = [(_('Hell no!'), 'no'), (_('No!'), 'no'), (_('Yes, I\'m 100% sure!'), 'yes')]
+    random.shuffle(names_callbacks)
+    buttons = [[InlineKeyboardButton(name, callback_data=callback)] for name, callback in names_callbacks]
+    buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data='back')])
     return InlineKeyboardMarkup(buttons)

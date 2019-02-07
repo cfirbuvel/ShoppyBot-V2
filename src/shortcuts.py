@@ -1,12 +1,11 @@
-from telegram import ParseMode, TelegramError, InputMediaPhoto, InputMediaVideo
-import io
 import datetime
 import operator
 
-from .models import Order, OrderPhotos, OrderItem, ProductWarehouse
+from telegram import ParseMode, TelegramError, InputMediaPhoto, InputMediaVideo
+
+from .models import Order, OrderPhotos, OrderItem, ProductWarehouse, ChannelMessageData
 
 from .helpers import config, get_trans, logger, get_user_id, get_channel_trans, get_user_session, session_client
-# from .keyboards import create_service_notice_keyboard, create_courier_order_status_keyboard
 from . import keyboards
 from . import messages
 
@@ -15,8 +14,7 @@ def make_confirm(bot, update, user_data):
     query = update.callback_query
     data = query.data
     label, order_id, courier_name = data.split('|')
-    bot.delete_message(config.get_service_channel(),
-                       message_id=query.message.message_id)
+    delete_channel_msg(bot, config.get_service_channel(), query.message.message_id)
     try:
         order = Order.get(id=order_id)
     except Order.DoesNotExist:
@@ -48,63 +46,44 @@ def make_unconfirm(bot, update, user_data):
     query = update.callback_query
     data = query.data
     label, order_id, courier_name, answers_ids, assigned_msg_id = data.split('|')
-    bot.delete_message(config.get_service_channel(),
-                       message_id=query.message.message_id)
+    delete_channel_msg(bot, config.get_service_channel(), query.message.message_id)
     couriers_channel = config.get_couriers_channel()
     for answer_id in answers_ids.split(','):
-        bot.delete_message(couriers_channel,
-                           message_id=answer_id)
-    # bot.delete_message(couriers_channel,
-    #                    message_id=photo_msg_id)
-    bot.delete_message(couriers_channel,
-                       message_id=assigned_msg_id)
+        delete_channel_msg(bot, couriers_channel, answer_id)
+    delete_channel_msg(bot, couriers_channel, assigned_msg_id)
     try:
         order = Order.get(id=order_id)
     except Order.DoesNotExist:
         logger.info('Order № {} not found!'.format(order_id))
     else:
-        # user_id = order.user.telegram_id
         change_order_products_credits(order, True, order.courier)
         order.courier = None
         order.save()
         _ = get_channel_trans()
         order_data = OrderPhotos.get(order=order)
-        bot.send_message(couriers_channel,
-                         text='The admin did not confirm. Please retake '
-                              'responsibility for order №{}'.format(order_id),
-                         )
-        # photo_msg_id = ''
-        # if order_data.photo_id:
-        #     photo_id, msg_id = order_data.photo_id.split('|')
-        #     photo_msg = bot.send_photo(couriers_channel,
-        #                                photo=photo_id,
-        #                                caption=_('Stage 1 Identification - Selfie'),
-        #                                parse_mode=ParseMode.MARKDOWN, )
-        #     photo_msg_id = photo_msg['message_id']
-        answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
+        msg = _('The admin did not confirm. Please retake '
+                'responsibility for order №{}').format(order_id)
+        send_channel_msg(bot, msg, couriers_channel, order=order)
+        answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True, channel=True)
         answers_ids = ','.join(answers_ids)
         order_info = Order.get(id=order_id)
         order_pickup_state = order_info.shipping_method
         order_location = order_info.location
         if order_location:
             order_location = order_location.title
-        bot.send_message(chat_id=couriers_channel,
-                         text=order_data.order_text,
-                         reply_markup=keyboards.create_service_notice_keyboard(
-                             order_id, _, answers_ids, order_location, order_pickup_state),
-                         parse_mode=ParseMode.MARKDOWN,
-                         )
+        keyboard = keyboards.create_service_notice_keyboard(order_id, _, answers_ids, order_location, order_pickup_state)
+        send_channel_msg(bot, order_data.order_text, couriers_channel, keyboard, order)
 
 
 def resend_responsibility_keyboard(bot, update):
     query = update.callback_query
     data = query.data
     order_id = data.split('|')[1]
-    # user_id = get_user_id(update)
     try:
         order = Order.get(id=order_id)
     except Order.DoesNotExist:
         logger.info('Order № {} not found!'.format(order_id))
+        return
     else:
         change_order_products_credits(order, True, order.courier)
         order.confirmed = False
@@ -115,9 +94,9 @@ def resend_responsibility_keyboard(bot, update):
     bot.delete_message(query.message.chat_id,
                        message_id=query.message.message_id)
     order_data = OrderPhotos.get(order_id=order_id)
-    bot.send_message(chat_id=couriers_channel,
-                     text=_('Order №{} was dropped by courier').format(order_id))
-    answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True)
+    msg = _('Order №{} was dropped by courier').format(order_id)
+    send_channel_msg(bot, msg, couriers_channel, order=order)
+    answers_ids = send_order_identification_answers(bot, couriers_channel, order, send_one=True, channel=True)
     answers_ids = ','.join(answers_ids)
 
     order_info = Order.get(id=order_id)
@@ -125,30 +104,28 @@ def resend_responsibility_keyboard(bot, update):
     order_location = order_info.location
     if order_location:
         order_location = order_location.title
-    bot.send_message(chat_id=couriers_channel,
-                     text=order_data.order_text,
-                     reply_markup=keyboards.create_service_notice_keyboard(
-                         order_id, _, answers_ids, order_location, order_pickup_state),
-                     parse_mode=ParseMode.MARKDOWN,
-                     )
-
+    keyboard = keyboards.create_service_notice_keyboard(order_id, _, answers_ids, order_location, order_pickup_state)
+    send_channel_msg(bot, order_data.order_text, couriers_channel, keyboard, order)
     query.answer(text=_('Order sent to couriers channel'), show_alert=True)
 
 
-def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=None):
+def bot_send_order_msg(bot, chat_id, message, trans_func, order_id, order_data=None, channel=False):
+    order = Order.get(id=order_id)
     if not order_data:
-        order = Order.get(id=order_id)
         order_data = OrderPhotos.get(order=order)
     _ = trans_func
-    order_msg = bot.send_message(chat_id,
-                                 text=message,
-                                 reply_markup=keyboards.create_show_order_keyboard(_, order_id))
+    keyboard = keyboards.create_show_order_keyboard(_, order_id)
+    if channel:
+        msg_id = send_channel_msg(bot, message, chat_id, keyboard, order)
+    else:
+        order_msg = bot.send_message(chat_id, message, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+        msg_id = order_msg['message_id']
     order_data.order_hidden_text = message
-    order_data.order_text_msg_id = str(order_msg['message_id'])
+    order_data.order_text_msg_id = str(msg_id)
     order_data.save()
 
 
-def send_order_identification_answers(bot, chat_id, order, send_one=False):
+def send_order_identification_answers(bot, chat_id, order, send_one=False, channel=False):
     answers = []
     photos_answers = []
     photos = []
@@ -169,17 +146,23 @@ def send_order_identification_answers(bot, chat_id, order, send_one=False):
         if send_one:
             break
     if photos:
-        photo_msgs = bot.send_media_group(chat_id, photos)
-        msgs_ids = [msg['message_id'] for msg in photo_msgs]
+        if channel:
+            msgs_ids = send_channel_media_group(bot, chat_id, photos, order=order)
+        else:
+            photo_msgs = bot.send_media_group(chat_id, photos)
+            msgs_ids = [msg['message_id'] for msg in photo_msgs]
     else:
         msgs_ids = []
     for ph_id, answer in zip(msgs_ids, photos_answers):
         answer.msg_id = ph_id
         answer.save()
     for content, answer in answers:
-        msg = bot.send_message(chat_id, content, parse_mode=ParseMode.MARKDOWN)
-        sent_msg_id = msg['message_id']
-        answer.msg_id = sent_msg_id
+        if channel:
+            sent_msg_id = send_channel_msg(bot, content, chat_id, order=order)
+            answer.msg_id = sent_msg_id
+        else:
+            msg = bot.send_message(chat_id, content, parse_mode=ParseMode.MARKDOWN)
+            sent_msg_id = msg['message_id']
         answer.save()
         msgs_ids.append(str(sent_msg_id))
     return msgs_ids
@@ -213,13 +196,11 @@ def initialize_calendar(bot, user_data, chat_id, message_id, state, trans, query
 
 def get_order_subquery(action, val, month, year):
     val = int(val)
-    # if action == 'year':
     query = []
     subquery = Order.date_created.year == year
     query.append(subquery)
     if action == 'year':
         return query
-    # if action == 'month':
     query.append(Order.date_created.month == month)
     if action == 'day':
         query.append(Order.date_created.day == val)
@@ -286,13 +267,6 @@ def change_order_products_credits(order, add=False, courier=None):
             product.save()
 
 
-# def send_product_media(bot, product, chat_id):
-#     for media in product.product_media:
-#         with open(media.file_path, 'rb') as file:
-#             func = getattr(bot, 'send_{}'.format(media.type))
-#             stream = io.BytesIO(file.read())
-#             func(chat_id, stream)
-
 def send_product_media(bot, product, chat_id):
     class_map = {'photo': InputMediaPhoto, 'video': InputMediaVideo}
     media_list = []
@@ -301,26 +275,75 @@ def send_product_media(bot, product, chat_id):
         file = media_class(media=media.file_id)
         media_list.append(file)
     bot.send_media_group(chat_id, media_list)
-    # with open(media.file_path, 'rb') as file:
-    #     func = getattr(bot, 'send_{}'.format(media.type))
-    #     stream = io.BytesIO(file.read())
-    #     func(chat_id, stream)
-# def send_chunks(bot, obj_list, chat_id, selected_command, back_command, first_message, trans, chunk_size=50):
-#     _ = trans
-#     # first_iter = True
-#     while True:
-#         chunk = obj_list[:chunk_size]
-#         obj_list = obj_list[chunk_size:]
-#         # if first_iter:
-#         #     msg = _(first_message)
-#         #     first_iter = False
-#         # else:
-#         #     msg = '~' * len(first_message)
-#         msg = _(first_message)
-#         if obj_list:
-#             markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command)
-#         else:
-#             markup = keyboards.create_select_products_chunk_keyboard(_, chunk, selected_command, back_command)
-#         bot.send_message(chat_id, msg, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
-#         if not obj_list:
-#             break
+
+
+def send_channel_msg(bot, msg, chat_id, keyboard=None, order=None):
+    params = {
+        'chat_id': chat_id, 'text': msg, 'parse_mode': ParseMode.MARKDOWN
+    }
+    if keyboard:
+        params['reply_markup'] = keyboard
+    sent_msg = bot.send_message(**params)
+    sent_msg_id = str(sent_msg['message_id'])
+    ChannelMessageData.create(channel=str(chat_id), msg_id=sent_msg_id, order=order)
+    return sent_msg_id
+
+
+def send_channel_location(bot, chat_id, lat, lng, order=None):
+    sent_msg = bot.send_location(chat_id, lat, lng)
+    sent_msg_id = str(sent_msg['message_id'])
+    ChannelMessageData.create(channel=str(chat_id), msg_id=sent_msg_id, order=order)
+    return sent_msg_id
+
+
+def edit_channel_msg(bot, msg, chat_id, msg_id, keyboard=None, order=None):
+    params = {
+        'chat_id': chat_id, 'message_id': msg_id, 'text': msg, 'parse_mode': ParseMode.MARKDOWN
+    }
+    if keyboard:
+        params['reply_markup'] = keyboard
+    edited_msg = bot.edit_message_text(**params)
+    edited_msg_id = str(edited_msg['message_id'])
+    chat_id = str(chat_id)
+    try:
+        msg_data = ChannelMessageData.get(channel=chat_id, msg_id=msg_id)
+    except ChannelMessageData.DoesNotExist:
+        ChannelMessageData.create(channel=chat_id, msg_id=edited_msg_id, order=order)
+    else:
+        msg_data.channel = chat_id
+        msg_data.msg_id = edited_msg_id
+        msg_data.order = order
+        msg_data.save()
+    return edited_msg_id
+
+
+def delete_channel_msg(bot, chat_id, msg_id):
+    try:
+        bot.delete_message(chat_id, msg_id)
+    except TelegramError:
+        pass
+    try:
+        msg_row = ChannelMessageData.get(channel=str(chat_id), msg_id=str(msg_id))
+    except ChannelMessageData.DoesNotExist:
+        pass
+    else:
+        msg_row.delete_instance()
+
+
+def send_channel_media_group(bot, chat_id, media, order=None):
+    msgs = bot.send_media_group(chat_id, media)
+    msgs_ids = [str(msg['message_id']) for msg in msgs]
+    chat_id = str(chat_id)
+    for msg_id in msgs_ids:
+        ChannelMessageData.create(channel=chat_id, msg_id=msg_id, order=order)
+    return msgs_ids
+
+
+def delete_order_channels_msgs(bot, order):
+    msgs = ChannelMessageData.select().where(ChannelMessageData.order == order)
+    for msg in msgs:
+        try:
+            bot.delete_message(msg.channel, msg.msg_id)
+        except TelegramError:
+            pass
+        msg.delete_instance()

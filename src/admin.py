@@ -1,7 +1,3 @@
-import io
-import os
-import mimetypes
-
 from telegram import ParseMode
 from telegram import ReplyKeyboardRemove
 from telegram.error import TelegramError
@@ -9,9 +5,10 @@ from telegram.ext import ConversationHandler
 
 from . import enums
 from .helpers import session_client, get_config_session, get_user_id, set_config_session, config, get_trans, \
-    parse_discount, get_channel_trans
+    parse_discount, get_channel_trans, get_locale, get_username
 from .models import Product, ProductCount, Courier, Location, CourierLocation, ProductWarehouse, User, \
-    ProductMedia, ProductCategory, IdentificationStage, Order, OrderPhotos, IdentificationQuestion
+    ProductMedia, ProductCategory, IdentificationStage, Order, OrderPhotos, IdentificationQuestion, \
+    ChannelMessageData, delete_db, create_tables
 from .keyboards import create_back_button, create_bot_couriers_keyboard, create_bot_channels_keyboard, \
     create_bot_settings_keyboard, create_bot_order_options_keyboard, \
     create_ban_list_keyboard, create_courier_locations_keyboard, create_bot_locations_keyboard, \
@@ -20,7 +17,8 @@ from .keyboards import create_back_button, create_bot_couriers_keyboard, create_
     create_edit_identification_keyboard, create_edit_restriction_keyboard, create_product_media_keyboard, \
     create_categories_keyboard, create_add_courier_keyboard, create_delivery_fee_keyboard, \
     create_general_on_off_keyboard, create_bot_product_edit_keyboard, create_product_edit_media_keyboard, \
-    create_edit_identification_type_keyboard, create_bot_orders_keyboard, create_locations_with_all_btn_keyboard
+    create_edit_identification_type_keyboard, create_bot_orders_keyboard, create_locations_with_all_btn_keyboard, \
+    create_reset_confirm_keyboard
 
 from . import shortcuts
 
@@ -233,7 +231,6 @@ def on_admin_orders_pending_select(bot, update, user_data):
         query.answer()
         return enums.ADMIN_ORDERS
     if action == 'page':
-        #orders = Order.select().where(Order.delivered == False).tuples()
         orders = user_data['admin_pending_orders']
         keyboard = general_select_one_keyboard(_, orders, int(val))
         msg = _('Please select an order\nBot will send it to service channel')
@@ -242,7 +239,6 @@ def on_admin_orders_pending_select(bot, update, user_data):
         query.answer()
         return enums.ADMIN_ORDERS_PENDING_SELECT
     elif action == 'select':
-        # order = Order.get(id=val)
         service_trans = get_channel_trans()
         order = Order.get(id=val)
         user_name = order.user.username
@@ -397,11 +393,6 @@ def on_admin_add_delivery(bot, update, user_data):
                               reply_markup=keyboard)
         update.callback_query.answer()
         return state
-        # option_back_function(
-        #     bot, update, create_bot_order_options_keyboard(_),
-        #     'Order options')
-        # return enums.ADMIN_ORDER_OPTIONS
-    # user_id = get_user_id(update)
     delivery = update.message.text
     cleaned_data = [int(i.strip()) for i in delivery.split('>')]
     delivery_fee = cleaned_data[0]
@@ -441,10 +432,6 @@ def on_admin_delivery_fee_vip(bot, update):
     action = query.data
     if action == 'back':
         msg = _('🚕 Delivery fee')
-        # bot.edit_message_text(msg, chat_id, msg_id, parse_mode=ParseMode.MARKDOWN,
-        #                       reply_markup=create_delivery_fee_keyboard(_))
-        # query.answer()
-        # return enums.ADMIN_DELIVERY_FEE
     else:
         callback_map = {
             'on': (True, _('Delivery fee for vip customers was activated')),
@@ -639,7 +626,6 @@ def on_admin_category_products_add(bot, update, user_data):
                           reply_markup=products_keyboard)
     query.answer()
     return enums.ADMIN_CATEGORY_PRODUCTS_ADD
-
 
 
 def on_admin_warehouse_products(bot, update, user_data):
@@ -837,7 +823,7 @@ def on_admin_products(bot, update, user_data):
     if data == 'bot_products_back':
         bot.edit_message_text(chat_id=chat_id,
                               message_id=message_id,
-                              text = _('💳 Order options'),
+                              text=_('💳 Order options'),
                               reply_markup=create_bot_order_options_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -966,8 +952,6 @@ def on_admin_product_edit(bot, update, user_data):
     if action == 'title':
         msg = _('Current title: {}\n\nEnter new title for product').format(product.title)
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_back_button(_), parse_mode=ParseMode.MARKDOWN)
-        # msg = _('Enter new title for product')
-        # bot.send_message(chat_id, msg, reply_markup=create_back_button(_), parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCT_EDIT_TITLE
     elif action == 'price':
         prices_str = _('Current prices:\n\n')
@@ -1263,11 +1247,6 @@ def on_admin_txt_product_prices(bot, update, user_data):
             return enums.ADMIN_TXT_PRODUCT_PRICES
 
     user_data['add_product']['prices'] = prices_list
-    # msg = _('Send a photo/gif/video')
-    # update.message.reply_text(
-    #     text=msg, parse_mode=ParseMode.MARKDOWN,
-    #     reply_markup=create_back_button(_)
-    # )
     update.message.reply_text(
         text=_('Send photos/videos for new product'),
         reply_markup=create_product_media_keyboard(_), parse_mode=ParseMode.MARKDOWN,
@@ -1332,79 +1311,6 @@ def on_admin_txt_product_photo(bot, update, user_data):
         user_data['add_product']['files'].append((file.file_id, file_type))
     return enums.ADMIN_TXT_PRODUCT_PHOTO
 
-# def on_admin_txt_product_photo(bot, update, user_data):
-#     user_id = get_user_id(update)
-#     _ = get_trans(user_id)
-#     upd_msg = update.message
-#     msg_text = upd_msg.text
-#     chat_id = update.message.chat_id
-#     if msg_text == _('Create Product'):
-#         title = user_data['add_product']['title']
-#         prices = user_data['add_product']['prices']
-#         try:
-#             files = user_data['add_product']['files']
-#         except KeyError:
-#             msg = _('Send a photo, gif or video')
-#             bot.send_message(chat_id, msg)
-#             return enums.ADMIN_TXT_PRODUCT_PHOTO
-#         try:
-#             def_cat = ProductCategory.get(title='Default')
-#         except ProductCategory.DoesNotExist:
-#             product = Product.create(title=title)
-#         else:
-#             product = Product.create(title=title, category=def_cat)
-#         for count, price in prices:
-#             ProductCount.create(product=product, price=price, count=count)
-#         for file_id, ftype in files:
-#             file = bot.get_file(file_id)
-#             file_ext = os.path.splitext(file.file_path)[1]
-#             filename = '{}{}'.format(file.file_id, file_ext)
-#             media_dir = config.get_media_path()
-#             filename = os.path.join(media_dir, filename)
-#             file.download(custom_path=filename)
-#             ProductMedia.create(product=product, file_path=filename, type=ftype)
-#         for courier in Courier:
-#             ProductWarehouse.create(product=product, courier=courier)
-#         # clear new product data
-#         del user_data['add_product']
-#         msg = _('New Product Created\n✅')
-#         bot.send_message(chat_id, msg, reply_markup=ReplyKeyboardRemove())
-#         bot.send_message(chat_id=chat_id,
-#                          text=_('🏪 My Products'),
-#                          reply_markup=create_bot_products_keyboard(_),
-#                          parse_mode=ParseMode.MARKDOWN)
-#         return enums.ADMIN_PRODUCTS
-#     elif msg_text == _('❌ Cancel'):
-#         del user_data['add_product']
-#         bot.send_message(chat_id, _('Cancelled'), reply_markup=ReplyKeyboardRemove())
-#         bot.send_message(chat_id=chat_id,
-#                          text=_('🏪 My Products'),
-#                          reply_markup=create_bot_products_keyboard(_),
-#                          parse_mode=ParseMode.MARKDOWN)
-#         return enums.ADMIN_PRODUCTS
-#     files_types = ('video', 'photo', 'document')
-#     file, ftype = next((getattr(upd_msg, ftype), ftype) for ftype in files_types if getattr(upd_msg, ftype, None))
-#     if type(file) == list:
-#         file = file[-1]
-#     file = bot.get_file(file.file_id)
-#     if file.file_size > 1000 * 20000:
-#         err_msg = _('File size shouldn\'t be larger than 20 MB')
-#         bot.send_message(chat_id, err_msg)
-#     else:
-#         new_type = mimetypes.guess_type(file.file_path)[0]
-#         if new_type:
-#             new_type = new_type.split('/')[0]
-#         #if new_type in files_types + ('image',):
-#         if new_type in ('image', 'video'):
-#             if new_type == 'image':
-#                 new_type = 'photo'
-#             ftype = new_type
-#             if not user_data['add_product'].get('files'):
-#                 user_data['add_product']['files'] = [(file.file_id, ftype)]
-#             else:
-#                 user_data['add_product']['files'].append((file.file_id, ftype))
-#     return enums.ADMIN_TXT_PRODUCT_PHOTO
-
 
 def on_admin_cmd_delete_product(bot, update, user_data):
     user_id = get_user_id(update)
@@ -1422,24 +1328,6 @@ def on_admin_cmd_delete_product(bot, update, user_data):
                           text=_('Select a product which you want to remove'),
                           reply_markup=products_keyboard, parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_DELETE_PRODUCT
-
-
-def on_admin_cmd_bot_on(bot, update):
-    global BOT_ON
-    BOT_ON = True
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    update.message.reply_text(text=_('Bot switched on'))
-    return enums.ADMIN_INIT
-
-
-def on_admin_cmd_bot_off(bot, update):
-    global BOT_ON
-    BOT_ON = False
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    update.message.reply_text(text=_('Bot switched off'))
-    return enums.ADMIN_INIT
 
 
 def on_admin_cmd_add_courier(bot, update):
@@ -1560,83 +1448,6 @@ def on_admin_add_courier(bot, update, user_data):
                                   parse_mode=ParseMode.MARKDOWN)
             query.answer()
             return enums.ADMIN_COURIERS
-    # query = update.callback_query
-    # user_id = get_user_id(update)
-    # _ = get_trans(user_id)
-    # chat_id, message_id = query.message.chat_id, query.message.message_id
-    # action = query.data
-    # if action == 'back':
-    #     bot.edit_message_text(_('🛵 Couriers'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
-    #                           reply_markup=create_bot_couriers_keyboard(_))
-    #     query.answer()
-    #     return enums.ADMIN_COURIERS
-    # elif action == 'by_id':
-    #     msg = _('Enter telegram ID of courier')
-    #     bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
-    #                           reply_markup=create_back_button(_))
-    #     query.answer()
-    #     return enums.ADMIN_COURIER_ADD_ID
-    # elif action == 'select':
-    #     couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
-    #     if not couriers:
-    #         msg = _('There\'s no couriers to add')
-    #         query.answer(msg)
-    #         return enums.ADMIN_COURIERS
-    #     bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-    #                           text=_('Select a courier to add'),
-    #                           reply_markup=general_select_one_keyboard(_, couriers),
-    #                           parse_mode=ParseMode.MARKDOWN)
-    #     query.answer()
-    #     return enums.ADMIN_COURIER_ADD_SELECT
-
-
-# def on_admin_add_courier_id(bot, update, user_data):
-#     user_id = get_user_id(update)
-#     _ = get_trans(user_id)
-#     if update.callback_query and update.callback_query.data == 'back':
-#         upd_msg = update.callback_query.message
-#         bot.edit_message_text(_('➕ Add couriers'), upd_msg.chat_id, upd_msg.message_id, parse_mode=ParseMode.MARKDOWN,
-#                               reply_markup=create_add_courier_keyboard(_))
-#         update.callback_query.answer()
-#         return enums.ADMIN_COURIER_ADD
-#     upd_msg = update.message
-#     courier_id = upd_msg.text
-#     user_data['add_courier_by_id'] = courier_id
-#     msg =
-#     bot.send_message()
-
-
-# def on_admin_add_courier_select(bot, update, user_data):
-    # query = update.callback_query
-    # user_id = get_user_id(update)
-    # _ = get_trans(user_id)
-    # chat_id, message_id = query.message.chat_id, query.message.message_id
-    # action, param = query.data.split('|')
-    # if action == 'back':
-    #     bot.edit_message_text(_('➕ Add couriers'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
-    #                           reply_markup=create_add_courier_keyboard(_))
-    #     query.answer()
-    #     return enums.ADMIN_COURIER_ADD
-    # if action == 'page':
-    #     current_page = int(param)
-    #     couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()
-    #     bot.edit_message_text(chat_id=chat_id, message_id=message_id,
-    #                           text=_('Select a courier to add'),
-    #                           reply_markup=general_select_one_keyboard(_, couriers, current_page),
-    #                           parse_mode=ParseMode.MARKDOWN)
-    #     query.answer()
-    #     return enums.ADMIN_COURIER_ADD_SELECT
-    # elif action == 'select':
-    #     user_data['add_courier'] = {'location_ids': [], 'courier_id': param}
-    #     text = _('Choose locations for new courier')
-    #     locations = []
-    #     for location in Location:
-    #         is_picked = False
-    #         locations.append((location.title, location.id, is_picked))
-    #     bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text,
-    #                           reply_markup=create_courier_locations_keyboard(_, locations))
-    #     query.answer()
-    #     return enums.ADMIN_TXT_COURIER_LOCATION
 
 
 def on_admin_delete_courier(bot, update):
@@ -1678,67 +1489,6 @@ def on_admin_delete_courier(bot, update):
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_COURIERS
-
-
-def on_admin_txt_courier_name(bot, update, user_data):
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    if update.callback_query and update.callback_query.data == 'back':
-        query = update.callback_query
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=_('🛵 Couriers'),
-                              reply_markup=create_bot_couriers_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        return enums.ADMIN_COURIERS
-
-    name = update.message.text
-    # initialize new courier data
-    user_data['add_courier'] = {}
-    user_data['add_courier']['name'] = name
-    text = _('Enter courier telegram_id')
-    update.message.reply_text(text=text)
-    return enums.ADMIN_TXT_COURIER_ID
-
-
-# def on_admin_txt_courier_id(bot, update, user_data):
-#     telegram_id = update.message.text
-#     user_data['add_courier']['telegram_id'] = telegram_id
-#     user_id = get_user_id(update)
-#     _ = get_trans(user_id)
-#     locations = Location.select().exists()
-#     if not locations:
-#         Courier.create(telegram_id=telegram_id, is_active=True)
-#         for product in Product:
-#             try:
-#                 ProductWarehouse.get(courier=courier, product=product)
-#             except ProductWarehouse.DoesNotExist:
-#                 ProductWarehouse.create(courier=courier, product=product)
-#         del user_data['add_courier']
-#         bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
-#                               text=_('Courier added'),
-#                               reply_markup=create_bot_couriers_keyboard(_),
-#                               parse_mode=ParseMode.MARKDOWN)
-#         query.answer()
-#         return enums.ADMIN_COURIERS
-#     if 'location_ids' not in user_data['add_courier']:
-#         user_data['add_courier']['location_ids'] = []
-#     location_ids = user_data['add_courier']['location_ids']
-#
-#     text = _('Choose locations for new courier')
-#     locations = []
-#     for location in Location:
-#         is_picked = False
-#         if location.id in location_ids:
-#             is_picked = True
-#         locations.append((location.title, location.id, is_picked))
-#
-#     update.message.reply_text(
-#         text=text,
-#         reply_markup=create_courier_locations_keyboard(_, locations)
-#     )
-#
-#     return enums.ADMIN_TXT_COURIER_LOCATION
 
 
 def on_admin_btn_courier_location(bot, update, user_data):
@@ -1795,37 +1545,6 @@ def on_admin_btn_courier_location(bot, update, user_data):
                           parse_mode=ParseMode.MARKDOWN)
     query.answer()
     return enums.ADMIN_TXT_COURIER_LOCATION
-
-
-def on_admin_txt_delete_courier(bot, update, user_data):
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    if update.callback_query and update.callback_query.data == 'back':
-        query = update.callback_query
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
-                              text=_('🛵 Couriers'),
-                              reply_markup=create_bot_couriers_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN)
-        query.answer()
-        return enums.ADMIN_COURIERS
-
-    courier_id = update.message.text
-
-    # check that courier id is valid
-    try:
-        courier = Courier.get(id=courier_id)
-    except Courier.DoesNotExist:
-        update.message.reply_text(
-            text='Invalid courier id, please enter correct id')
-        return enums.ADMIN_TXT_DELETE_COURIER
-
-    courier.delete_instance()
-    bot.send_message(chat_id=update.message.chat_id,
-                     text=_('Courier deleted'),
-                     reply_markup=create_bot_couriers_keyboard(_),
-                     parse_mode=ParseMode.MARKDOWN)
-    return enums.ADMIN_COURIERS
 
 
 def on_admin_txt_location(bot, update, user_data):
@@ -1944,6 +1663,7 @@ def on_admin_locations(bot, update):
 
     return ConversationHandler.END
 
+
 # additional cancel handler for admin commands
 def on_admin_cancel(bot, update):
     update.message.reply_text(
@@ -1959,21 +1679,6 @@ def on_admin_fallback(bot, update):
         reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.MARKDOWN,
     )
     return enums.ADMIN_INIT
-
-
-def set_welcome_message(bot, update):
-    update.callback_query.message.reply_text(
-        text='Enter new welcome text',
-        parse_mode=ParseMode.MARKDOWN,
-    )
-
-
-def new_welcome_message(bot, update):
-    new_text = update.message.text
-    session = get_config_session()
-    session['welcome_text'] = new_text
-    session_client.json_set('config', session)
-    return on_start_admin(bot, update)
 
 
 def on_admin_select_channel_type(bot, update, user_data):
@@ -2076,13 +1781,12 @@ def on_admin_edit_working_hours(bot, update, user_data):
             bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
         return enums.ADMIN_BOT_SETTINGS
-    user_id = get_user_id(update)
     new_working_hours = update.message.text
     config_session = get_config_session()
     config_session['working_hours'] = new_working_hours
     set_config_session(config_session)
     bot.send_message(chat_id=update.message.chat_id,
-                     text='Working hours was changed',
+                     text='Working hours were changed',
                      reply_markup=create_bot_settings_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_BOT_SETTINGS
@@ -2096,7 +1800,6 @@ def on_admin_edit_contact_info(bot, update, user_data):
             bot, update, create_bot_settings_keyboard(_),
             'Bot settings')
         return enums.ADMIN_BOT_SETTINGS
-    user_id = get_user_id(update)
     contact_info = update.message.text
     config_session = get_config_session()
     config_session['contact_info'] = contact_info
@@ -2116,7 +1819,6 @@ def on_admin_add_discount(bot, update, user_data):
             bot, update, create_bot_order_options_keyboard(_),
             _('💳 Order options'))
         return enums.ADMIN_ORDER_OPTIONS
-    # user_id = get_user_id(update)
     discount = update.message.text
     discount = parse_discount(discount)
     if discount:
@@ -2141,7 +1843,6 @@ def on_admin_add_discount(bot, update, user_data):
                          msg, reply_markup=create_back_button(_),
                          parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_ADD_DISCOUNT
-
 
 
 def on_admin_bot_on_off(bot, update, user_data):
@@ -2181,7 +1882,6 @@ def on_admin_edit_welcome_message(bot, update, user_data):
             bot, update, create_bot_order_options_keyboard(_),
             _('💳 Order options'))
         return enums.ADMIN_ORDER_OPTIONS
-    # user_id = get_user_id(update)
     welcome_message = update.message.text
     config_session = get_config_session()
     config_session['welcome_text'] = welcome_message
@@ -2201,7 +1901,6 @@ def on_admin_edit_order_message(bot, update, user_data):
             bot, update, create_bot_order_options_keyboard(_),
             _('💳 Order options'))
         return enums.ADMIN_ORDER_OPTIONS
-    # user_id = get_user_id(update)
     order_message = update.message.text
     config_session = get_config_session()
     config_session['order_text'] = order_message
@@ -2382,7 +2081,6 @@ def on_admin_add_ban_list(bot, update, user_data):
     config_session = get_config_session()
     config_session['banned'] = banned
     set_config_session(config_session)
-    # user_id = get_user_id(update)
     bot.send_message(chat_id=update.message.chat_id,
                      text='@{} was banned'.format(username),
                      reply_markup=create_ban_list_keyboard(_),
@@ -2405,9 +2103,52 @@ def on_admin_remove_ban_list(bot, update, user_data):
     config_session = get_config_session()
     config_session['banned'] = banned
     set_config_session(config_session)
-    # user_id = get_user_id(update)
     bot.send_message(chat_id=update.message.chat_id,
                      text='@{} was unbanned'.format(username),
                      reply_markup=create_ban_list_keyboard(_),
                      parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_BAN_LIST
+
+
+def on_admin_reset_all_data(bot, update):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    query = update.callback_query
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    if query.data == 'yes':
+        msg = _('Are you *TOTALLY* sure you want to delete database, session and all messages in channels?')
+        keyboard = create_reset_confirm_keyboard(_)
+        state = enums.ADMIN_BOT_RESET_CONFIRM
+    else:
+        msg = _('⚙️ Bot settings')
+        keyboard = create_bot_settings_keyboard(_)
+        state = enums.ADMIN_BOT_SETTINGS
+    bot.edit_message_text(msg, chat_id, msg_id, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+    query.answer()
+    return state
+
+
+def on_admin_reset_confirm(bot, update):
+    user_id = get_user_id(update)
+    _ = get_trans(user_id)
+    query = update.callback_query
+    chat_id, msg_id = query.message.chat_id, query.message.message_id
+    if query.data == 'yes':
+        # delete logic
+        for msg_row in ChannelMessageData:
+            try:
+                bot.delete_message(msg_row.channel, msg_row.msg_id)
+            except TelegramError:
+                pass
+        delete_db()
+        create_tables()
+        set_config_session({})
+        username = get_username(update)
+        locale = get_locale(update)
+        User.create(telegram_id=user_id, username=username, locale=locale)
+        msg = _('Database, session and all channel messages were deleted.')
+    else:
+        msg = _('⚙️ Bot settings')
+    bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_bot_settings_keyboard(_), parse_mode=ParseMode.MARKDOWN)
+    query.answer()
+    return enums.ADMIN_BOT_SETTINGS

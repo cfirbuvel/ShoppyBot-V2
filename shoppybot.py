@@ -4,7 +4,7 @@ from telegram.ext import CallbackQueryHandler, CommandHandler, ConversationHandl
     Handler
 from src import admin
 from src import enums
-from src.handlers import on_start, on_menu, on_error, on_chat_update_handler
+from src.handlers import on_start, on_menu, on_error
 from src.helpers import config, get_user_id, \
     get_user_session
 
@@ -65,18 +65,14 @@ def main():
             ],
             enums.COURIER_STATE_CONFIRM_ORDER: [
                 CallbackQueryHandler(triggers.on_courier_confirm_order, pass_user_data=True)
-                                     #pattern='^confirm_order')
-
             ],
             enums.COURIER_STATE_CONFIRM_REPORT: [
                 CallbackQueryHandler(triggers.on_courier_confirm_report,)
-                                     #pattern='^confirm_report')
             ],
             enums.COURIER_STATE_REPORT_REASON: [
                 MessageHandler(Filters.text, triggers.on_courier_enter_reason),
                 CallbackQueryHandler(triggers.on_courier_cancel_reason, pattern='^back')
             ]
-
         },
         fallbacks=[
             CommandHandler('start', on_start, pass_user_data=True)
@@ -166,11 +162,9 @@ def main():
             enums.PRODUCT_CATEGORIES: [
                 CallbackQueryHandler(triggers.on_product_categories, pass_user_data=True)
             ],
-
             #
             # admin states
             #
-
             enums.ADMIN_MENU: [CallbackQueryHandler(
                 triggers.on_settings_menu, pattern='^settings')],
             enums.ADMIN_STATISTICS: [CallbackQueryHandler(
@@ -424,8 +418,6 @@ def main():
                 CommandHandler('delproduct', admin.on_admin_cmd_delete_product, pass_user_data=True),
                 CommandHandler('addcourier', admin.on_admin_cmd_add_courier),
                 CommandHandler('delcourier', admin.on_admin_cmd_delete_courier),
-                CommandHandler('on', admin.on_admin_cmd_bot_on),
-                CommandHandler('off', admin.on_admin_cmd_bot_off),
                 CommandHandler('cancel', admin.on_admin_cancel),
                 MessageHandler(Filters.all, admin.on_admin_fallback),
             ],
@@ -450,23 +442,9 @@ def main():
                 CallbackQueryHandler(admin.on_admin_delete_product, pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel)
             ],
-            enums.ADMIN_TXT_COURIER_NAME: [
-                CallbackQueryHandler(
-                    admin.on_admin_txt_courier_name, pass_user_data=True),
-                MessageHandler(Filters.text, admin.on_admin_txt_courier_name,
-                               pass_user_data=True),
-                CommandHandler('cancel', admin.on_admin_cancel),
-            ],
             enums.ADMIN_TXT_COURIER_LOCATION: [
                 CallbackQueryHandler(
                     admin.on_admin_btn_courier_location, pass_user_data=True),
-                CommandHandler('cancel', admin.on_admin_cancel),
-            ],
-            enums.ADMIN_TXT_DELETE_COURIER: [
-                CallbackQueryHandler(
-                    admin.on_admin_txt_delete_courier, pass_user_data=True),
-                MessageHandler(Filters.text, admin.on_admin_txt_delete_courier,
-                               pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
             enums.ADMIN_TXT_ADD_LOCATION: [
@@ -482,12 +460,17 @@ def main():
                 MessageHandler(Filters.text, admin.on_admin_txt_delete_location,
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel), ],
+            enums.ADMIN_BOT_RESET_DATA: [
+                CallbackQueryHandler(admin.on_admin_reset_all_data)
+            ],
+            enums.ADMIN_BOT_RESET_CONFIRM: [
+                CallbackQueryHandler(admin.on_admin_reset_confirm)
+            ]
         },
         fallbacks=[
             CommandHandler('cancel', triggers.on_cancel, pass_user_data=True),
             CommandHandler('start', on_start, pass_user_data=True)
         ])
-
     updater = Updater(config.get_api_token(), user_sig_handler=close_db_on_signal)
     updater.dispatcher.add_handler(MessageHandler(
         Filters.status_update.new_chat_members, triggers.send_welcome_message))

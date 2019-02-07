@@ -1,4 +1,6 @@
 import datetime
+import os
+
 from os.path import dirname, abspath, join
 from enum import Enum
 from peewee import Model, CharField, IntegerField, SqliteDatabase, \
@@ -122,6 +124,13 @@ class OrderIdentificationAnswer(BaseModel):
     content = CharField()
     msg_id = CharField(null=True)
 
+
+class ChannelMessageData(BaseModel):
+    channel = CharField()
+    msg_id = CharField()
+    order = ForeignKeyField(Order, related_name='channel_messages', null=True)
+
+
 def create_tables():
     try:
         db.connect()
@@ -133,10 +142,15 @@ def create_tables():
         [
             Location, User, Courier, CourierLocation, ProductCategory, Product, ProductCount,
             Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia, IdentificationStage,
-            OrderIdentificationAnswer, IdentificationQuestion
+            OrderIdentificationAnswer, IdentificationQuestion, ChannelMessageData
         ], safe=True
     )
 
 
 def close_db():
     db.close()
+
+
+def delete_db():
+    db.close()
+    os.remove('db.sqlite')

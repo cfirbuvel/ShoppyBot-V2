@@ -79,43 +79,12 @@ def enter_state_phone_number_text(bot, update, user_data):
     return BOT_STATE_CHECKOUT_PHONE_NUMBER_TEXT
 
 
-def enter_state_identify_photo(bot, update, user_data):
-    user_id = get_user_id(update)
-    session = get_user_session(user_id)
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    if 'photo_question' not in session['shipping']:
-        session['shipping']['photo_question'] = create_photo_question()
-    else:
-        session['shipping']['photo_question'] = {}
-        session['shipping']['photo_question'] = create_photo_question()
-    session_client.json_set(user_id, session)
-    text = _('Please provide an identification picture. {}').format(
-        session['shipping']['photo_question'])
-    update.message.reply_text(text=text, reply_markup=create_cancel_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN, )
-    return BOT_STATE_CHECKOUT_IDENTIFY_STAGE1
-
-
-def enter_state_identify_stage2(bot, update, user_data):
-    user_id = get_user_id(update)
-    _ = get_trans(user_id)
-    update.message.reply_text(text=config.get_identification_stage2_question(),
-                              reply_markup=create_cancel_keyboard(_),
-                              parse_mode=ParseMode.MARKDOWN,
-                              )
-
-    return BOT_STATE_CHECKOUT_IDENTIFY_STAGE2
-
-
 def enter_state_order_confirm(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     is_pickup = user_data['shipping']['method'] == _('🏪 Pickup')
     shipping_data = user_data['shipping']
     total = cart.get_cart_total(user_data)
-    # delivery_cost = config.get_delivery_fee()
-    # delivery_min = config.get_delivery_min()
     delivery_for_vip = config.get_delivery_fee_for_vip()
     product_info = cart.get_products_info(user_data)
     user_data['shipping']['vip'] = is_vip_customer(bot, user_id)
