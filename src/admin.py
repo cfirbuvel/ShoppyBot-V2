@@ -1407,6 +1407,7 @@ def on_admin_add_courier(bot, update, user_data):
         bot.edit_message_text(msg, chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
                               reply_markup=create_bot_couriers_keyboard(_))
         query.answer()
+        return enums.ADMIN_COURIERS
     if action == 'page':
         current_page = int(param)
         couriers = Courier.select(Courier.username, Courier.id).where(Courier.is_active == False).tuples()

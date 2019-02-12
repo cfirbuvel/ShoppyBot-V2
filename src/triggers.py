@@ -409,6 +409,8 @@ def on_phone_number_text(bot, update, user_data):
         identification_stages = IdentificationStage.filter(active=True)
         if is_vip_customer(bot, user_id):
             identification_stages = identification_stages.filter(vip_required=True)
+        else:
+            identification_stages = identification_stages.filter(vip_required=False)
         if len(identification_stages):
             first_stage = identification_stages[0]
             questions = first_stage.identification_questions
