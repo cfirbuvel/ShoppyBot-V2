@@ -604,7 +604,7 @@ def service_channel_sendto_courier_handler(bot, update, user_data):
     _ = get_channel_trans()
     courier = Courier.get(telegram_id=telegram_id)
     msg = shortcuts.check_order_products_credits(order, _, courier)
-    if msg:
+    if msg and msg != True:
         bot.send_message(user_id, msg, parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return
@@ -672,7 +672,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
             msg = _('Order is delivered. Cannot send it to couriers again.')
             query.answer(text=msg, show_alert=True)
             return
-        couriers = Courier.select(Courier.username, Courier.telegram_id, Courier.location)
+        couriers = Courier.select(Courier.username, Courier.telegram_id, Courier.location).where(Courier.is_active == True)
         msg = _('Please choose who to send')
         keyboard = couriers_choose_keyboard(_, couriers, order_id, update.callback_query.message.message_id)
         shortcuts.send_channel_msg(bot, msg, config.get_service_channel(), keyboard, order)
@@ -718,7 +718,7 @@ def on_service_send_order_to_courier(bot, update, user_data):
         else:
             msg = _('Are you sure?')
             keyboard = create_cancel_order_confirm(_, order_id)
-            shortcuts.send_channel_msg(update.callback_query.message.chat_id, msg, keyboard, order)
+            shortcuts.send_channel_msg(bot, msg, update.callback_query.message.chat_id, keyboard, order)
             query.answer()
     elif label == 'order_send_to_self':
         order = Order.get(id=order_id)
