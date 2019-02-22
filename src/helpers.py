@@ -27,20 +27,20 @@ class JsonRedis(redis.StrictRedis):
 class ConfigHelper:
     def __init__(self, cfgfilename='shoppybot.conf'):
         self.config = configparser.ConfigParser(
-            defaults={'api_token': None, 'reviews_channel': None,
-                      'service_channel': None, 'customers_channel': None,
-                      'vip_customers_channel': None, 'couriers_channel': None,
+            defaults={'api_token': '', 'reviews_channel': '',
+                      'service_channel': '', 'customers_channel': '',
+                      'vip_customers_channel': '', 'couriers_channel': '',
                       'channels_language': 'iw',
                       'welcome_text': 'Welcome text not configured yet',
                       'order_text': 'Order text not configured yet',
                       'order_complete_text': 'Order text not configured yet',
                       'working_hours': 'Working hours not configured yet',
                       'contact_info': 'Contact info not configured yet',
-                      'phone_number_required': True,
-                      'has_courier_option': True,
-                      'only_for_customers': False, 'delivery_fee': 0,
-                      'delivery_fee_for_vip': False, 'discount': 0,
-                      'discount_min': 0})
+                      'phone_number_required': 'true',
+                      'has_courier_option': 'true',
+                      'only_for_customers': 'false', 'delivery_fee': '0',
+                      'delivery_fee_for_vip': 'false', 'discount': '0',
+                      'discount_min': '0'})
         self.config.read(cfgfilename, encoding='utf-8')
         self.section = 'Settings'
 
@@ -50,31 +50,31 @@ class ConfigHelper:
 
     def get_reviews_channel(self):
         value = get_config_session().get('reviews_channel')
-        if value is None:
+        if not value:
             value = self.config.get(self.section, 'reviews_channel')
         return value.strip()
 
     def get_service_channel(self):
         value = get_config_session().get('service_channel')
-        if value is None:
+        if not value:
             value = self.config.get(self.section, 'service_channel')
         return value.strip()
 
     def get_customers_channel(self):
         value = get_config_session().get('customers_channel')
-        if value is None:
+        if not value:
             value = self.config.get(self.section, 'customers_channel')
         return value.strip()
 
     def get_vip_customers_channel(self):
         value = get_config_session().get('vip_customers_channel')
-        if value is None:
+        if not value:
             value = self.config.get(self.section, 'vip_customers_channel')
         return value.strip()
 
     def get_couriers_channel(self):
         value = get_config_session().get('couriers_channel')
-        if value is None:
+        if not value:
             value = self.config.get(self.section, 'couriers_channel')
         return value.strip()
 
@@ -211,9 +211,12 @@ class CartHelper:
     def add(self, user_data, product_id):
         cart = self.check_cart(user_data)
         product_id = str(product_id)
-        prices = ProductCount.select().where(
-            ProductCount.product == product_id).order_by(
-            ProductCount.count.asc())
+        product = Product.get(id=product_id)
+        if product.group_price:
+            query = (ProductCount.product_group == product.group_price)
+        else:
+            query = (ProductCount.product == product)
+        prices = ProductCount.select().where(query).order_by(ProductCount.count.asc())
         counts = [x.count for x in prices]
         min_count = counts[0]
 
@@ -234,10 +237,12 @@ class CartHelper:
     def remove(self, user_data, product_id):
         cart = self.check_cart(user_data)
         product_id = str(product_id)
-
-        prices = ProductCount.select().where(
-            ProductCount.product == product_id).order_by(
-            ProductCount.count.asc())
+        product = Product.get(id=product_id)
+        if product.group_price:
+            query = (ProductCount.product_group == product.group_price)
+        else:
+            query = (ProductCount.product == product)
+        prices = ProductCount.select().where(query).order_by(ProductCount.count.asc())
         counts = [x.count for x in prices]
 
         if product_id in cart:
@@ -266,12 +271,16 @@ class CartHelper:
     def get_product_info(self, user_data, product_id, for_order=False):
         result = None
         try:
-            product_title = Product.get(id=product_id).title
+            product = Product.get(id=product_id)
         except Product.DoesNotExist:
             return result
+        product_title = product.title
         product_count = self.get_product_count(user_data, product_id)
-        product_price = ProductCount.get(
-            product_id=product_id, count=product_count).price
+        if product.group_price:
+            product_count = ProductCount.get(product_group=product.group_price, count=product_count)
+        else:
+            product_count = ProductCount.get(product=product, count=product_count)
+        product_price = product_count.price
         if for_order:
             result = product_id, product_count, product_price
         else:
@@ -280,12 +289,15 @@ class CartHelper:
 
     def product_full_info(self, user_data, product_id):
         try:
-            product_title = Product.get(id=product_id).title
+            product = Product.get(id=product_id)
         except Product.DoesNotExist:
             return '', []
-        rows = ProductCount.select(
-            ProductCount.count, ProductCount.price).where(
-            ProductCount.product == product_id).tuples()
+        product_title = product.title
+        if product.group_price:
+            query = (ProductCount.product_group == product.group_price)
+        else:
+            query = (ProductCount.product == product)
+        rows = ProductCount.select(ProductCount.count, ProductCount.price).where(query).tuples()
         return product_title, rows
 
     def get_product_ids(self, user_data):
@@ -309,8 +321,11 @@ class CartHelper:
 
     def get_product_subtotal(self, user_data, product_id):
         count = self.get_product_count(user_data, product_id)
-
-        rows = ProductCount.filter(product_id=product_id)
+        product = Product.get(id=product_id)
+        if product.group_price:
+            rows = ProductCount.filter(product_group=product.group_price)
+        else:
+            rows = ProductCount.filter(product=product)
         min_price = 0
         for row in rows:
             price, product_count = row.price, row.count

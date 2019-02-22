@@ -3,7 +3,7 @@ import operator
 
 from telegram import ParseMode, TelegramError, InputMediaPhoto, InputMediaVideo
 
-from .models import Order, OrderPhotos, OrderItem, ProductWarehouse, ChannelMessageData
+from .models import Order, OrderPhotos, OrderItem, ProductWarehouse, ChannelMessageData, ProductCount
 
 from .helpers import config, get_trans, logger, get_user_id, get_channel_trans, get_user_session, session_client
 from . import keyboards
@@ -169,7 +169,11 @@ def send_order_identification_answers(bot, chat_id, order, send_one=False, chann
 
 
 def send_product_info(bot, product, chat_id, trans):
-    product_prices = ((obj.count, obj.price) for obj in product.product_counts)
+    if product.group_prices:
+        product_prices = product.group_prices.product_counts
+    else:
+        product_prices = product.product_counts
+    product_prices = ((obj.count, obj.price) for obj in product_prices)
     send_product_media(bot, product, chat_id)
     msg = messages.create_admin_product_description(trans, product.title, product_prices)
     bot.send_message(chat_id,
@@ -347,3 +351,18 @@ def delete_order_channels_msgs(bot, order):
         except TelegramError:
             pass
         msg.delete_instance()
+
+
+def get_product_prices_str(trans, product):
+    _ = trans
+    group_price = product.group_price
+    prices_str = _('Current prices:\n\n')
+    if group_price:
+        prices_str += _('Product price group: _{}_'.format(group_price.name))
+        prices_str += '\n\n'
+        product_counts = ProductCount.select().where(ProductCount.product_group == group_price)
+    else:
+        product_counts = product.product_counts
+    for price in product_counts:
+        prices_str += _('x {} = ${}\n').format(price.count, price.price)
+    return prices_str

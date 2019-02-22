@@ -47,12 +47,17 @@ class ProductCategory(BaseModel):
     title = CharField(unique=True)
 
 
+class GroupProductCount(BaseModel):
+    name = CharField()
+
+
 class Product(BaseModel):
     title = CharField()
     image = BlobField(null=True)
     is_active = BooleanField(default=True)
     credits = IntegerField(default=0)
     category = ForeignKeyField(ProductCategory, related_name='products', null=True)
+    group_price = ForeignKeyField(GroupProductCount, related_name='products', null=True)
 
 
 class ProductMedia(BaseModel):
@@ -62,7 +67,8 @@ class ProductMedia(BaseModel):
 
 
 class ProductCount(BaseModel):
-    product = ForeignKeyField(Product, related_name='product_counts')
+    product = ForeignKeyField(Product, related_name='product_counts', null=True)
+    product_group = ForeignKeyField(GroupProductCount, related_name='product_counts', null=True)
     count = IntegerField()
     price = DecimalField()
 
@@ -142,7 +148,7 @@ def create_tables():
         [
             Location, User, Courier, CourierLocation, ProductCategory, Product, ProductCount,
             Order, OrderItem, OrderPhotos, ProductWarehouse, ProductMedia, IdentificationStage,
-            OrderIdentificationAnswer, IdentificationQuestion, ChannelMessageData
+            OrderIdentificationAnswer, IdentificationQuestion, ChannelMessageData, GroupProductCount
         ], safe=True
     )
 

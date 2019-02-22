@@ -458,7 +458,9 @@ def create_bot_order_options_keyboard(trans):
                               callback_data='bot_order_options_discount'),
          InlineKeyboardButton(_('🚕 Delivery fee'),
                               callback_data='bot_order_options_delivery_fee')],
-        [InlineKeyboardButton(_('🎯 Locations'),
+        [InlineKeyboardButton(_('💸 Product price groups'),
+                              callback_data='bot_order_options_price_groups'),
+         InlineKeyboardButton(_('🎯 Locations'),
                               callback_data='bot_order_options_add_locations')],
         [InlineKeyboardButton(_('👨 Edit identification process'),
                               callback_data='bot_order_options_identify'),
@@ -828,4 +830,34 @@ def create_reset_confirm_keyboard(trans):
     random.shuffle(names_callbacks)
     buttons = [[InlineKeyboardButton(name, callback_data=callback)] for name, callback in names_callbacks]
     buttons.append([InlineKeyboardButton(_('↩ Back'), callback_data='back')])
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_product_price_groups_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('➕ Add price group'), callback_data='add')],
+        [InlineKeyboardButton(_('🧮 List price groups'), callback_data='list')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_product_price_group_selected_keyboard(trans, group_id):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('✏️ Edit'), callback_data='edit|{}'.format(group_id))],
+        [InlineKeyboardButton(_('❌ Delete'), callback_data='delete|{}'.format(group_id))],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back|')]
+    ]
+    return InlineKeyboardMarkup(buttons)
+
+
+def create_product_price_type_keyboard(trans):
+    _ = trans
+    buttons = [
+        [InlineKeyboardButton(_('✏ Enter prices'), callback_data='text')],
+        [InlineKeyboardButton(_('💸 Select product price group'), callback_data='select')],
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
+    ]
     return InlineKeyboardMarkup(buttons)

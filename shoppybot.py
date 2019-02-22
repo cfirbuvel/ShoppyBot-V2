@@ -248,8 +248,16 @@ def main():
                 MessageHandler(Filters.text, admin.on_admin_product_edit_title, pass_user_data=True)
             ],
             enums.ADMIN_PRODUCT_EDIT_PRICES: [
-                CallbackQueryHandler(admin.on_admin_product_edit_prices, pass_user_data=True),
-                MessageHandler(Filters.text, admin.on_admin_product_edit_prices, pass_user_data=True),
+                CallbackQueryHandler(admin.on_admin_product_edit_price_type, pass_user_data=True)
+                # CallbackQueryHandler(admin.on_admin_product_edit_prices, pass_user_data=True),
+                # MessageHandler(Filters.text, admin.on_admin_product_edit_prices, pass_user_data=True),
+            ],
+            enums.ADMIN_PRODUCT_EDIT_PRICES_TEXT: [
+                CallbackQueryHandler(admin.on_admin_product_edit_prices_text, pass_user_data=True),
+                MessageHandler(Filters.text, admin.on_admin_product_edit_prices_text, pass_user_data=True),
+            ],
+            enums.ADMIN_PRODUCT_EDIT_PRICES_GROUP: [
+                CallbackQueryHandler(admin.on_admin_product_edit_prices_group, pass_user_data=True)
             ],
             enums.ADMIN_PRODUCT_EDIT_MEDIA: [
                 MessageHandler((Filters.text | Filters.photo | Filters.video), admin.on_admin_product_edit_media,
@@ -428,10 +436,16 @@ def main():
                                pass_user_data=True),
                 CommandHandler('cancel', admin.on_admin_cancel),
             ],
-            enums.ADMIN_TXT_PRODUCT_PRICES: [
-                MessageHandler(Filters.text, admin.on_admin_txt_product_prices,
-                               pass_user_data=True),
-                CommandHandler('cancel', admin.on_admin_cancel),
+            enums.ADMIN_ADD_PRODUCT_PRICES: [
+                CallbackQueryHandler(admin.on_admin_add_product_prices, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_PRICES_TEXT: [
+                CallbackQueryHandler(admin.admin_product_price_text, pass_user_data=True),
+                MessageHandler(Filters.text, admin.admin_product_price_text, pass_user_data=True),
+                CommandHandler('cancel', admin.on_admin_cancel)
+            ],
+            enums.ADMIN_PRODUCT_PRICES_GROUP: [
+                CallbackQueryHandler(admin.admin_product_price_group, pass_user_data=True)
             ],
             enums.ADMIN_TXT_PRODUCT_PHOTO: [
                 MessageHandler((Filters.text | Filters.photo | Filters.video), admin.on_admin_txt_product_photo,
@@ -465,7 +479,22 @@ def main():
             ],
             enums.ADMIN_BOT_RESET_CONFIRM: [
                 CallbackQueryHandler(admin.on_admin_reset_confirm)
-            ]
+            ],
+            enums.ADMIN_PRODUCT_PRICE_GROUPS: [
+                CallbackQueryHandler(admin.on_admin_product_price_groups, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_PRICE_GROUP_LIST: [
+                CallbackQueryHandler(admin.on_admin_product_price_groups_list, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_PRICE_GROUPS_SELECTED: [
+                CallbackQueryHandler(admin.on_admin_product_price_group_selected, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_PRICE_GROUP_CHANGE: [
+                MessageHandler(Filters.text, admin.on_admin_product_price_group_change, pass_user_data=True)
+            ],
+            enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE: [
+                MessageHandler(Filters.text, admin.on_admin_product_price_group_save, pass_user_data=True)
+            ],
         },
         fallbacks=[
             CommandHandler('cancel', triggers.on_cancel, pass_user_data=True),
