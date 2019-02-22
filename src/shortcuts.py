@@ -169,8 +169,8 @@ def send_order_identification_answers(bot, chat_id, order, send_one=False, chann
 
 
 def send_product_info(bot, product, chat_id, trans):
-    if product.group_prices:
-        product_prices = product.group_prices.product_counts
+    if product.group_price:
+        product_prices = product.group_price.product_counts
     else:
         product_prices = product.product_counts
     product_prices = ((obj.count, obj.price) for obj in product_prices)
