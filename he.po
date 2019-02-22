@@ -285,20 +285,36 @@ msgid "💫 Reset all data"
 msgstr "💫️ אפס נתונים"
 
 #: shoppybot.py:920
-msgid "Total confirmed orders\nCount: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪"
-msgstr "סה״כ מכירות כלליות:\nכמות הזמנות: {}\nסה״כ מחיר: {}₪\n\nסה״כ הזמנות שבוטלו\nכמות הזמנות שבוטלו: {}\nסה״כ מחיר ביטולים: {}₪"
+msgid "✅ *Total confirmed orders*\nCount: {}\n{}\n*Total cost: {}₪*"
+msgstr "✅ *סה״כ מכירות מאושרות*\nכמות הזמנות: {}\n{}\n*סה״כ מחיר: {}₪*"
 
 #: shoppybot.py:920
-msgid "Courier @{}\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪"
-msgstr "שליח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪\n\nמס׳ ביטולים לפי שליח: {}\nסה״כ מחיר ביטולים: {}₪"
+msgid "❌ *Total canceled orders*\nCount: {}\n*Total cost: {}₪*"
+msgstr "❌ *סה״כ מכירות מבוטלות*\nכמות הזמנות: {}\n*סה״כ מחיר ביטולים: {}₪*"
 
 #: shoppybot.py:920
-msgid "Location `{}`\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders\nCount: {}\nTotal cost: {}₪"
-msgstr "איזור: `{}`\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪\n\nמס׳ ביטולים לפי איזור: {}\nסה״כ מחיר ביטולים: {}₪"
+msgid "*✅ Total confirmed orders for Courier* @{}\nCount: {}\n*Total cost: {}₪*"
+msgstr "ֿ✅ *סה״כ מכירות מאושרות ע״י השליח* @{}\n\nכמות הזמנות: {}\n*סה״כ מחיר: {}₪*"
 
 #: shoppybot.py:920
-msgid "User @{}\n\nOrders count: {}\nTotal cost: {}₪\n\nTotal canceled orders:\n\nCount: {}\nTotal cost: {}₪"
-msgstr "לקוח: @{}\n\nמס׳ הזמנות: {}\nסה״כ מחיר: {}₪\n\nמס׳ ביטולים לפי לקוח: {}\nסה״כ מחיר ביטולים: {}₪"
+msgid "❌ *Total canceled orders for Courier* @{}\nCount: {}\n*Total cost: {}₪*"
+msgstr "❌ *סה״כ מכירות מבוטלות ע״י השליח* @{}\n\nכמות הזמנות: {}\n*סה״כ מחיר ביטולים: {}₪*"
+
+#: shoppybot.py:920
+msgid "✅ *Total confirmed orders for Location* `{}`\nCount: {}\n*Total cost: {}₪*"
+msgstr "✅ *סה״כ מכירות מאושרות מאיזור* `{}`\n\nכמות הזמנות: {}\n*סה״כ מחיר: {}₪*"
+
+#: shoppybot.py:920
+msgid "❌ *Total canceled orders for Location* `{}`\nCount: {}\n*Total cost: {}₪*"
+msgstr "❌ *סה״כ מכירות מבוטלות מאיזור* `{}`\n\nכמות הזמנות: {}\n*סה״כ מחיר ביטולים: {}₪*"
+
+#: shoppybot.py:920
+msgid "✅ *Total confirmed orders for client* @{}\nCount: {}\n*Total cost: {}₪*"
+msgstr "✅ *סה״כ מכירות מאושרות ע״י הלקוח* @{}\nכמות הזמנות: {}\n*סה״כ מחיר: {}₪*"
+
+#: shoppybot.py:920
+msgid "❌ *Total canceled orders for client*\nCount: {}\n*Total cost: {}₪*"
+msgstr "❌ *סה״כ מכירות מבוטלות ע״י הלקוח*\nכמות הזמנות: {}\n*סה״כ מחיר ביטולים: {}₪*"
 
 #: keyboards.py:186
 msgid "💵 General statistics"
@@ -1427,3 +1443,15 @@ msgstr "וידאו"
 #: admin.py:306
 msgid "Delivery Fee from *{}*: {}₪"
 msgstr "דמי משלוח מאיזור *{}*: {}₪"
+
+#: admin.py:306
+msgid "\n Product: *"
+msgstr "\n מוצר: *"
+
+#: admin.py:306
+msgid "count"
+msgstr "כמות"
+
+#: admin.py:306
+msgid "price"
+msgstr "מחיר"

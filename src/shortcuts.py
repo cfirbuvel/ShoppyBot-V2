@@ -212,12 +212,33 @@ def get_order_subquery(action, val, month, year):
 
 
 def get_order_count_and_price(*subqueries):
+    _ = get_channel_trans()
     orders_count = Order.select().where(*subqueries).count()
     total_price = 0
+    products_count = {}
+    product_text = ''
+    count_text = _('count')
+    price_text = _('price')
     orders_items = OrderItem.select().join(Order).where(*subqueries)
     for order_item in orders_items:
         total_price += order_item.total_price
-    return orders_count, total_price
+        title, count, price = order_item.product.title, order_item.count, order_item.total_price
+        try:
+            if products_count[title]:
+                products_count[title][count_text] += count
+                products_count[title][price_text] += price
+        except KeyError:
+            products_count[title] = {count_text: count, price_text: price}
+    for x in products_count:
+        product_text += _('\n Product: *')
+        product_text += x
+        product_text += '*\n'
+        for y in products_count[x]:
+            product_text += y
+            product_text += ' = '
+            product_text += str(products_count[x][y])
+            product_text += '\n'
+    return orders_count, total_price, product_text
 
 
 def check_order_products_credits(order, trans, courier=None):
@@ -227,8 +248,12 @@ def check_order_products_credits(order, trans, courier=None):
     for order_item in order.order_items:
         product = order_item.product
         if courier:
-            warehouse = ProductWarehouse.get(product=product, courier=courier)
-            warehouse_count = warehouse.count
+            try:
+                warehouse = ProductWarehouse.get(product=product, courier=courier)
+                warehouse_count = warehouse.count
+            except ProductWarehouse.DoesNotExist:
+                warehouse = ProductWarehouse(product=product, courier=courier)
+                warehouse.save()
         else:
             warehouse_count = product.credits
         product_warehouse = ProductWarehouse.get(product=product)
