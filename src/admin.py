@@ -901,8 +901,8 @@ def on_admin_show_product(bot, update, user_data):
     elif action == 'select':
         product = Product.get(id=param)
         bot.delete_message(chat_id, msg_id)
-        if product.group_prices:
-            product_prices = product.group_prices.product_counts
+        if product.group_price:
+            product_prices = product.group_price.product_counts
         else:
             product_prices = product.product_counts
         product_prices = ((obj.count, obj.price) for obj in product_prices)
