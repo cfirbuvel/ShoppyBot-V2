@@ -848,7 +848,7 @@ def create_product_price_group_selected_keyboard(trans, group_id):
     buttons = [
         [InlineKeyboardButton(_('✏️ Edit'), callback_data='edit|{}'.format(group_id))],
         [InlineKeyboardButton(_('❌ Delete'), callback_data='delete|{}'.format(group_id))],
-        [InlineKeyboardButton(_('↩ Back'), callback_data='back|')]
+        [InlineKeyboardButton(_('↩ Back'), callback_data='back|{}'.format(group_id))]
     ]
     return InlineKeyboardMarkup(buttons)
 

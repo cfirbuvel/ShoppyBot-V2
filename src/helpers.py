@@ -229,6 +229,7 @@ class CartHelper:
             current_count_index = counts.index(current_count)
             # iterate through possible product counts for next price
             next_count_index = (current_count_index + 1) % len(counts)
+            next_count = counts[next_count_index]
             cart[product_id] = counts[next_count_index]
         user_data['cart'] = cart
 
@@ -281,6 +282,7 @@ class CartHelper:
         else:
             product_count = ProductCount.get(product=product, count=product_count)
         product_price = product_count.price
+        product_count = product_count.count
         if for_order:
             result = product_id, product_count, product_price
         else:
