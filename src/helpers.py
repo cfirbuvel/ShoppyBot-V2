@@ -268,26 +268,27 @@ class CartHelper:
             try:
                 product = Product.get(id=product_id)
             except Product.DoesNotExist:
-                return result
+                continue
             product_count = self.get_product_count(user_data, product_id)
-        if product.group_price:
-            group_price_id = product.group_price.id
-            try:
-                price_groups[group_price_id] += product_count
-            except KeyError:
-                price_groups[group_price_id] = product_count
-        product_counts.append((product, product_count))
+            if product.group_price:
+                group_price_id = product.group_price.id
+                try:
+                    price_groups[group_price_id] += product_count
+                except KeyError:
+                    price_groups[group_price_id] = product_count
+            products_counts.append((product, product_count))
 
         for group_id, total_count in price_groups.items():
             total_price = 0
             query = ProductCount.select(ProductCount.count, ProductCount.price).where(ProductCount.product_group == group_id)\
                 .order_by(ProductCount.count.desc()).tuples()
+            rem = total_count
             for count, price in query:
-                q = total_count // count
+                q = rem // count
                 if q:
                     total_price += price
-                    total_count = total_count % count
-                    if not total_count:
+                    rem = rem % count
+                    if not rem:
                         break    
             price_groups[group_id] = total_price / total_count
         
@@ -308,7 +309,6 @@ class CartHelper:
 
     def get_product_info(self, user_data, product_id, for_order=False):
         result = None
-        
         return result
 
     def product_full_info(self, user_data, product_id):
@@ -359,12 +359,8 @@ class CartHelper:
         return min_price
 
     def get_cart_total(self, user_data):
-        cart = self.check_cart(user_data)
-
-        total = 0
-        for product_id in cart:
-            subtotal = self.get_product_subtotal(user_data, product_id)
-            total += subtotal
+        products_info = self.get_products_info(user_data)
+        total = sum((val[-1] for val in products_info))
         return total
 
     def fill_order(self, user_data, order):
