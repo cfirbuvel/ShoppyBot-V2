@@ -1,4 +1,5 @@
 import configparser
+from decimal import Decimal
 import redis
 import json
 import gettext
@@ -261,32 +262,53 @@ class CartHelper:
 
     def get_products_info(self, user_data, for_order=False):
         product_ids = self.get_product_ids(user_data)
-        product_info = []
+        products_counts = []
+        price_groups = {}
         for product_id in product_ids:
-            info = self.get_product_info(user_data, product_id, for_order)
-            if info:
-                product_info.append(info)
+            try:
+                product = Product.get(id=product_id)
+            except Product.DoesNotExist:
+                return result
+            product_count = self.get_product_count(user_data, product_id)
+        if product.group_price:
+            group_price_id = product.group_price.id
+            try:
+                price_groups[group_price_id] += product_count
+            except KeyError:
+                price_groups[group_price_id] = product_count
+        product_counts.append((product, product_count))
 
-        return product_info
+        for group_id, total_count in price_groups.items():
+            total_price = 0
+            query = ProductCount.select(ProductCount.count, ProductCount.price).where(ProductCount.product_group == group_id)\
+                .order_by(ProductCount.count.desc()).tuples()
+            for count, price in query:
+                q = total_count // count
+                if q:
+                    total_price += price
+                    total_count = total_count % count
+                    if not total_count:
+                        break    
+            price_groups[group_id] = total_price / total_count
+        
+        products_info = []
+        for product, count in products_counts:
+            if product.group_price:
+                product_price = price_groups[product.group_price.id] * count
+                product_price = Decimal(product_price).quantize(Decimal('0.01'))
+            else:
+                product_price = ProductCount.get(product=product, count=count).price
+            if for_order:
+                name = product.id
+            else:
+                name = product.title
+            products_info.append((name, count, product_price))
+
+        return products_info
 
     def get_product_info(self, user_data, product_id, for_order=False):
         result = None
-        try:
-            product = Product.get(id=product_id)
-        except Product.DoesNotExist:
-            return result
-        product_title = product.title
-        product_count = self.get_product_count(user_data, product_id)
-        if product.group_price:
-            product_count = ProductCount.get(product_group=product.group_price, count=product_count)
-        else:
-            product_count = ProductCount.get(product=product, count=product_count)
-        product_price = product_count.price
-        product_count = product_count.count
-        if for_order:
-            result = product_id, product_count, product_price
-        else:
-            result = product_title, product_count, product_price
+        
         return result
 
     def product_full_info(self, user_data, product_id):
