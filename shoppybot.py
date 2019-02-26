@@ -490,10 +490,12 @@ def main():
                 CallbackQueryHandler(admin.on_admin_product_price_group_selected, pass_user_data=True)
             ],
             enums.ADMIN_PRODUCT_PRICE_GROUP_CHANGE: [
-                MessageHandler(Filters.text, admin.on_admin_product_price_group_change, pass_user_data=True)
+                MessageHandler(Filters.text, admin.on_admin_product_price_group_change, pass_user_data=True),
+                CallbackQueryHandler(admin.on_admin_product_price_group_change, pass_user_data=True)
             ],
             enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE: [
-                MessageHandler(Filters.text, admin.on_admin_product_price_group_save, pass_user_data=True)
+                MessageHandler(Filters.text, admin.on_admin_product_price_group_save, pass_user_data=True),
+                CallbackQueryHandler(admin.on_admin_product_price_group_save, pass_user_data=True)
             ],
         },
         fallbacks=[

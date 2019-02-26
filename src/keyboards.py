@@ -837,7 +837,7 @@ def create_product_price_groups_keyboard(trans):
     _ = trans
     buttons = [
         [InlineKeyboardButton(_('➕ Add price group'), callback_data='add')],
-        [InlineKeyboardButton(_('🧮 List price groups'), callback_data='list')],
+        [InlineKeyboardButton(_('🔗 List price groups'), callback_data='list')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]
     return InlineKeyboardMarkup(buttons)
@@ -846,8 +846,8 @@ def create_product_price_groups_keyboard(trans):
 def create_product_price_group_selected_keyboard(trans, group_id):
     _ = trans
     buttons = [
-        [InlineKeyboardButton(_('✏️ Edit'), callback_data='edit|{}'.format(group_id))],
-        [InlineKeyboardButton(_('❌ Delete'), callback_data='delete|{}'.format(group_id))],
+        [InlineKeyboardButton(_('✏️ Edit price group'), callback_data='edit|{}'.format(group_id))],
+        [InlineKeyboardButton(_('❌ Delete price group'), callback_data='delete|{}'.format(group_id))],
         [InlineKeyboardButton(_('↩ Back'), callback_data='back|{}'.format(group_id))]
     ]
     return InlineKeyboardMarkup(buttons)
@@ -856,7 +856,7 @@ def create_product_price_group_selected_keyboard(trans, group_id):
 def create_product_price_type_keyboard(trans):
     _ = trans
     buttons = [
-        [InlineKeyboardButton(_('✏ Enter prices'), callback_data='text')],
+        [InlineKeyboardButton(_('✏️ Enter prices'), callback_data='text')],
         [InlineKeyboardButton(_('💸 Select product price group'), callback_data='select')],
         [InlineKeyboardButton(_('↩ Back'), callback_data='back')]
     ]

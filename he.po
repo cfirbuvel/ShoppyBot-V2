@@ -529,6 +529,66 @@ msgid "All locations"
 msgstr "כל האיזורים"
 
 #: shoppybot.py:318
+msgid "💸 Product price groups"
+msgstr "💸 קבוצת מחירים"
+
+#: shoppybot.py:318
+msgid "➕ Add price group"
+msgstr "➕ הוסף קבוצת מחירים"
+
+#: shoppybot.py:318
+msgid "🔗 List price groups"
+msgstr "🔗 רשימת הקבוצות"
+
+#: shoppybot.py:318
+msgid "✏️ Enter prices"
+msgstr "✏️ הגדר מחיר למוצר"
+
+#: shoppybot.py:318
+msgid "💸 Select product price group"
+msgstr "💸 בחר מקבוצת המחירים"
+
+#: shoppybot.py:318
+msgid "Select product price group to use with this product:"
+msgstr "בחר קבוצת מחיר שמתאימה למוצר זה:"
+
+#: shoppybot.py:318
+msgid "Add product prices:"
+msgstr "הוסף מחיר למוצר:"
+
+#: shoppybot.py:318
+msgid "Please enter the name of new price group:"
+msgstr "הכנס שם זיהוי לקבוצת המחיר"
+
+#: shoppybot.py:318
+msgid "Please enter new name for the price group:"
+msgstr "הכנס שם זיהוי חדש לקבוצת המחיר"
+
+#: shoppybot.py:318
+msgid "Please select a price group:"
+msgstr "בחר קבוצת מחירים"
+
+#: shoppybot.py:318
+msgid "Product price group:\n_{}_"
+msgstr "קבוצת מחירים למוצר:\n_{}_"
+
+#: shoppybot.py:318
+msgid "✏️ Edit price group"
+msgstr "✏️ ערוך קבוצת מחירים"
+
+#: shoppybot.py:318
+msgid "❌ Delete price group"
+msgstr "❌ מחק קבוצת מחירים"
+
+#: shoppybot.py:318
+msgid "Prices configured for this group:"
+msgstr "המחירים המוגדרים לקבוצה זו:"
+
+#: shoppybot.py:318
+msgid "Products in this group price:"
+msgstr "המוצרים המשוייכים לקבוצה זו:"
+
+#: shoppybot.py:318
 msgid "👨 Edit identification process"
 msgstr "👨‍ ערוך תהליך אימות"
 
@@ -1255,8 +1315,8 @@ msgid "Current title: {}\n\nEnter new title for product"
 msgstr "שם מוצר המוגדר כעת: {}\n\nהכנס שם מוצר חדש"
 
 #: admin.py:306
-msgid "Current prices:\n\n"
-msgstr "מחיר המוגדר כעת:\n\n"
+msgid "Current prices:\n"
+msgstr "מחיר המוגדר כעת:\n"
 
 #: admin.py:306
 msgid "Upload new photos for product"

@@ -1315,9 +1315,7 @@ def on_admin_add_product_prices(bot, update, user_data):
     chat_id, msg_id = query.message.chat_id, query.message.message_id
     action = query.data
     if action == 'text':
-        msg = _('Enter new product prices\n'
-                'one per line in the format\n'
-                '*COUNT* *PRICE*, e.g. *1* *10*')
+        msg = _('Enter new product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
         keyboard = create_back_button(_)
         bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         query.answer()
@@ -2311,14 +2309,15 @@ def on_admin_product_price_groups(bot, update, user_data):
     action = query.data
     if action == 'add':
         msg = _('Please enter the name of new price group:')
+        keyboard = create_back_button(_)
         user_data['price_group'] = {'edit': None}
-        bot.send_message(chat_id, msg)
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=keyboard)
         query.answer()
         return enums.ADMIN_PRODUCT_PRICE_GROUP_CHANGE
     elif action == 'list':
         groups = GroupProductCount.select(GroupProductCount.name, GroupProductCount.id).tuples()
         keyboard = general_select_one_keyboard(_, groups)
-        msg = 'Please select a group:'
+        msg = _('Please select a price group:')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=keyboard)
         query.answer()
         return enums.ADMIN_PRODUCT_PRICE_GROUP_LIST
@@ -2341,14 +2340,14 @@ def on_admin_product_price_groups_list(bot, update, user_data):
         product_counts = ProductCount.select(ProductCount.count, ProductCount.price)\
             .where(ProductCount.product_group == group).tuples()
         products = Product.select(Product.title).where(Product.group_price == group)
-        msg = _('Product price group: _{}_:').format(group.name)
+        msg = _('Product price group:\n_{}_').format(group.name)
         msg += '\n\n'
-        msg += _('Prices:')
+        msg += _('Prices configured for this group:')
         msg += '\n'
         for count, price in product_counts:
             msg += '{} x {}\n'.format(count, price)
         msg += '\n'
-        msg += _('Products:')
+        msg += _('Products in this group price:')
         msg += '\n'
         for p in products:
             msg += '_{}_'.format(p.title)
@@ -2359,7 +2358,7 @@ def on_admin_product_price_groups_list(bot, update, user_data):
     elif action == 'page':
         groups = GroupProductCount.select(GroupProductCount.name, GroupProductCount.id).tuples()
         keyboard = general_select_one_keyboard(_, groups, int(val))
-        msg = 'Please select a group:'
+        msg = _('Please select a price group:')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=keyboard)
         query.answer()
         return enums.ADMIN_PRODUCT_PRICE_GROUP_LIST
@@ -2379,7 +2378,8 @@ def on_admin_product_price_group_selected(bot, update, user_data):
     if action == 'edit':
         msg = _('Please enter new name for the price group:')
         user_data['price_group'] = {'edit': val}
-        bot.send_message(chat_id, msg)
+        keyboard = create_back_button(_)
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=keyboard)
         query.answer()
         return enums.ADMIN_PRODUCT_PRICE_GROUP_CHANGE
     elif action == 'delete':
@@ -2398,18 +2398,23 @@ def on_admin_product_price_group_selected(bot, update, user_data):
             query.answer()
             return enums.ADMIN_PRODUCT_PRICE_GROUPS
     else:
+        if action == 'back':
+            msg = _('💸 Product price groups')
+            bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_product_price_groups_keyboard(_))
+            query.answer()
+            return enums.ADMIN_PRODUCT_PRICE_GROUPS
         group = GroupProductCount.get(id=val)
         product_counts = ProductCount.select(ProductCount.count, ProductCount.price) \
             .where(ProductCount.product_group == group).tuples()
         products = Product.select(Product.title).where(Product.group_price == group)
-        msg = _('Product price group: _{}_:').format(group.name)
+        msg = _('Product price group:\n_{}_').format(group.name)
         msg += '\n\n'
-        msg += _('Prices:')
+        msg += _('Prices configured for this group:')
         msg += '\n'
         for count, price in product_counts:
             msg += 'x {} ${}\n'.format(count, price)
         msg += '\n'
-        msg += _('Products:')
+        msg += _('Products in this group price:')
         msg += '\n'
         for p in products:
             msg += '_{}_'.format(p.title)
@@ -2422,11 +2427,17 @@ def on_admin_product_price_group_selected(bot, update, user_data):
 def on_admin_product_price_group_change(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
+    query = update.callback_query
+    chat_id, msg_id = query.effective_message.chat_id, query.effective_message.message_id
+    action = query.data
+    if action == 'back':
+        msg = _('💸 Product price groups')
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_product_price_groups_keyboard(_))
+        query.answer()
+        return enums.ADMIN_PRODUCT_PRICE_GROUPS
     group_name = update.effective_message.text
     user_data['price_group']['name'] = group_name
-    msg = _('Enter product prices\n'
-            'one per line in the format\n'
-            '*COUNT PRICE*, e.g. *1 10*')
+    msg = _('Enter product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
     bot.send_message(update.effective_chat.id, msg, parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE
 
@@ -2453,9 +2464,7 @@ def on_admin_product_price_group_save(bot, update, user_data):
     if not prices:
         msg = _('Incorrect prices entered!')
         bot.send_message(chat_id, msg)
-        msg = _('Enter product prices\n'
-                'one per line in the format\n'
-                '*COUNT PRICE*, e.g. *1 10*')
+        msg = _('Enter product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
         bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE
     if group_edit:

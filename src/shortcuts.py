@@ -381,9 +381,9 @@ def delete_order_channels_msgs(bot, order):
 def get_product_prices_str(trans, product):
     _ = trans
     group_price = product.group_price
-    prices_str = _('Current prices:\n\n')
+    prices_str = _('Current prices:\n')
     if group_price:
-        prices_str += _('Product price group: _{}_'.format(group_price.name))
+        prices_str += _('Product price group:\n_{}_').format(group_price.name)
         prices_str += '\n\n'
         product_counts = ProductCount.select().where(ProductCount.product_group == group_price)
     else:
