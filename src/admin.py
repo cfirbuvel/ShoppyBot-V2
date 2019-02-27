@@ -2427,10 +2427,9 @@ def on_admin_product_price_group_selected(bot, update, user_data):
 def on_admin_product_price_group_change(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
-    query = update.callback_query
-    chat_id, msg_id = query.effective_message.chat_id, query.effective_message.message_id
-    action = query.data
-    if action == 'back':
+    if update.callback_query and update.callback_query.data == 'back':
+        query = update.callback_query
+        chat_id, msg_id = query.message.chat_id, query.message.message_id
         msg = _('💸 Product price groups')
         bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_product_price_groups_keyboard(_))
         query.answer()
