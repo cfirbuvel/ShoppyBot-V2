@@ -2386,7 +2386,7 @@ def on_admin_product_price_group_selected(bot, update, user_data):
         group = GroupProductCount.get(id=val)
         has_products = Product.select().where(Product.group_price == group).exists()
         if has_products:
-            msg = _('Cannot delete group which has products')
+            msg = _('Cannot delete group which has products, please remove price group from product')
             query.answer(msg, show_alert=True)
             return enums.ADMIN_PRODUCT_PRICE_GROUPS_SELECTED
         else:
@@ -2436,7 +2436,7 @@ def on_admin_product_price_group_change(bot, update, user_data):
         return enums.ADMIN_PRODUCT_PRICE_GROUPS
     group_name = update.effective_message.text
     user_data['price_group']['name'] = group_name
-    msg = _('Enter product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
+    msg = _('Enter new product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
     bot.send_message(update.effective_chat.id, msg, parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE
 
@@ -2463,7 +2463,7 @@ def on_admin_product_price_group_save(bot, update, user_data):
     if not prices:
         msg = _('Incorrect prices entered!')
         bot.send_message(chat_id, msg)
-        msg = _('Enter product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
+        msg = _('Enter new product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
         bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE
     if group_edit:

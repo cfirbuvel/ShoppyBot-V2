@@ -80,11 +80,7 @@ def create_product_description(user_id, product_title, product_prices, product_c
 
 def create_admin_product_description(trans, product_title, product_prices):
     _ = trans
-    text = _('Product:\n{}'
-             '\n\n'
-             '~~'
-             '\n'
-             'Price:\n').format(product_title)
+    text = _('Product:\n{}\n\n~~\nPrice:\n').format(product_title)
     for q, price in product_prices:
         text += '\n'
         text += _('x {} = {}₪').format(q, price)
