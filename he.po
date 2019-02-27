@@ -589,6 +589,14 @@ msgid "Products in this group price:"
 msgstr "המוצרים המשוייכים לקבוצה זו:"
 
 #: shoppybot.py:318
+msgid "Cannot delete group which has products, please remove price group from product"
+msgstr "לא ניתן למחוק קבוצת מחירים זו.\nכדי למחוק לחץ על המוצרים שלי והגדר קבוצת מחיר אחרת או הגדר מחיר למוצר;"
+
+#: shoppybot.py:318
+msgid "Group was successfully deleted!"
+msgstr "קבוצת המחירים נמחקה בהצלחה!"
+
+#: shoppybot.py:318
 msgid "👨 Edit identification process"
 msgstr "👨‍ ערוך תהליך אימות"
 
@@ -1515,3 +1523,7 @@ msgstr "כמות"
 #: admin.py:306
 msgid "price"
 msgstr "מחיר"
+
+#: admin.py:306
+msgid "Product:\n{}\n\n~~\nPrice:\n"
+msgstr "מוצר:\n{}\n\n~~\nמחיר:\n"
