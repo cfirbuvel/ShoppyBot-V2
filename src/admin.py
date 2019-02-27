@@ -2345,7 +2345,7 @@ def on_admin_product_price_groups_list(bot, update, user_data):
         msg += _('Prices configured for this group:')
         msg += '\n'
         for count, price in product_counts:
-            msg += '{} x {}\n'.format(count, price)
+            msg += '{} x ${}\n'.format(count, price)
         msg += '\n'
         msg += _('Products in this group price:')
         msg += '\n'
@@ -2437,7 +2437,8 @@ def on_admin_product_price_group_change(bot, update, user_data):
     group_name = update.effective_message.text
     user_data['price_group']['name'] = group_name
     msg = _('Enter product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
-    bot.send_message(update.effective_chat.id, msg, parse_mode=ParseMode.MARKDOWN)
+    keyboard = create_back_button(_)
+    bot.send_message(update.effective_chat.id, msg, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE
 
 
@@ -2445,6 +2446,14 @@ def on_admin_product_price_group_save(bot, update, user_data):
     user_id = get_user_id(update)
     _ = get_trans(user_id)
     chat_id = update.effective_chat.id
+    if update.callback_query and update.callback_query.data == 'back':
+        del user_data['price_group']
+        query = update.callback_query
+        msg_id = query.message.message_id
+        msg = _('💸 Product price groups')
+        bot.edit_message_text(msg, chat_id, msg_id, reply_markup=create_product_price_groups_keyboard(_))
+        query.answer()
+        return enums.ADMIN_PRODUCT_PRICE_GROUPS
     group_prices = update.effective_message.text
     group_edit = user_data['price_group']['edit']
     group_name = user_data['price_group']['name']
@@ -2464,11 +2473,12 @@ def on_admin_product_price_group_save(bot, update, user_data):
         msg = _('Incorrect prices entered!')
         bot.send_message(chat_id, msg)
         msg = _('Enter product prices\none per line in the format\n*COUNT PRICE*, e.g. *1 10*')
-        bot.send_message(chat_id, msg, parse_mode=ParseMode.MARKDOWN)
+        keyboard = create_back_button(_)
+        bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
         return enums.ADMIN_PRODUCT_PRICE_GROUP_SAVE
     if group_edit:
         group = GroupProductCount.get(id=group_edit)
-        ProductCount.delete().where(ProductCount.product_group)
+        ProductCount.delete().where(ProductCount.product_group == group).execute()
     else:
         group = GroupProductCount()
     group.name = group_name
@@ -2476,7 +2486,7 @@ def on_admin_product_price_group_save(bot, update, user_data):
     for count, price in prices:
         ProductCount.create(count=count, price=price, product_group=group)
     action_format = _('changed') if group_edit else _('added')
-    msg = _('Group _{}_ was successfully {}!').format(group.name, action_format)
+    msg = _('Group _{}_  was successfully {}!').format(group.name, action_format)
     keyboard = create_product_price_groups_keyboard(_)
     bot.send_message(chat_id, msg, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
     return enums.ADMIN_PRODUCT_PRICE_GROUPS
