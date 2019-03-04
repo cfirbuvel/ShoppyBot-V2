@@ -30,38 +30,46 @@ def create_product_description(user_id, product_title, product_prices, product_c
     text += '\n'
     delivery_fee = config.get_delivery_fee()
     delivery_min = config.get_delivery_min()
-    if delivery_fee > 0 and delivery_min > 0:
-        text += _('Delivery Fee: {}₪').format(delivery_fee)
-        text += '\n'
-        text += _('for orders below {}₪').format(delivery_min)
-        text += '\n'
-        text += '〰️'
-        text += '\n'
-    elif delivery_fee > 0:
-        text += _('Delivery Fee: {}₪').format(delivery_fee)
-        text += '\n'
-
     if Location.select().exists():
         for loc in Location.select():
             conf_delivery_fee = config.get_delivery_fee()
             if conf_delivery_fee == loc.delivery_fee:
+                if not conf_delivery_fee and not loc.delivery_fee:
+                    text += _('Free delivery from:\n*{}*').format(loc.title)
+                    text += '\n\n'
                 continue
+
             delivery_fee = loc.delivery_fee
             delivery_min = loc.delivery_min
             if delivery_fee:
                 if delivery_fee > 0 and delivery_min > 0:
-                    text += _('Delivery Fee from *{}*: {}₪').format(loc.title, delivery_fee)
+                    text += _('{}₪ Delivery Fee from\n*{}*').format(delivery_fee, loc.title)
                     text += '\n'
                     text += _('for orders below {}₪').format(delivery_min)
-                    text += '\n'
-                    text += '〰️'
-                    text += '\n'
-                else:
-                    text += _('Delivery Fee from *{}*: {}₪').format(loc.title, delivery_fee)
-                    text += '\n'
-    text += '\n'
+                    text += '\n\n'
+                elif delivery_fee > 0:
+                    text += _('{}₪ Delivery Fee from\n*{}*').format(delivery_fee, loc.title)
+                    text += '\n\n'
+            else:
+                text += _('Free delivery from:\n*{}*').format(loc.title)
+                text += '\n\n'
+    else:
+        if delivery_fee > 0:
+            if delivery_fee > 0 and delivery_min > 0:
+                text += _('{}₪ Delivery Fee').format(delivery_fee)
+                text += '\n'
+                text += _('for orders below {}₪').format(delivery_min)
+                text += '\n'
+                text += '〰️'
+                text += '\n'
+            elif delivery_fee > 0:
+                text += _('{}₪ Delivery Fee').format(delivery_fee)
+                text += '\n'
+            elif delivery_fee == 0:
+                text += _('Free delivery')
+    text += '\n\n*'
     text += _('Price:')
-    text += '\n'
+    text += '*\n'
 
     for q, price in product_prices:
         text += '\n'

@@ -95,9 +95,11 @@ def on_admin_order_options(bot, update, user_data):
         query.answer()
         return enums.ADMIN_PRODUCTS
     if data == 'bot_order_options_categories':
-        bot.edit_message_text(_('🛍 Categories'), chat_id, message_id, parse_mode=ParseMode.MARKDOWN,
-                              reply_markup=create_categories_keyboard(_)
-        )
+        bot.edit_message_text(_('🛍 Categories'),
+                              chat_id, message_id,
+                              parse_mode=ParseMode.MARKDOWN,
+                              reply_markup=create_categories_keyboard(_),
+                              )
         query.answer()
         return enums.ADMIN_CATEGORIES
     elif data == 'bot_order_options_warehouse':
@@ -2345,7 +2347,7 @@ def on_admin_product_price_groups_list(bot, update, user_data):
         msg += _('Prices configured for this group:')
         msg += '\n'
         for count, price in product_counts:
-            msg += '{} x ${}\n'.format(count, price)
+            msg += '{} x {}₪\n'.format(count, price)
         msg += '\n'
         msg += _('Products in this group price:')
         msg += '\n'

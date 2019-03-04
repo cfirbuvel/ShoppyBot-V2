@@ -531,7 +531,7 @@ def on_confirm_order(bot, update, user_data):
         _ = get_channel_trans()
         customer_username = user.username
         order_id = order.id
-        enums.logger.info('New order confirmed  - Order №%s, From user_id %s, username: @%s',
+        enums.logger.info('New order confirmed  - Order Num: %s, From user_id %s, username: @%s',
                           order_id,
                           update.effective_user.id,
                           update.effective_user.username)
