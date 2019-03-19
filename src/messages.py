@@ -61,7 +61,7 @@ def create_product_description(user_id, product_title, product_prices, product_c
                 if delivery_min > 0:
                     text += '\n'
                     text += _('for orders below *{}*₪').format(delivery_min)
-                    text += '\n\n'
+                text += '\n\n'
     else:
         if conf_delivery_fee > 0:
             if conf_delivery_fee > 0 and conf_delivery_min > 0:
