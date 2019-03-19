@@ -1,3 +1,4 @@
+from collections import defaultdict
 import configparser
 from decimal import Decimal
 import redis
@@ -7,7 +8,7 @@ import os
 
 from telegram import TelegramError
 
-from .models import ProductCount, Product, User, OrderItem, Courier
+from .models import ProductCount, Product, User, OrderItem, Courier, GroupProductCount
 from .enums import logger
 
 
@@ -262,40 +263,29 @@ class CartHelper:
 
     def get_products_info(self, user_data, for_order=False):
         product_ids = self.get_product_ids(user_data)
-        products_counts = []
-        price_groups = {}
-        for product_id in product_ids:
-            try:
-                product = Product.get(id=product_id)
-            except Product.DoesNotExist:
-                continue
-            product_count = self.get_product_count(user_data, product_id)
-            if product.group_price:
-                group_price_id = product.group_price.id
-                try:
-                    price_groups[group_price_id] += product_count
-                except KeyError:
-                    price_groups[group_price_id] = product_count
-            products_counts.append((product, product_count))
 
-        for group_id, total_count in price_groups.items():
-            total_price = 0
-            query = ProductCount.select(ProductCount.count, ProductCount.price).where(ProductCount.product_group == group_id)\
-                .order_by(ProductCount.count.desc()).tuples()
-            rem = total_count
-            for count, price in query:
-                q = rem // count
-                if q:
-                    total_price += price
-                    rem = rem % count
-                    if not rem:
-                        break    
-            price_groups[group_id] = total_price / total_count
-        
+        group_prices = defaultdict(int)
+        products = Product.select().where(Product.id << list(product_ids))
+        products_counts = []
+        for product in products:
+            count = self.get_product_count(user_data, product.id)
+            group_price = product.group_price
+            if group_price:
+                group_prices[group_price.id] += count
+            products_counts.append((product, count))
+
+        for group_id, count in group_prices.items():
+            group_count = ProductCount.select().where(
+                ProductCount.product_group == group_id, ProductCount.count <= count
+            ).order_by(ProductCount.count.desc()).first()
+            price_per_one = group_count.price / group_count.count
+            group_prices[group_id] = price_per_one
+
         products_info = []
         for product, count in products_counts:
-            if product.group_price:
-                product_price = price_groups[product.group_price.id] * count
+            group_price = product.group_price
+            if group_price:
+                product_price = count * group_prices[group_price.id]
                 product_price = Decimal(product_price).quantize(Decimal('0.01'))
             else:
                 product_price = ProductCount.get(product=product, count=count).price
@@ -304,7 +294,6 @@ class CartHelper:
             else:
                 name = product.title
             products_info.append((name, count, product_price))
-
         return products_info
 
     def get_product_info(self, user_data, product_id, for_order=False):

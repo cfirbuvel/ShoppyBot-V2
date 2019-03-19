@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from .helpers import get_trans, calculate_discount_total, config, cart
 from .models import Location
 
@@ -28,44 +30,51 @@ def create_product_description(user_id, product_title, product_prices, product_c
     text += '\n\n'
     text += '〰️'
     text += '\n'
-    delivery_fee = config.get_delivery_fee()
-    delivery_min = config.get_delivery_min()
+    conf_delivery_fee = config.get_delivery_fee()
+    conf_delivery_min = config.get_delivery_min()
     if Location.select().exists():
+        locations_fees = defaultdict(list)
         for loc in Location.select():
-            conf_delivery_fee = config.get_delivery_fee()
-            if conf_delivery_fee == loc.delivery_fee:
-                if not conf_delivery_fee and not loc.delivery_fee:
-                    text += _('Free delivery from:\n*{}*').format(loc.title)
-                    text += '\n\n'
-                continue
-
+            loc_name = loc.title
             delivery_fee = loc.delivery_fee
             delivery_min = loc.delivery_min
-            if delivery_fee:
-                if delivery_fee > 0 and delivery_min > 0:
-                    text += _('{}₪ Delivery Fee from\n*{}*').format(delivery_fee, loc.title)
-                    text += '\n'
-                    text += _('for orders below {}₪').format(delivery_min)
-                    text += '\n\n'
-                elif delivery_fee > 0:
-                    text += _('{}₪ Delivery Fee from\n*{}*').format(delivery_fee, loc.title)
-                    text += '\n\n'
-            else:
-                text += _('Free delivery from:\n*{}*').format(loc.title)
-                text += '\n\n'
-    else:
-        if delivery_fee > 0:
-            if delivery_fee > 0 and delivery_min > 0:
-                text += _('{}₪ Delivery Fee').format(delivery_fee)
+
+            if not delivery_fee:
+                if not conf_delivery_fee:
+                    locations_fees['free'].append(loc_name)
+                    continue
+                else:
+                    delivery_fee, delivery_min = conf_delivery_fee, conf_delivery_min
+            locations_fees[(delivery_fee, delivery_min)].append(loc_name)
+
+        for data, locs in locations_fees.items():
+            if data == 'free':
+                text += _('Free delivery from:')
                 text += '\n'
-                text += _('for orders below {}₪').format(delivery_min)
+                text += '*{}*'.format(', '.join(locs))
+                text += '\n\n'
+            else:
+                delivery_fee, delivery_min = data
+                text += _('*{}*₪ Delivery Fee from:').format(delivery_fee)
+                text += '\n'
+                text += '*{}*'.format(', '.join(locs))
+                if delivery_min > 0:
+                    text += '\n'
+                    text += _('for orders below *{}*₪').format(delivery_min)
+                    text += '\n\n'
+    else:
+        if conf_delivery_fee > 0:
+            if conf_delivery_fee > 0 and conf_delivery_min > 0:
+                text += _('*{}*₪ Delivery Fee').format(conf_delivery_fee)
+                text += '\n'
+                text += _('for orders below *{}*₪').format(conf_delivery_min)
                 text += '\n'
                 text += '〰️'
                 text += '\n'
-            elif delivery_fee > 0:
-                text += _('{}₪ Delivery Fee').format(delivery_fee)
+            elif conf_delivery_fee > 0:
+                text += _('*{}*₪ Delivery Fee').format(conf_delivery_fee)
                 text += '\n'
-            elif delivery_fee == 0:
+            elif conf_delivery_fee == 0:
                 text += _('Free delivery')
     text += '\n\n*'
     text += _('Price:')
