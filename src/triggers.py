@@ -873,20 +873,22 @@ def send_welcome_message(bot, update):
 def on_settings_menu(bot, update):
     query = update.callback_query
     data = query.data
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
     user_id = get_user_id(update)
     total = cart.get_cart_total(get_user_session(user_id))
     _ = get_trans(user_id)
     if data == 'settings_statistics':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=_('📈 Statistics'),
                               reply_markup=create_statistics_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
         query.answer()
         return enums.ADMIN_STATISTICS
     elif data == 'settings_bot':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=_('⚙ Bot settings'),
                               reply_markup=create_bot_settings_keyboard(_),
                               parse_mode=ParseMode.MARKDOWN)
@@ -902,8 +904,8 @@ def on_settings_menu(bot, update):
             msg = create_cart_details_msg(user_id, products_info)
         else:
             msg = config.get_welcome_text().format(update.effective_user.first_name)
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              message_id=query.message.message_id,
+        bot.edit_message_text(chat_id=chat_id,
+                              message_id=message_id,
                               text=msg,
                               reply_markup=create_main_keyboard(_,
                                                                 config.get_reviews_channel(),
@@ -915,7 +917,7 @@ def on_settings_menu(bot, update):
     else:
         enums.logger.info('Unknown command - {}'.format(data))
         bot.send_message(
-            query.message.chat_id,
+            chat_id,
             text=_('Unknown command'),
             reply_markup=None,
             parse_mode=ParseMode.MARKDOWN,
