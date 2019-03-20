@@ -116,12 +116,12 @@ msgid "$"
 msgstr "₪"
 
 #: shoppybot.py:127 shoppybot.py:181 shoppybot.py:217
-msgid "{}₪ Delivery Fee"
-msgstr "{}₪ דמי משלוח"
+msgid "*{}*₪ Delivery Fee"
+msgstr "*{}₪* דמי משלוח"
 
 #: shoppybot.py:129
-msgid "for orders below {}₪"
-msgstr "להזמנות מתחת ל{}₪"
+msgid "for orders below *{}*₪"
+msgstr "להזמנות מתחת ל*{}₪*"
 
 #: shoppybot.py:133
 msgid "Price:"
@@ -1509,16 +1509,16 @@ msgid "video"
 msgstr "וידאו"
 
 #: admin.py:306
-msgid "{}₪ Delivery Fee from\n*{}*"
-msgstr "{}₪ דמי משלוח מאיזור:\n*{}*"
+msgid "*{}*₪ Delivery Fee from:"
+msgstr "{}₪ דמי משלוח מאיזור:"
 
 #: admin.py:306
 msgid "Free delivery"
 msgstr "משלוחים חינם!"
 
 #: admin.py:306
-msgid "Free delivery from:\n*{}*"
-msgstr "משלוחים חינם מאיזור:\n*{}*"
+msgid "Free delivery from:"
+msgstr "משלוחים חינם מאיזור:"
 
 #: admin.py:306
 msgid "\n Product: *"
