@@ -38,13 +38,9 @@ def create_product_description(user_id, product_title, product_prices, product_c
             loc_name = loc.title
             delivery_fee = loc.delivery_fee
             delivery_min = loc.delivery_min
-
             if not delivery_fee:
-                if not conf_delivery_fee:
-                    locations_fees['free'].append(loc_name)
-                    continue
-                else:
-                    delivery_fee, delivery_min = conf_delivery_fee, conf_delivery_min
+                locations_fees['free'].append(loc_name)
+                continue
             locations_fees[(delivery_fee, delivery_min)].append(loc_name)
 
         for data, locs in locations_fees.items():
