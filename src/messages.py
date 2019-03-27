@@ -75,7 +75,7 @@ def create_product_description(user_id, product_title, product_prices, product_c
                 text += '\n'
             elif conf_delivery_fee == 0:
                 text += _('Free delivery')
-    text += '\n\n*'
+    text += '\n\n'
     text += _('Price:')
 
     for q, price in product_prices:
