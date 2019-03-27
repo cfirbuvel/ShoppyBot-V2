@@ -39,18 +39,21 @@ def create_product_description(user_id, product_title, product_prices, product_c
             delivery_fee = loc.delivery_fee
             delivery_min = loc.delivery_min
             if not delivery_fee:
-                locations_fees['free'].append(loc_name)
+                locations_fees[(0, 0)].append(loc_name)
                 continue
             locations_fees[(delivery_fee, delivery_min)].append(loc_name)
 
-        for data, locs in locations_fees.items():
-            if data == 'free':
+        locations_fees = [(key, value) for key, value in locations_fees.items()]
+        locations_fees = sorted(locations_fees, key=lambda x: (x[0][0], x[0][1]))
+
+        for data, locs in locations_fees:
+            delivery_fee, delivery_min = data
+            if not delivery_fee and not delivery_min:
                 text += _('Free delivery from:')
                 text += '\n'
                 text += '*{}*'.format(', '.join(locs))
                 text += '\n\n'
             else:
-                delivery_fee, delivery_min = data
                 text += _('*{}*₪ Delivery Fee from:').format(delivery_fee)
                 text += '\n'
                 text += '*{}*'.format(', '.join(locs))
@@ -74,7 +77,6 @@ def create_product_description(user_id, product_title, product_prices, product_c
                 text += _('Free delivery')
     text += '\n\n*'
     text += _('Price:')
-    text += '*\n'
 
     for q, price in product_prices:
         text += '\n'
