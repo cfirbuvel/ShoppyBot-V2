@@ -215,6 +215,7 @@ def get_order_count_and_price(*subqueries):
     _ = get_channel_trans()
     orders_count = Order.select().where(*subqueries).count()
     total_price = 0
+    delivery_fee = 0
     products_count = {}
     product_text = ''
     count_text = _('count')
@@ -222,6 +223,10 @@ def get_order_count_and_price(*subqueries):
     orders_items = OrderItem.select().join(Order).where(*subqueries)
     for order_item in orders_items:
         total_price += order_item.total_price
+        try:
+            delivery_fee += order_item.order.location.delivery_fee
+        except:
+            continue
         title, count, price = order_item.product.title, order_item.count, order_item.total_price
         try:
             if products_count[title]:
@@ -238,7 +243,7 @@ def get_order_count_and_price(*subqueries):
             product_text += ' = '
             product_text += str(products_count[x][y])
             product_text += '\n'
-    return orders_count, total_price, product_text
+    return orders_count, total_price, product_text, delivery_fee
 
 
 def check_order_products_credits(order, trans, courier=None):

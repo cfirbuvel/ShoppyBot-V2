@@ -944,12 +944,13 @@ def on_statistics_general(bot, update, user_data):
     else:
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price, product_text = shortcuts.get_order_count_and_price((Order.delivered == True),
+        count, price, product_text, delivery_fee = shortcuts.get_order_count_and_price((Order.delivered == True),
                                                                          (Order.canceled == False), *subquery)
-        cancel_count, cancel_price, cancel_product_text = shortcuts.get_order_count_and_price((Order.canceled == True),
+        cancel_count, cancel_price, cancel_product_text, cancel_delivery_fee = shortcuts.get_order_count_and_price((Order.canceled == True),
                                                                                               *subquery)
-        message = _('✅ *Total confirmed orders*\nCount: {}\n{}\n*Total cost: {}₪*').format(
-            count, product_text, price)
+        message = \
+            _('✅ *Total confirmed orders*\nCount: {}\n{}\nDelivery Fee: {}₪\nOrders cost: {}₪\n*Total cost: {}₪*').\
+                format(count, product_text, delivery_fee, price, delivery_fee+price)
         message += '\n\n'
         message += _('❌ *Total canceled orders*\nCount: {}\n*Total cost: {}₪*').format(
             cancel_count, cancel_price)
@@ -1013,12 +1014,13 @@ def on_statistics_couriers(bot, update, user_data):
         courier = Courier.get(id=courier_id)
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price, product_text = shortcuts.get_order_count_and_price(
+        count, price, product_text, delivery_fee = shortcuts.get_order_count_and_price(
             (Order.delivered == True), (Order.canceled == False), (Order.courier == courier), *subquery)
         # cancel_count, cancel_price, cancel_product_text = shortcuts.get_order_count_and_price(
         #     (Order.canceled == True), (Order.courier == courier) * subquery)
-        message = _('*✅ Total confirmed orders for Courier* @{}\nCount: {}\n*Total cost: {}₪*').format(
-            courier.username, count, price)
+        message = _('*✅ Total confirmed orders for Courier* @{}\n'
+                    'Count: {}\n{}\nDelivery Fee: {}₪\nOrders cost: {}₪\n*Total cost: {}₪*').format(
+            courier.username, count, product_text, delivery_fee, price, delivery_fee+price)
         # message += _('❌ *Total canceled orders for Courier @{}*\nCount: {}\n*Total cost: {}₪*').format(
         #     cancel_count, cancel_product_text, cancel_price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
@@ -1081,13 +1083,14 @@ def on_statistics_locations(bot, update, user_data):
         location = Location.get(id=location_id)
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
-        count, price, product_text = shortcuts.get_order_count_and_price((Order.delivered == True),
+        count, price, product_text, delivery_fee = shortcuts.get_order_count_and_price((Order.delivered == True),
                                                                          (Order.canceled == False),
                                                                          (Order.location == location), *subquery)
         # cancel_count, cancel_price, cancel_product_text = shortcuts.get_order_count_and_price(
         #     (Order.canceled == True), (Order.location == location) *subquery)
-        message = _('✅ *Total confirmed orders for Location* `{}`\nCount: {}\n*Total cost: {}₪*').format(
-            location.title, count, price)
+        message = _(
+            '✅ *Total confirmed orders for Location* `{}`\nCount: {}\n{}\nDelivery Fee: {}₪\nOrders cost: {}₪\n'
+            '*Total cost: {}₪*').format(location.title, count, product_text, delivery_fee, price, delivery_fee+price)
         # message += _('❌ *Total canceled orders for Location `{}`*\nCount: {}\n*Total cost: {}₪*').format(
         #     cancel_count, cancel_product_text, cancel_price)
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message,
@@ -1146,13 +1149,15 @@ def on_statistics_user(bot, update, user_data):
         year, month = user_data['calendar_date']
         subquery = shortcuts.get_order_subquery(action, val, month, year)
         for user in users:
-            count, price, product_text = shortcuts.get_order_count_and_price((Order.delivered == True),
+            count, price, product_text, delivery_fee = shortcuts.get_order_count_and_price((Order.delivered == True),
                                                                              (Order.canceled == False),
                                                                              (Order.user == user), *subquery)
-            cancel_count, cancel_price, cancel_product_text = shortcuts.get_order_count_and_price(
+            cancel_count, cancel_price, cancel_product_text, cancel_delivery_fee = shortcuts.get_order_count_and_price(
                 (Order.canceled == True), *subquery)
-            message = _('✅ *Total confirmed orders for client* @{}\nCount: {}\n*Total cost: {}₪*').format(
-                user.username, count, price)
+            message = _(
+                '✅ *Total confirmed orders for client* @{}\nCount: {}\n{}\nDelivery Fee: {}₪\nOrders cost: {}₪\n'
+                '*Total cost: {}₪*').format(
+                user.username, count, product_text, delivery_fee, price, delivery_fee + price)
             message += '\n\n'
             message += _('❌ *Total canceled orders for client*\nCount: {}\n*Total cost: {}₪*').format(
                 cancel_count, cancel_price)

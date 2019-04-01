@@ -72,7 +72,7 @@ def create_product_description(user_id, product_title, product_prices, product_c
                 text += '\n'
             elif conf_delivery_fee == 0:
                 text += _('Free delivery')
-    text += '\n\n*'
+    text += '*'
     text += _('Price:')
     text += '*\n'
 
@@ -142,7 +142,7 @@ def create_confirmation_text(user_id, is_pickup, shipping_data, total,
             if not is_pickup:
                 active_delivery = True
                 text += '\n'
-                text += _('Delivery Fee: {}₪').format(delivery_fee)
+                text += _('*{}*₪ Delivery Fee').format(delivery_fee)
 
     discount = config.get_discount()
     discount_min = config.get_discount_min()
@@ -210,7 +210,7 @@ def create_service_notice(trans, is_pickup, order_id, username, product_info, sh
             if not is_pickup:
                 active_delivery = True
                 text += '\n'
-                text += _('Delivery Fee: {}₪').format(delivery_fee)
+                text += _('*{}*₪ Delivery Fee').format(delivery_fee)
 
     discount = config.get_discount()
     discount_min = config.get_discount_min()
